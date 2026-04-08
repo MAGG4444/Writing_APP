@@ -1,4 +1,102 @@
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("./assets/fonts/SourceSans3-400.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("./assets/fonts/SourceSans3-500.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("./assets/fonts/SourceSans3-600.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("./assets/fonts/SourceSans3-700.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Merriweather";
+  src: url("./assets/fonts/Merriweather-400.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Merriweather";
+  src: url("./assets/fonts/Merriweather-700.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans SC";
+  src: url("./assets/fonts/NotoSansSC-400.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans SC";
+  src: url("./assets/fonts/NotoSansSC-500.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans SC";
+  src: url("./assets/fonts/NotoSansSC-700.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Serif SC";
+  src: url("./assets/fonts/NotoSerifSC-400.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Serif SC";
+  src: url("./assets/fonts/NotoSerifSC-600.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Serif SC";
+  src: url("./assets/fonts/NotoSerifSC-700.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
 :root {
+  --font-en: "Source Sans 3";
+  --font-zh: "Noto Sans SC";
   --bg: #f6efe6;
   --bg-accent: #ead9c8;
   --surface: rgba(255, 250, 244, 0.84);
@@ -24,10 +122,11 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+  height: 100%;
 }
 
 body {
-  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  font-family: var(--font-en), var(--font-zh), "Avenir Next", "Segoe UI", sans-serif;
   color: var(--text);
   background:
     radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 14%, transparent), transparent 28%),
@@ -64,11 +163,13 @@ textarea {
 }
 
 .app-frame {
-  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 20px;
   padding: 22px 22px 18px;
+  overflow: hidden;
 }
 
 .app-header,
@@ -104,11 +205,13 @@ textarea {
 
 .app-main {
   min-height: 0;
+  overflow: hidden;
 }
 
 .tab-view {
   display: none;
   height: 100%;
+  min-height: 0;
 }
 
 .tab-view.active {
@@ -117,13 +220,15 @@ textarea {
 
 .storage-layout {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(220px, 24vw) minmax(0, 1fr) minmax(280px, 30vw);
   gap: 18px;
-  min-height: calc(100vh - 220px);
+  height: 100%;
+  min-height: 0;
 }
 
 .surface {
   padding: 18px;
+  min-height: 0;
 }
 
 .explorer-panel,
@@ -132,12 +237,14 @@ textarea {
   flex-direction: column;
   gap: 16px;
   background: color-mix(in srgb, var(--sidebar) 86%, transparent);
+  overflow: auto;
 }
 
 .editor-panel {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
 }
 
 .grow {
@@ -155,7 +262,7 @@ textarea {
 .app-header h1,
 .section-head h2 {
   margin: 0;
-  font-family: Baskerville, "Iowan Old Style", serif;
+  font-family: var(--font-en), var(--font-zh), Baskerville, "Iowan Old Style", serif;
 }
 
 .app-subtitle,
@@ -282,7 +389,8 @@ textarea {
 }
 
 .main-editor {
-  min-height: calc(100vh - 380px);
+  min-height: 260px;
+  height: 100%;
   line-height: 1.75;
 }
 
@@ -323,7 +431,8 @@ textarea {
   display: grid;
   grid-template-rows: auto auto 1fr auto;
   gap: 16px;
-  min-height: calc(100vh - 220px);
+  height: 100%;
+  min-height: 0;
 }
 
 .search-wrap {
@@ -388,15 +497,29 @@ textarea {
 
 .settings-layout {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 18px;
-  min-height: calc(100vh - 220px);
+  height: 100%;
+  min-height: 0;
 }
 
 .settings-panel {
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+.font-setting {
+  display: grid;
+  gap: 8px;
+}
+
+.font-preview {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-strong);
+  line-height: 1.75;
 }
 
 .theme-grid {
@@ -448,14 +571,29 @@ textarea {
   display: block;
 }
 
-@media (max-width: 1240px) {
-  .storage-layout,
-  .settings-layout {
+@media (max-width: 1360px) {
+  .storage-layout {
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  }
+
+  .tools-panel {
+    grid-column: 1 / -1;
+    max-height: 34dvh;
+  }
+}
+
+@media (max-width: 1040px) {
+  .storage-layout {
     grid-template-columns: 1fr;
   }
 
+  .explorer-panel,
+  .tools-panel {
+    max-height: none;
+  }
+
   .main-editor {
-    min-height: 420px;
+    min-height: 320px;
   }
 }
 

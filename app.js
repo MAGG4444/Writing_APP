@@ -79,6 +79,32 @@ const themes = {
   },
 };
 
+const englishFonts = {
+  sourceSans3: {
+    id: "sourceSans3",
+    name: { zh: "Source Sans 3", en: "Source Sans 3" },
+    css: '"Source Sans 3"',
+  },
+  merriweather: {
+    id: "merriweather",
+    name: { zh: "Merriweather", en: "Merriweather" },
+    css: '"Merriweather"',
+  },
+};
+
+const chineseFonts = {
+  notoSansSc: {
+    id: "notoSansSc",
+    name: { zh: "思源黑体 / Noto Sans SC", en: "Noto Sans SC" },
+    css: '"Noto Sans SC"',
+  },
+  notoSerifSc: {
+    id: "notoSerifSc",
+    name: { zh: "思源宋体 / Noto Serif SC", en: "Noto Serif SC" },
+    css: '"Noto Serif SC"',
+  },
+};
+
 const translations = {
   zh: {
     appKicker: "本地写作工作台",
@@ -124,6 +150,12 @@ const translations = {
     appearanceTitle: "颜色风格",
     languageKicker: "语言",
     languageTitle: "界面语言",
+    typographyKicker: "字体",
+    typographyTitle: "中英文字体",
+    englishFontLabel: "英文字体",
+    chineseFontLabel: "中文字体",
+    fontPreview:
+      "The orchard remembers every footstep.\n果园记得每一步脚印。\n\nWrite in the tone that fits your story.",
     themeSource:
       "主题候选包含内置方案，以及基于开源配色项目的方案：Catppuccin、Nord、Dracula。",
     languageZh: "中文",
@@ -186,6 +218,12 @@ const translations = {
     appearanceTitle: "Color Styles",
     languageKicker: "Language",
     languageTitle: "App Language",
+    typographyKicker: "Typography",
+    typographyTitle: "English and Chinese Fonts",
+    englishFontLabel: "English font",
+    chineseFontLabel: "Chinese font",
+    fontPreview:
+      "The orchard remembers every footstep.\n果园记得每一步脚印。\n\nWrite in the tone that fits your story.",
     themeSource:
       "Theme options include a built-in style plus presets based on open-source palette projects: Catppuccin, Nord, and Dracula.",
     languageZh: "Chinese",
@@ -211,6 +249,8 @@ const seedState = {
   settings: {
     theme: "ember",
     language: "zh",
+    englishFont: "sourceSans3",
+    chineseFont: "notoSansSc",
   },
   storage: {
     activeFolderId: "folder-1",
@@ -346,6 +386,9 @@ const ui = {
   postButton: document.getElementById("post-button"),
   themeGrid: document.getElementById("theme-grid"),
   languageOptions: document.getElementById("language-options"),
+  englishFontSelect: document.getElementById("english-font-select"),
+  chineseFontSelect: document.getElementById("chinese-font-select"),
+  fontPreview: document.getElementById("font-preview"),
 };
 
 init();
@@ -353,6 +396,7 @@ init();
 function init() {
   document.documentElement.lang = state.settings.language === "zh" ? "zh-CN" : "en";
   applyTheme(state.settings.theme);
+  applyTypography();
   renderStaticText();
   renderTabs();
   renderToolbar();
@@ -415,6 +459,10 @@ function renderStaticText() {
   text("appearance-title", t("appearanceTitle"));
   text("language-kicker", t("languageKicker"));
   text("language-title", t("languageTitle"));
+  text("typography-kicker", t("typographyKicker"));
+  text("typography-title", t("typographyTitle"));
+  text("english-font-label", t("englishFontLabel"));
+  text("chinese-font-label", t("chineseFontLabel"));
   text("theme-source-note", t("themeSource"));
   ui.exportButton.textContent = t("exportProject");
   ui.importButton.textContent = t("importProject");
@@ -667,6 +715,29 @@ function renderSettings() {
     });
     ui.languageOptions.appendChild(card);
   });
+
+  ui.englishFontSelect.innerHTML = Object.values(englishFonts)
+    .map(
+      (font) =>
+        `<option value="${escapeAttribute(font.id)}" ${
+          font.id === state.settings.englishFont ? "selected" : ""
+        }>${escapeHtml(font.name[state.settings.language])}</option>`,
+    )
+    .join("");
+
+  ui.chineseFontSelect.innerHTML = Object.values(chineseFonts)
+    .map(
+      (font) =>
+        `<option value="${escapeAttribute(font.id)}" ${
+          font.id === state.settings.chineseFont ? "selected" : ""
+        }>${escapeHtml(font.name[state.settings.language])}</option>`,
+    )
+    .join("");
+
+  ui.fontPreview.innerHTML = `<div>${escapeHtml(t("fontPreview")).replaceAll("\n", "<br />")}</div>`;
+  ui.fontPreview.style.fontFamily = `${englishFonts[state.settings.englishFont].css}, ${
+    chineseFonts[state.settings.chineseFont].css
+  }, "Segoe UI", sans-serif`;
 }
 
 function bindEvents() {
@@ -676,6 +747,18 @@ function bindEvents() {
   ui.newWorkButton.addEventListener("click", createWork);
   ui.newCategoryButton.addEventListener("click", createCategory);
   ui.postButton.addEventListener("click", createPost);
+  ui.englishFontSelect.addEventListener("change", (event) => {
+    state.settings.englishFont = event.target.value;
+    applyTypography();
+    saveState();
+    renderSettings();
+  });
+  ui.chineseFontSelect.addEventListener("change", (event) => {
+    state.settings.chineseFont = event.target.value;
+    applyTypography();
+    saveState();
+    renderSettings();
+  });
 
   ui.inspirationSearch.addEventListener("input", (event) => {
     state.inspiration.search = event.target.value;
@@ -725,6 +808,7 @@ function bindEvents() {
         Object.assign(state, structuredClone(seedState));
         document.documentElement.lang = "zh-CN";
         applyTheme(state.settings.theme);
+        applyTypography();
         saveState();
         renderStaticText();
         renderTabs();
@@ -895,6 +979,14 @@ function applyTheme(themeId) {
   root.style.setProperty("--accent-soft", theme.vars.accentSoft);
 }
 
+function applyTypography() {
+  const englishFont = englishFonts[state.settings.englishFont] ?? englishFonts.sourceSans3;
+  const chineseFont = chineseFonts[state.settings.chineseFont] ?? chineseFonts.notoSansSc;
+  const root = document.documentElement;
+  root.style.setProperty("--font-en", englishFont.css);
+  root.style.setProperty("--font-zh", chineseFont.css);
+}
+
 async function exportState() {
   const content = JSON.stringify(state, null, 2);
 
@@ -947,6 +1039,7 @@ function loadImportedState(raw) {
     Object.assign(state, imported);
     document.documentElement.lang = state.settings.language === "zh" ? "zh-CN" : "en";
     applyTheme(state.settings.theme);
+    applyTypography();
     saveState();
     renderStaticText();
     renderTabs();

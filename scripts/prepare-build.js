@@ -3,16 +3,22 @@ const path = require("node:path");
 
 const rootDir = path.resolve(__dirname, "..");
 const buildDir = path.join(rootDir, ".app-build");
+const buildAssetsDir = path.join(buildDir, "assets");
 
 const runtimeFiles = ["app.js", "index.html", "main.js", "preload.js", "styles.css"];
 
 async function main() {
   await fs.rm(buildDir, { recursive: true, force: true });
   await fs.mkdir(buildDir, { recursive: true });
+  await fs.mkdir(buildAssetsDir, { recursive: true });
 
   for (const file of runtimeFiles) {
     await fs.copyFile(path.join(rootDir, file), path.join(buildDir, file));
   }
+
+  await fs.cp(path.join(rootDir, "assets", "fonts"), path.join(buildAssetsDir, "fonts"), {
+    recursive: true,
+  });
 
   const rootPackage = JSON.parse(await fs.readFile(path.join(rootDir, "package.json"), "utf8"));
   const appPackage = {
