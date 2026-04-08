@@ -7,46 +7,14 @@
   "author": "MAGG4444",
   "license": "MIT",
   "scripts": {
+    "postinstall": "node scripts/patch-electron-builder.js",
     "start": "electron .",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "prepare:build": "node scripts/prepare-build.js",
+    "pack": "npm run prepare:build && electron-builder --dir --config electron-builder.json",
+    "dist": "npm run prepare:build && electron-builder --config electron-builder.json"
   },
   "devDependencies": {
     "electron": "^37.2.0",
     "electron-builder": "^26.0.12"
-  },
-  "build": {
-    "appId": "com.magg4444.storyforge",
-    "productName": "Story Forge",
-    "files": [
-      "app.js",
-      "index.html",
-      "main.js",
-      "package.json",
-      "preload.js",
-      "styles.css"
-    ],
-    "directories": {
-      "output": "dist"
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "tar.gz"
-      ],
-      "category": "Office"
-    },
-    "win": {
-      "target": [
-        "nsis",
-        "portable"
-      ]
-    },
-    "mac": {
-      "target": [
-        "dmg"
-      ],
-      "category": "public.app-category.productivity"
-    }
   }
 }

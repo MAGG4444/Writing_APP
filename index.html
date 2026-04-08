@@ -7,163 +7,149 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="app-shell">
-      <aside class="sidebar">
+    <div class="app-frame">
+      <header class="app-header">
         <div>
-          <p class="eyebrow">Local Writing Studio</p>
-          <h1>Story Forge</h1>
-          <p class="sidebar-copy">
-            Edit drafts, capture ideas, structure plots, and track characters in one local workspace.
-          </p>
+          <p class="eyebrow" id="app-kicker"></p>
+          <h1 id="app-title"></h1>
+          <p class="app-subtitle" id="app-subtitle"></p>
         </div>
-        <nav class="nav-list" id="nav-list"></nav>
-        <div class="sidebar-footer">
-          <p>Data is saved locally in your browser.</p>
-          <button id="reset-button" class="ghost-button">Reset Sample Project</button>
+        <div class="header-actions">
+          <span class="runtime-pill" id="runtime-badge"></span>
+          <button id="export-button" class="ghost-button"></button>
+          <button id="import-button" class="ghost-button"></button>
         </div>
-      </aside>
+      </header>
 
-      <main class="main-panel">
-        <header class="topbar">
-          <div>
-            <p class="eyebrow">Current Project</p>
-            <h2 id="project-title"></h2>
-            <p id="runtime-badge" class="runtime-badge">Browser Mode</p>
-          </div>
-          <div class="topbar-actions">
-            <button id="export-button" class="ghost-button">Export JSON</button>
-            <label class="import-label">
-              Import JSON
-              <input id="import-input" type="file" accept="application/json" />
-            </label>
-          </div>
-        </header>
-
-        <section class="view active" data-view="workspace">
-          <div class="hero-card">
-            <div>
-              <p class="eyebrow">Draft Workspace</p>
-              <h3>Write with quick formatting support</h3>
-            </div>
-            <div class="toolbar" id="editor-toolbar"></div>
-          </div>
-          <div class="grid two-up">
-            <article class="panel">
-              <label for="draft-title">Draft title</label>
-              <input id="draft-title" type="text" />
-              <label for="draft-editor">Main draft</label>
-              <textarea id="draft-editor" class="editor"></textarea>
-            </article>
-            <article class="panel">
-              <p class="panel-title">Formatting Notes</p>
-              <p class="muted">
-                Buttons insert lightweight markdown-style formatting so you can keep the draft portable.
-              </p>
-              <div id="draft-preview" class="preview prose"></div>
-            </article>
-          </div>
-        </section>
-
-        <section class="view" data-view="ideas">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Idea Capture</p>
-              <h3>Keep fragments before they disappear</h3>
-            </div>
-            <button id="add-idea" class="primary-button">New Idea</button>
-          </div>
-          <div id="ideas-list" class="stack-list"></div>
-        </section>
-
-        <section class="view" data-view="outline">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Outline</p>
-              <h3>High-level structure</h3>
-            </div>
-            <button id="add-outline-item" class="primary-button">Add Beat</button>
-          </div>
-          <div id="outline-list" class="stack-list"></div>
-        </section>
-
-        <section class="view" data-view="detailed-outline">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Detailed Outline</p>
-              <h3>Scene-by-scene planning</h3>
-            </div>
-            <button id="add-scene" class="primary-button">Add Scene</button>
-          </div>
-          <div id="scene-list" class="stack-list"></div>
-        </section>
-
-        <section class="view" data-view="plot">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Plot Pointers</p>
-              <h3>Track motivations, stakes, and payoffs</h3>
-            </div>
-            <button id="add-pointer" class="primary-button">Add Pointer</button>
-          </div>
-          <div id="plot-list" class="stack-list"></div>
-        </section>
-
-        <section class="view" data-view="tags">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Tags</p>
-              <h3>Group threads, themes, and revision passes</h3>
-            </div>
-            <button id="add-tag" class="primary-button">Add Tag</button>
-          </div>
-          <div class="grid two-up">
-            <article class="panel">
-              <div id="tag-list" class="stack-list compact"></div>
-            </article>
-            <article class="panel">
-              <p class="panel-title">Tag Reference</p>
-              <div id="tag-summary" class="tag-cloud"></div>
-            </article>
-          </div>
-        </section>
-
-        <section class="view" data-view="mind-map">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Mind Map</p>
-              <h3>Character and plot relationships</h3>
-            </div>
-            <button id="add-link" class="primary-button">Add Connection</button>
-          </div>
-          <div class="grid two-up">
-            <article class="panel panel-tall">
-              <div id="mind-map" class="mind-map"></div>
-            </article>
-            <article class="panel panel-tall">
-              <div id="connection-list" class="stack-list compact"></div>
-            </article>
-          </div>
-        </section>
-
-        <section class="view" data-view="characters">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Characters</p>
-              <h3>Roles, arcs, and analysis</h3>
-            </div>
-            <button id="add-character" class="primary-button">Add Character</button>
-          </div>
-          <div class="character-layout">
-            <aside id="character-list" class="panel character-list"></aside>
-            <article class="panel character-detail">
-              <div id="character-empty" class="empty-state">
-                Select a character to open the dedicated analysis page.
+      <main class="app-main">
+        <section class="tab-view active" data-tab="storage">
+          <div class="storage-layout">
+            <aside class="surface explorer-panel">
+              <div class="section-head">
+                <div>
+                  <p class="eyebrow" id="storage-kicker"></p>
+                  <h2 id="storage-title"></h2>
+                </div>
+                <div class="stack-actions">
+                  <button id="new-folder-button" class="primary-button"></button>
+                  <button id="new-work-button" class="ghost-button"></button>
+                </div>
               </div>
-              <div id="character-detail" class="character-analysis hidden"></div>
-            </article>
+              <div id="folder-list" class="folder-list"></div>
+            </aside>
+
+            <section class="surface editor-panel">
+              <div id="work-empty" class="empty-state"></div>
+              <div id="work-editor" class="hidden">
+                <div class="editor-header">
+                  <div class="grow">
+                    <label class="field-label" for="work-title-input" id="work-title-label"></label>
+                    <input id="work-title-input" type="text" />
+                  </div>
+                  <div class="meta-chip" id="current-folder-chip"></div>
+                </div>
+                <div class="editor-toolbar" id="editor-toolbar"></div>
+                <label class="field-label" for="work-content-input" id="editor-label"></label>
+                <textarea id="work-content-input" class="main-editor"></textarea>
+              </div>
+            </section>
+
+            <aside class="surface tools-panel">
+              <div class="section-head">
+                <div>
+                  <p class="eyebrow" id="tools-kicker"></p>
+                  <h2 id="tools-title"></h2>
+                </div>
+              </div>
+              <div id="tool-fields" class="tool-fields hidden">
+                <div class="tool-card">
+                  <label class="field-label" for="tool-formatting" id="tool-formatting-label"></label>
+                  <textarea id="tool-formatting"></textarea>
+                </div>
+                <div class="tool-card">
+                  <label class="field-label" for="tool-outline" id="tool-outline-label"></label>
+                  <textarea id="tool-outline"></textarea>
+                </div>
+                <div class="tool-card">
+                  <label class="field-label" for="tool-detailed-outline" id="tool-detailed-outline-label"></label>
+                  <textarea id="tool-detailed-outline"></textarea>
+                </div>
+                <div class="tool-card">
+                  <label class="field-label" for="tool-plot" id="tool-plot-label"></label>
+                  <textarea id="tool-plot"></textarea>
+                </div>
+                <div class="tool-card">
+                  <label class="field-label" for="tool-tags" id="tool-tags-label"></label>
+                  <input id="tool-tags" type="text" />
+                </div>
+                <div class="tool-card">
+                  <label class="field-label" for="tool-mind-map" id="tool-mind-map-label"></label>
+                  <textarea id="tool-mind-map"></textarea>
+                </div>
+                <div class="tool-card">
+                  <label class="field-label" for="tool-characters" id="tool-characters-label"></label>
+                  <textarea id="tool-characters"></textarea>
+                </div>
+              </div>
+              <div id="tool-empty" class="empty-state compact"></div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="tab-view" data-tab="inspiration">
+          <div class="surface inspiration-panel">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow" id="inspiration-kicker"></p>
+                <h2 id="inspiration-title"></h2>
+              </div>
+              <div class="search-wrap">
+                <input id="inspiration-search" type="search" />
+              </div>
+            </div>
+
+            <div class="category-row">
+              <div id="category-list" class="category-list"></div>
+              <button id="new-category-button" class="ghost-button"></button>
+            </div>
+
+            <div id="post-list" class="post-list"></div>
+
+            <div class="composer">
+              <select id="post-category-select"></select>
+              <textarea id="post-input"></textarea>
+              <button id="post-button" class="primary-button"></button>
+            </div>
+          </div>
+        </section>
+
+        <section class="tab-view" data-tab="settings">
+          <div class="settings-layout">
+            <section class="surface settings-panel">
+              <div class="section-head">
+                <div>
+                  <p class="eyebrow" id="appearance-kicker"></p>
+                  <h2 id="appearance-title"></h2>
+                </div>
+              </div>
+              <div id="theme-grid" class="theme-grid"></div>
+              <p class="source-note" id="theme-source-note"></p>
+            </section>
+
+            <section class="surface settings-panel">
+              <div class="section-head">
+                <div>
+                  <p class="eyebrow" id="language-kicker"></p>
+                  <h2 id="language-title"></h2>
+                </div>
+              </div>
+              <div id="language-options" class="language-options"></div>
+            </section>
           </div>
         </section>
       </main>
+
+      <nav class="bottom-tabs" id="bottom-tabs"></nav>
     </div>
 
     <script src="./app.js"></script>

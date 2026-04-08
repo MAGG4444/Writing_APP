@@ -1,0 +1,34 @@
+{
+  "appId": "com.magg4444.storyforge",
+  "productName": "Story Forge",
+  "directories": {
+    "buildResources": "assets",
+    "app": ".app-build",
+    "output": "dist"
+  },
+  "artifactName": "${productName}-${version}.${ext}",
+  "files": [
+    "**/*"
+  ],
+  "linux": {
+    "icon": "assets/icon.png",
+    "target": [
+      "AppImage",
+      "tar.gz"
+    ],
+    "category": "Office"
+  },
+  "win": {
+    "icon": "assets/icon.ico",
+    "target": [
+      "nsis",
+      "portable"
+    ]
+  },
+  "mac": {
+    "target": [
+      "dmg"
+    ],
+    "category": "public.app-category.productivity"
+  }
+}

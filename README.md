@@ -6,14 +6,12 @@ Story Forge is a local desktop writing studio for authors who want drafting, out
 
 Story Forge is built for long-form fiction workflows. It combines the core writing surfaces authors usually have to split across multiple tools:
 
-- A main draft editor with quick formatting tools and live preview
-- An idea capture page for fragments, notes, and future scenes
-- A high-level outline page for major beats
-- A detailed outline page for scene-by-scene planning
-- Plot pointers for motivations, reveals, stakes, and payoffs
-- Tags for themes, revision passes, and thread tracking
-- A mind-map view for character relationships and plot connections
-- A character panel with a dedicated analysis page for each role
+- A bottom-tab `Storage` workspace for folders, works, and text editing
+- A right-side writing tools panel for formatting rules, outline, detailed outline, plot pointers, tags, mind-map notes, and character analysis
+- An `Inspiration` page with conversation-style idea capture
+- Search and category creation for inspiration posts
+- A `Settings` page for app color themes and language switching
+- English and Chinese interface support
 - Local project persistence plus JSON import/export
 
 ## Desktop App
@@ -26,6 +24,7 @@ Desktop-specific behavior includes:
 - App menu for import, export, and reset actions
 - File-based JSON import/export through system dialogs
 - Packaging support for downloadable builds
+- Custom app icon for packaged builds
 
 ## Local Development
 
@@ -54,9 +53,46 @@ Build artifacts are written to `dist/`.
 On Linux, the generated outputs include:
 
 - `Story Forge-1.0.0.AppImage`
-- `story-forge-1.0.0.tar.gz`
+- `Story Forge-1.0.0.tar.gz`
 
 Windows and macOS targets are also configured in `package.json`, but those are best built on their native platforms or CI runners for reliable release packaging.
+
+## Fedora Installation
+
+The recommended Fedora path is to use the AppImage build.
+
+Make it executable:
+
+```bash
+cd dist
+chmod +x "Story Forge-1.0.0.AppImage"
+```
+
+Run it directly:
+
+```bash
+./"Story Forge-1.0.0.AppImage"
+```
+
+If your Fedora environment is missing AppImage runtime support, install FUSE libraries first:
+
+```bash
+sudo dnf install fuse fuse-libs
+```
+
+If you want to keep it like a normal desktop app, a simple approach is:
+
+```bash
+mkdir -p ~/Applications
+cp "dist/Story Forge-1.0.0.AppImage" ~/Applications/
+chmod +x ~/Applications/"Story Forge-1.0.0.AppImage"
+```
+
+Then run it from:
+
+```bash
+~/Applications/"Story Forge-1.0.0.AppImage"
+```
 
 ## Browser Fallback
 
@@ -66,7 +102,9 @@ The app still works as a plain local web app. If needed, you can open `index.htm
 
 - `index.html` contains the app shell
 - `styles.css` contains the visual system and layout
-- `app.js` contains the writing workspace logic and local state handling
+- `app.js` contains the tab logic, local state handling, themes, and localization
 - `main.js` contains the Electron main process
 - `preload.js` exposes the safe desktop bridge to the renderer
-- `package.json` contains Electron scripts and packaging config
+- `package.json` contains Electron scripts and packaging workflow
+- `electron-builder.json` contains package targets and build resource configuration
+- `assets/` contains application icon resources

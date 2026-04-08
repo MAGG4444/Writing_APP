@@ -1,359 +1,721 @@
-const STORAGE_KEY = "story-forge-state-v1";
+const STORAGE_KEY = "story-forge-state-v2";
 
-const seedState = {
-  projectTitle: "The Glass Orchard",
-  activeView: "workspace",
-  activeCharacterId: "char-1",
-  draft: {
-    title: "Chapter One: The Orchard Wakes",
-    content:
-      "# Opening image\nLena returns to the family estate after a decade away.\n\n## Tension\nShe expects silence, but the orchard is full of music only she seems to hear.\n\n- Dust in the greenhouse\n- A key hidden in a pomegranate crate\n- Her brother acting as if nothing is wrong",
+const themes = {
+  ember: {
+    id: "ember",
+    name: { zh: "琥珀手稿", en: "Ember Manuscript" },
+    source: { zh: "Story Forge 内置主题", en: "Built-in Story Forge theme" },
+    vars: {
+      bg: "#f6efe6",
+      bgAccent: "#ead9c8",
+      surface: "rgba(255, 250, 244, 0.84)",
+      surfaceStrong: "#fffaf5",
+      sidebar: "rgba(255, 247, 239, 0.72)",
+      text: "#2f231c",
+      muted: "#706154",
+      border: "rgba(87, 62, 42, 0.14)",
+      accent: "#9f4328",
+      accentStrong: "#7e321b",
+      accentSoft: "rgba(159, 67, 40, 0.12)",
+    },
+    swatches: ["#f6efe6", "#ead9c8", "#9f4328", "#2f231c"],
   },
-  ideas: [
-    {
-      id: "idea-1",
-      title: "Secret at the irrigation gate",
-      notes: "The broken irrigation gate is actually a coded entry point into the old archive tunnel.",
+  catppuccinLatte: {
+    id: "catppuccinLatte",
+    name: { zh: "Catppuccin Latte", en: "Catppuccin Latte" },
+    source: { zh: "基于 Catppuccin Palette", en: "Based on Catppuccin Palette" },
+    vars: {
+      bg: "#eff1f5",
+      bgAccent: "#dce0e8",
+      surface: "rgba(255, 255, 255, 0.78)",
+      surfaceStrong: "#ffffff",
+      sidebar: "rgba(220, 224, 232, 0.58)",
+      text: "#4c4f69",
+      muted: "#6c6f85",
+      border: "rgba(76, 79, 105, 0.12)",
+      accent: "#dc8a78",
+      accentStrong: "#d20f39",
+      accentSoft: "rgba(220, 138, 120, 0.14)",
     },
-    {
-      id: "idea-2",
-      title: "Voice motif",
-      notes: "Every time the orchard speaks, it uses a phrase once spoken by the grandmother.",
+    swatches: ["#eff1f5", "#dce0e8", "#dc8a78", "#4c4f69"],
+  },
+  nord: {
+    id: "nord",
+    name: { zh: "Nord Frost", en: "Nord Frost" },
+    source: { zh: "基于 Nord 配色", en: "Based on Nord colors" },
+    vars: {
+      bg: "#eceff4",
+      bgAccent: "#d8dee9",
+      surface: "rgba(255, 255, 255, 0.76)",
+      surfaceStrong: "#ffffff",
+      sidebar: "rgba(216, 222, 233, 0.7)",
+      text: "#2e3440",
+      muted: "#4c566a",
+      border: "rgba(46, 52, 64, 0.12)",
+      accent: "#5e81ac",
+      accentStrong: "#4c6d95",
+      accentSoft: "rgba(94, 129, 172, 0.14)",
     },
-  ],
-  outline: [
-    { id: "beat-1", title: "Arrival", summary: "Protagonist returns home under pressure." },
-    { id: "beat-2", title: "The impossible sound", summary: "She hears music in the trees." },
-    { id: "beat-3", title: "Refusal", summary: "She chooses not to investigate until a threat lands." },
-  ],
-  scenes: [
-    {
-      id: "scene-1",
-      title: "Train platform goodbye",
-      chapter: "1",
-      objective: "Show what she is leaving behind.",
-      conflict: "Her editor wants the book draft; family wants her silence.",
-      outcome: "She boards the train anyway.",
+    swatches: ["#eceff4", "#d8dee9", "#5e81ac", "#2e3440"],
+  },
+  dracula: {
+    id: "dracula",
+    name: { zh: "Dracula Classic", en: "Dracula Classic" },
+    source: { zh: "基于 Dracula Theme", en: "Based on Dracula Theme" },
+    vars: {
+      bg: "#282a36",
+      bgAccent: "#44475a",
+      surface: "rgba(52, 55, 70, 0.88)",
+      surfaceStrong: "#343746",
+      sidebar: "rgba(33, 34, 44, 0.9)",
+      text: "#f8f8f2",
+      muted: "#bd93f9",
+      border: "rgba(248, 248, 242, 0.12)",
+      accent: "#ff79c6",
+      accentStrong: "#ff5555",
+      accentSoft: "rgba(255, 121, 198, 0.18)",
     },
-    {
-      id: "scene-2",
-      title: "Night orchard walk",
-      chapter: "1",
-      objective: "Introduce the central mystery.",
-      conflict: "The orchard behaves like an active intelligence.",
-      outcome: "She discovers the hidden key.",
-    },
-  ],
-  plotPointers: [
-    {
-      id: "plot-1",
-      label: "Core question",
-      detail: "Who taught the orchard to remember?",
-      payoff: "Revealed in the grandmother's journals.",
-    },
-    {
-      id: "plot-2",
-      label: "Escalation",
-      detail: "Brother begins destroying records to bury the truth.",
-      payoff: "Forces protagonist into open conflict by midpoint.",
-    },
-  ],
-  tags: [
-    { id: "tag-1", name: "Memory", color: "#d9b16f", notes: "Themes of inheritance and recall." },
-    { id: "tag-2", name: "Revision Pass", color: "#c46c4c", notes: "Track scenes needing prose tightening." },
-    { id: "tag-3", name: "Family Secrets", color: "#8a9974", notes: "Use on hidden-history threads." },
-  ],
-  characters: [
-    {
-      id: "char-1",
-      name: "Lena Voss",
-      role: "Protagonist",
-      archetype: "Reluctant heir",
-      desire: "To finish her novel and leave the past untouched.",
-      fear: "That her family's history is inside her work and cannot be escaped.",
-      contradiction: "She wants distance but keeps searching for signs from home.",
-      relationships: "Protective toward Tomas, distrustful of Mara, haunted by Grandmother Iva.",
-      arc: "Moves from avoidance to stewardship.",
-      analysis: "Lena works best when every external clue collides with an artistic choice she has to make.",
-    },
-    {
-      id: "char-2",
-      name: "Tomas Voss",
-      role: "Brother",
-      archetype: "Keeper of appearances",
-      desire: "To preserve the family business at any cost.",
-      fear: "Exposure of what their grandmother built beneath the orchard.",
-      contradiction: "He claims stability matters most while quietly creating chaos.",
-      relationships: "Loves Lena, resents her freedom, fears Mara's insight.",
-      arc: "Slides from compromise into sabotage.",
-      analysis: "He should never feel purely antagonistic; his logic must stay emotionally legible.",
-    },
-    {
-      id: "char-3",
-      name: "Mara Quill",
-      role: "Archivist",
-      archetype: "Witness who sees too much",
-      desire: "To preserve truth before it is erased.",
-      fear: "That she will become complicit by waiting too long.",
-      contradiction: "She is disciplined in her work but reckless with people.",
-      relationships: "Pushes Lena toward action, clashes with Tomas.",
-      arc: "Transforms from observer into co-conspirator.",
-      analysis: "Mara is a catalyst character; scenes with her should move the plot or sharpen theme.",
-    },
-  ],
-  connections: [
-    {
-      id: "link-1",
-      from: "char-1",
-      to: "char-2",
-      label: "siblings under pressure",
-      type: "character",
-    },
-    {
-      id: "link-2",
-      from: "char-1",
-      to: "plot-1",
-      label: "drives investigation",
-      type: "plot",
-    },
-    {
-      id: "link-3",
-      from: "char-3",
-      to: "plot-2",
-      label: "reveals missing records",
-      type: "plot",
-    },
-  ],
+    swatches: ["#282a36", "#44475a", "#ff79c6", "#f8f8f2"],
+  },
 };
 
-const navItems = [
-  ["workspace", "Workspace", "Draft"],
-  ["ideas", "Ideas", "Capture"],
-  ["outline", "Outline", "Structure"],
-  ["detailed-outline", "Detailed Outline", "Scenes"],
-  ["plot", "Plot Pointers", "Threads"],
-  ["tags", "Tags", "Reference"],
-  ["mind-map", "Mind Map", "Links"],
-  ["characters", "Characters", "Analysis"],
-];
+const translations = {
+  zh: {
+    appKicker: "本地写作工作台",
+    appTitle: "Story Forge",
+    appSubtitle: "底部三栏结构：作品存储、灵感存储、设置。",
+    runtimeBrowser: "浏览器模式",
+    runtimeDesktop: "桌面应用模式",
+    exportProject: "导出项目",
+    importProject: "导入项目",
+    storageTab: "存储",
+    storageMeta: "文件夹与作品",
+    inspirationTab: "灵感存储",
+    inspirationMeta: "对话式灵感流",
+    settingsTab: "设置",
+    settingsMeta: "主题与语言",
+    storageKicker: "作品资源库",
+    storageTitle: "文件夹与作品",
+    newFolder: "新建文件夹",
+    newWork: "新建作品",
+    toolsKicker: "编辑功能",
+    toolsTitle: "作品详情工具",
+    workTitleLabel: "作品标题",
+    editorLabel: "正文编辑器",
+    emptyWork: "先选择一个作品，或新建文件夹与作品。",
+    emptyTools: "右侧会显示当前作品的结构化编辑工具。",
+    formattingLabel: "格式与写作规则",
+    outlineLabel: "大纲页",
+    detailedOutlineLabel: "详细大纲页",
+    plotLabel: "Plot Pointers / 情节提示",
+    tagsLabel: "标签",
+    mindMapLabel: "关系与 Mind-map 备注",
+    charactersLabel: "角色分析",
+    inspirationKicker: "灵感对话流",
+    inspirationTitle: "灵感存储",
+    searchPlaceholder: "搜索灵感内容或分类",
+    allCategories: "全部分类",
+    newCategory: "新建分类",
+    postPlaceholder: "把一条灵感记录在这里……",
+    postButton: "发布灵感",
+    uncategorized: "未分类",
+    noPosts: "还没有匹配的灵感记录。",
+    appearanceKicker: "外观",
+    appearanceTitle: "颜色风格",
+    languageKicker: "语言",
+    languageTitle: "界面语言",
+    themeSource:
+      "主题候选包含内置方案，以及基于开源配色项目的方案：Catppuccin、Nord、Dracula。",
+    languageZh: "中文",
+    languageEn: "英文",
+    folderCount: "作品数",
+    deleteFolder: "删除文件夹",
+    deleteWork: "删除作品",
+    renameHint: "可直接点击文字进行修改",
+    defaultFolder: "未命名文件夹",
+    defaultWork: "未命名作品",
+    defaultCategory: "新分类",
+    prompts: {
+      folder: "输入新文件夹名称",
+      work: "输入新作品名称",
+      category: "输入新分类名称",
+    },
+    postedAt: "发布于",
+  },
+  en: {
+    appKicker: "Local Writing Studio",
+    appTitle: "Story Forge",
+    appSubtitle: "Three bottom tabs: storage, inspiration, and settings.",
+    runtimeBrowser: "Browser Mode",
+    runtimeDesktop: "Desktop App Mode",
+    exportProject: "Export Project",
+    importProject: "Import Project",
+    storageTab: "Storage",
+    storageMeta: "Folders and works",
+    inspirationTab: "Inspiration",
+    inspirationMeta: "Conversation feed",
+    settingsTab: "Settings",
+    settingsMeta: "Theme and language",
+    storageKicker: "Project Library",
+    storageTitle: "Folders and Works",
+    newFolder: "New Folder",
+    newWork: "New Work",
+    toolsKicker: "Editing Tools",
+    toolsTitle: "Work Detail Tools",
+    workTitleLabel: "Work title",
+    editorLabel: "Main editor",
+    emptyWork: "Select a work first, or create a folder and a work.",
+    emptyTools: "The structured writing tools for the current work appear here.",
+    formattingLabel: "Formatting and writing rules",
+    outlineLabel: "Outline page",
+    detailedOutlineLabel: "Detailed outline page",
+    plotLabel: "Plot pointers",
+    tagsLabel: "Tags",
+    mindMapLabel: "Mind-map and relationship notes",
+    charactersLabel: "Character analysis",
+    inspirationKicker: "Conversation Feed",
+    inspirationTitle: "Inspiration Storage",
+    searchPlaceholder: "Search inspiration text or categories",
+    allCategories: "All categories",
+    newCategory: "New Category",
+    postPlaceholder: "Drop a new spark of inspiration here...",
+    postButton: "Post Inspiration",
+    uncategorized: "Uncategorized",
+    noPosts: "No inspiration posts match the current filter.",
+    appearanceKicker: "Appearance",
+    appearanceTitle: "Color Styles",
+    languageKicker: "Language",
+    languageTitle: "App Language",
+    themeSource:
+      "Theme options include a built-in style plus presets based on open-source palette projects: Catppuccin, Nord, and Dracula.",
+    languageZh: "Chinese",
+    languageEn: "English",
+    folderCount: "Works",
+    deleteFolder: "Delete folder",
+    deleteWork: "Delete work",
+    renameHint: "You can edit names directly",
+    defaultFolder: "Untitled Folder",
+    defaultWork: "Untitled Work",
+    defaultCategory: "New Category",
+    prompts: {
+      folder: "Enter a new folder name",
+      work: "Enter a new work name",
+      category: "Enter a new category name",
+    },
+    postedAt: "Posted",
+  },
+};
+
+const seedState = {
+  activeTab: "storage",
+  settings: {
+    theme: "ember",
+    language: "zh",
+  },
+  storage: {
+    activeFolderId: "folder-1",
+    activeWorkId: "work-1",
+    folders: [
+      {
+        id: "folder-1",
+        name: "长篇项目",
+      },
+      {
+        id: "folder-2",
+        name: "角色实验",
+      },
+    ],
+    works: [
+      {
+        id: "work-1",
+        folderId: "folder-1",
+        title: "玻璃果园",
+        content:
+          "第一章\n\nLena 回到果园，原本想尽快处理遗产问题离开，却听见温室深处传来不可能存在的音乐。",
+        tools: {
+          formatting: "第一人称与近景描写为主，关键线索第一次出现时加粗处理。",
+          outline: "回乡 -> 异常声音 -> 家族压力 -> 决定调查",
+          detailedOutline:
+            "场景 1：到站，编辑催稿。\n场景 2：夜里回到果园。\n场景 3：发现隐藏钥匙。",
+          plot: "核心悬念：是谁让果园拥有记忆？\n中段推进：兄长开始销毁旧记录。",
+          tags: "家族秘密, 记忆, 修订第一轮",
+          mindMap: "Lena -> Tomas：亲情与对立并存。\nLena -> 果园：被召回的继承关系。",
+          characters:
+            "Lena：逃离过去但不断回头。\nTomas：维护家业的代价越来越高。\nMara：推动真相曝光。",
+        },
+      },
+      {
+        id: "work-2",
+        folderId: "folder-1",
+        title: "城市夜航",
+        content: "一部偏悬疑的都市故事草稿。",
+        tools: {
+          formatting: "短句与节奏优先。",
+          outline: "失踪案 -> 错位线索 -> 夜间追踪",
+          detailedOutline: "",
+          plot: "",
+          tags: "悬疑, 都市",
+          mindMap: "",
+          characters: "",
+        },
+      },
+      {
+        id: "work-3",
+        folderId: "folder-2",
+        title: "配角档案",
+        content: "这里集中写配角的语气、动机和背景。",
+        tools: {
+          formatting: "",
+          outline: "",
+          detailedOutline: "",
+          plot: "",
+          tags: "角色",
+          mindMap: "",
+          characters: "为每个配角保留一个欲望、一个恐惧、一个矛盾。",
+        },
+      },
+    ],
+  },
+  inspiration: {
+    activeCategoryId: "all",
+    search: "",
+    categories: [
+      { id: "cat-1", name: "场景" },
+      { id: "cat-2", name: "对白" },
+      { id: "cat-3", name: "设定" },
+    ],
+    posts: [
+      {
+        id: "post-1",
+        categoryId: "cat-1",
+        text: "如果开场不是到家，而是她先在火车站丢了一页手稿，节奏会更紧。",
+        author: "author",
+        createdAt: "2026-04-08 13:10",
+      },
+      {
+        id: "post-2",
+        categoryId: "cat-2",
+        text: "“你不是回来继承果园的，你是回来替它作证的。”",
+        author: "system",
+        createdAt: "2026-04-08 13:12",
+      },
+    ],
+  },
+};
 
 const toolbarActions = [
   { label: "H1", before: "# ", after: "" },
   { label: "H2", before: "## ", after: "" },
-  { label: "Bold", before: "**", after: "**" },
-  { label: "Italic", before: "_", after: "_" },
-  { label: "Quote", before: "> ", after: "" },
-  { label: "List", before: "- ", after: "" },
+  { label: "B", before: "**", after: "**" },
+  { label: "I", before: "_", after: "_" },
+  { label: "•", before: "- ", after: "" },
+  { label: ">", before: "> ", after: "" },
 ];
 
 const state = loadState();
 
 const ui = {
-  navList: document.getElementById("nav-list"),
-  projectTitle: document.getElementById("project-title"),
+  bottomTabs: document.getElementById("bottom-tabs"),
   runtimeBadge: document.getElementById("runtime-badge"),
-  draftTitle: document.getElementById("draft-title"),
-  draftEditor: document.getElementById("draft-editor"),
-  draftPreview: document.getElementById("draft-preview"),
-  ideasList: document.getElementById("ideas-list"),
-  outlineList: document.getElementById("outline-list"),
-  sceneList: document.getElementById("scene-list"),
-  plotList: document.getElementById("plot-list"),
-  tagList: document.getElementById("tag-list"),
-  tagSummary: document.getElementById("tag-summary"),
-  connectionList: document.getElementById("connection-list"),
-  mindMap: document.getElementById("mind-map"),
-  characterList: document.getElementById("character-list"),
-  characterEmpty: document.getElementById("character-empty"),
-  characterDetail: document.getElementById("character-detail"),
-  editorToolbar: document.getElementById("editor-toolbar"),
-  resetButton: document.getElementById("reset-button"),
   exportButton: document.getElementById("export-button"),
-  importInput: document.getElementById("import-input"),
+  importButton: document.getElementById("import-button"),
+  folderList: document.getElementById("folder-list"),
+  newFolderButton: document.getElementById("new-folder-button"),
+  newWorkButton: document.getElementById("new-work-button"),
+  workEmpty: document.getElementById("work-empty"),
+  workEditor: document.getElementById("work-editor"),
+  workTitleInput: document.getElementById("work-title-input"),
+  currentFolderChip: document.getElementById("current-folder-chip"),
+  editorToolbar: document.getElementById("editor-toolbar"),
+  workContentInput: document.getElementById("work-content-input"),
+  toolFields: document.getElementById("tool-fields"),
+  toolEmpty: document.getElementById("tool-empty"),
+  toolFormatting: document.getElementById("tool-formatting"),
+  toolOutline: document.getElementById("tool-outline"),
+  toolDetailedOutline: document.getElementById("tool-detailed-outline"),
+  toolPlot: document.getElementById("tool-plot"),
+  toolTags: document.getElementById("tool-tags"),
+  toolMindMap: document.getElementById("tool-mind-map"),
+  toolCharacters: document.getElementById("tool-characters"),
+  inspirationSearch: document.getElementById("inspiration-search"),
+  categoryList: document.getElementById("category-list"),
+  newCategoryButton: document.getElementById("new-category-button"),
+  postList: document.getElementById("post-list"),
+  postCategorySelect: document.getElementById("post-category-select"),
+  postInput: document.getElementById("post-input"),
+  postButton: document.getElementById("post-button"),
+  themeGrid: document.getElementById("theme-grid"),
+  languageOptions: document.getElementById("language-options"),
 };
 
 init();
 
 function init() {
-  renderNav();
+  document.documentElement.lang = state.settings.language === "zh" ? "zh-CN" : "en";
+  applyTheme(state.settings.theme);
+  renderStaticText();
+  renderTabs();
   renderToolbar();
-  bindGlobalControls();
-  bindDraft();
-  renderAll();
+  bindEvents();
+  renderActiveTab();
 }
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : structuredClone(seedState);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return structuredClone(seedState);
+    return mergeState(structuredClone(seedState), JSON.parse(saved));
   } catch (error) {
     console.error("Failed to load state", error);
     return structuredClone(seedState);
   }
 }
 
+function mergeState(base, incoming) {
+  if (Array.isArray(base) || Array.isArray(incoming)) return incoming ?? base;
+  const result = { ...base };
+  Object.keys(incoming || {}).forEach((key) => {
+    if (typeof incoming[key] === "object" && incoming[key] && typeof base[key] === "object" && base[key]) {
+      result[key] = mergeState(base[key], incoming[key]);
+    } else {
+      result[key] = incoming[key];
+    }
+  });
+  return result;
+}
+
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function renderAll() {
-  ui.projectTitle.textContent = state.projectTitle;
-  ui.runtimeBadge.textContent = window.storyForgeDesktop ? "Desktop App Mode" : "Browser Mode";
-  ui.draftTitle.value = state.draft.title;
-  ui.draftEditor.value = state.draft.content;
-  ui.draftPreview.innerHTML = renderMarkdown(state.draft.content);
-  setActiveView(state.activeView);
-  renderIdeas();
-  renderOutline();
-  renderScenes();
-  renderPlotPointers();
-  renderTags();
-  renderConnections();
-  renderCharacters();
+function t(key) {
+  return translations[state.settings.language][key];
 }
 
-function renderNav() {
-  ui.navList.innerHTML = "";
-  navItems.forEach(([id, label, meta]) => {
+function renderStaticText() {
+  text("app-kicker", t("appKicker"));
+  text("app-title", t("appTitle"));
+  text("app-subtitle", t("appSubtitle"));
+  text("storage-kicker", t("storageKicker"));
+  text("storage-title", t("storageTitle"));
+  text("tools-kicker", t("toolsKicker"));
+  text("tools-title", t("toolsTitle"));
+  text("work-title-label", t("workTitleLabel"));
+  text("editor-label", t("editorLabel"));
+  text("tool-formatting-label", t("formattingLabel"));
+  text("tool-outline-label", t("outlineLabel"));
+  text("tool-detailed-outline-label", t("detailedOutlineLabel"));
+  text("tool-plot-label", t("plotLabel"));
+  text("tool-tags-label", t("tagsLabel"));
+  text("tool-mind-map-label", t("mindMapLabel"));
+  text("tool-characters-label", t("charactersLabel"));
+  text("inspiration-kicker", t("inspirationKicker"));
+  text("inspiration-title", t("inspirationTitle"));
+  text("appearance-kicker", t("appearanceKicker"));
+  text("appearance-title", t("appearanceTitle"));
+  text("language-kicker", t("languageKicker"));
+  text("language-title", t("languageTitle"));
+  text("theme-source-note", t("themeSource"));
+  ui.exportButton.textContent = t("exportProject");
+  ui.importButton.textContent = t("importProject");
+  ui.newFolderButton.textContent = t("newFolder");
+  ui.newWorkButton.textContent = t("newWork");
+  ui.newCategoryButton.textContent = t("newCategory");
+  ui.postButton.textContent = t("postButton");
+  ui.inspirationSearch.placeholder = t("searchPlaceholder");
+  ui.postInput.placeholder = t("postPlaceholder");
+  ui.runtimeBadge.textContent = window.storyForgeDesktop ? t("runtimeDesktop") : t("runtimeBrowser");
+}
+
+function renderTabs() {
+  const tabs = [
+    { id: "storage", label: t("storageTab"), meta: t("storageMeta") },
+    { id: "inspiration", label: t("inspirationTab"), meta: t("inspirationMeta") },
+    { id: "settings", label: t("settingsTab"), meta: t("settingsMeta") },
+  ];
+
+  ui.bottomTabs.innerHTML = "";
+  tabs.forEach((tab) => {
     const button = document.createElement("button");
-    button.className = `nav-item ${state.activeView === id ? "active" : ""}`;
-    button.innerHTML = `<span>${label}</span><span>${meta}</span>`;
+    button.className = `tab-button ${state.activeTab === tab.id ? "active" : ""}`;
+    button.innerHTML = `<span><strong>${escapeHtml(tab.label)}</strong><small>${escapeHtml(
+      tab.meta,
+    )}</small></span><span>${state.activeTab === tab.id ? "●" : "○"}</span>`;
     button.addEventListener("click", () => {
-      state.activeView = id;
+      state.activeTab = tab.id;
       saveState();
-      setActiveView(id);
-      renderNav();
+      renderActiveTab();
+      renderTabs();
     });
-    ui.navList.appendChild(button);
+    ui.bottomTabs.appendChild(button);
   });
 }
 
-function setActiveView(id) {
-  document.querySelectorAll(".view").forEach((view) => {
-    view.classList.toggle("active", view.dataset.view === id);
+function renderActiveTab() {
+  document.querySelectorAll(".tab-view").forEach((view) => {
+    view.classList.toggle("active", view.dataset.tab === state.activeTab);
   });
+
+  renderStorage();
+  renderInspiration();
+  renderSettings();
 }
 
-function bindDraft() {
-  ui.draftTitle.addEventListener("input", (event) => {
-    state.draft.title = event.target.value;
+function renderStorage() {
+  const activeFolder = getActiveFolder();
+  const activeWork = getActiveWork();
+
+  ui.folderList.innerHTML = "";
+
+  state.storage.folders.forEach((folder) => {
+    const works = state.storage.works.filter((work) => work.folderId === folder.id);
+    const card = document.createElement("div");
+    card.className = `folder-card ${folder.id === state.storage.activeFolderId ? "active" : ""}`;
+    card.innerHTML = `
+      <header>
+        <div class="grow">
+          <input data-folder-id="${folder.id}" class="folder-name-input" type="text" value="${escapeAttribute(
+            folder.name,
+          )}" />
+          <small>${t("folderCount")}: ${works.length}</small>
+        </div>
+        <button class="ghost-button delete-folder" data-folder-id="${folder.id}">${escapeHtml(
+          t("deleteFolder"),
+        )}</button>
+      </header>
+      <div class="work-list">
+        ${works
+          .map(
+            (work) => `
+              <button class="work-row ${
+                work.id === state.storage.activeWorkId ? "active" : ""
+              }" data-work-id="${work.id}" data-folder-id="${folder.id}">
+                <span>${escapeHtml(work.title)}</span>
+                <small>${work.content.length}</small>
+              </button>
+            `,
+          )
+          .join("")}
+      </div>
+    `;
+    ui.folderList.appendChild(card);
+  });
+
+  ui.folderList.querySelectorAll(".folder-name-input").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      const folder = state.storage.folders.find((item) => item.id === event.target.dataset.folderId);
+      folder.name = event.target.value;
+      saveState();
+    });
+    input.addEventListener("blur", renderStorage);
+    input.addEventListener("focus", () => {
+      state.storage.activeFolderId = input.dataset.folderId;
+      saveState();
+      renderStorage();
+    });
+  });
+
+  ui.folderList.querySelectorAll(".delete-folder").forEach((button) => {
+    button.addEventListener("click", () => deleteFolder(button.dataset.folderId));
+  });
+
+  ui.folderList.querySelectorAll(".work-row").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.storage.activeFolderId = button.dataset.folderId;
+      state.storage.activeWorkId = button.dataset.workId;
+      saveState();
+      renderStorage();
+    });
+  });
+
+  if (!activeWork) {
+    ui.workEmpty.classList.remove("hidden");
+    ui.workEditor.classList.add("hidden");
+    ui.toolFields.classList.add("hidden");
+    ui.toolEmpty.classList.remove("hidden");
+    ui.workEmpty.textContent = t("emptyWork");
+    ui.toolEmpty.textContent = t("emptyTools");
+    return;
+  }
+
+  ui.workEmpty.classList.add("hidden");
+  ui.workEditor.classList.remove("hidden");
+  ui.toolFields.classList.remove("hidden");
+  ui.toolEmpty.classList.add("hidden");
+
+  ui.workTitleInput.value = activeWork.title;
+  ui.currentFolderChip.textContent = activeFolder?.name ?? t("defaultFolder");
+  ui.workContentInput.value = activeWork.content;
+  ui.toolFormatting.value = activeWork.tools.formatting;
+  ui.toolOutline.value = activeWork.tools.outline;
+  ui.toolDetailedOutline.value = activeWork.tools.detailedOutline;
+  ui.toolPlot.value = activeWork.tools.plot;
+  ui.toolTags.value = activeWork.tools.tags;
+  ui.toolMindMap.value = activeWork.tools.mindMap;
+  ui.toolCharacters.value = activeWork.tools.characters;
+}
+
+function renderInspiration() {
+  const activeCategoryId = state.inspiration.activeCategoryId;
+  const categories = state.inspiration.categories;
+  const posts = getFilteredPosts();
+  ui.inspirationSearch.value = state.inspiration.search;
+
+  ui.categoryList.innerHTML = "";
+
+  const allButton = document.createElement("button");
+  allButton.className = `chip-button ${activeCategoryId === "all" ? "active" : ""}`;
+  allButton.textContent = t("allCategories");
+  allButton.addEventListener("click", () => {
+    state.inspiration.activeCategoryId = "all";
     saveState();
+    renderInspiration();
   });
+  ui.categoryList.appendChild(allButton);
 
-  ui.draftEditor.addEventListener("input", (event) => {
-    state.draft.content = event.target.value;
-    ui.draftPreview.innerHTML = renderMarkdown(state.draft.content);
-    saveState();
-  });
-}
-
-function renderToolbar() {
-  toolbarActions.forEach((action) => {
+  categories.forEach((category) => {
     const button = document.createElement("button");
-    button.textContent = action.label;
-    button.addEventListener("click", () => wrapSelection(action.before, action.after));
-    ui.editorToolbar.appendChild(button);
+    button.className = `chip-button ${activeCategoryId === category.id ? "active" : ""}`;
+    button.textContent = category.name;
+    button.addEventListener("click", () => {
+      state.inspiration.activeCategoryId = category.id;
+      saveState();
+      renderInspiration();
+    });
+    ui.categoryList.appendChild(button);
+  });
+
+  ui.postCategorySelect.innerHTML = `
+    <option value="">${escapeHtml(t("uncategorized"))}</option>
+    ${categories
+      .map(
+        (category) =>
+          `<option value="${escapeAttribute(category.id)}">${escapeHtml(category.name)}</option>`,
+      )
+      .join("")}
+  `;
+  if (activeCategoryId !== "all" && categories.some((category) => category.id === activeCategoryId)) {
+    ui.postCategorySelect.value = activeCategoryId;
+  }
+
+  ui.postList.innerHTML = "";
+  if (posts.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = t("noPosts");
+    ui.postList.appendChild(empty);
+    return;
+  }
+
+  posts.forEach((post) => {
+    const categoryName =
+      categories.find((category) => category.id === post.categoryId)?.name ?? t("uncategorized");
+    const card = document.createElement("article");
+    card.className = `post-card ${post.author === "author" ? "mine" : ""}`;
+    card.innerHTML = `
+      <header>
+        <strong>${escapeHtml(categoryName)}</strong>
+        <time>${escapeHtml(post.createdAt)}</time>
+      </header>
+      <p>${escapeHtml(post.text)}</p>
+    `;
+    ui.postList.appendChild(card);
   });
 }
 
-function wrapSelection(before, after) {
-  const editor = ui.draftEditor;
-  const start = editor.selectionStart;
-  const end = editor.selectionEnd;
-  const selected = editor.value.slice(start, end);
-  const nextValue =
-    editor.value.slice(0, start) + before + selected + after + editor.value.slice(end);
-  editor.value = nextValue;
-  editor.focus();
-  editor.selectionStart = start + before.length;
-  editor.selectionEnd = end + before.length;
-  state.draft.content = nextValue;
-  ui.draftPreview.innerHTML = renderMarkdown(nextValue);
-  saveState();
+function renderSettings() {
+  ui.themeGrid.innerHTML = "";
+
+  Object.values(themes).forEach((theme) => {
+    const card = document.createElement("button");
+    card.className = `theme-card ${state.settings.theme === theme.id ? "active" : ""}`;
+    card.innerHTML = `
+      <div class="theme-preview">
+        <strong>${escapeHtml(theme.name[state.settings.language])}</strong>
+        <div class="swatches">
+          ${theme.swatches.map((swatch) => `<span class="swatch" style="background:${swatch}"></span>`).join("")}
+        </div>
+      </div>
+      <p>${escapeHtml(theme.source[state.settings.language])}</p>
+    `;
+    card.addEventListener("click", () => {
+      state.settings.theme = theme.id;
+      applyTheme(theme.id);
+      saveState();
+      renderSettings();
+      renderTabs();
+      renderStaticText();
+    });
+    ui.themeGrid.appendChild(card);
+  });
+
+  ui.languageOptions.innerHTML = "";
+  [
+    { id: "zh", label: t("languageZh") },
+    { id: "en", label: t("languageEn") },
+  ].forEach((option) => {
+    const card = document.createElement("button");
+    card.className = `language-card ${state.settings.language === option.id ? "active" : ""}`;
+    card.innerHTML = `<strong>${escapeHtml(option.label)}</strong><p>${escapeHtml(option.id.toUpperCase())}</p>`;
+    card.addEventListener("click", () => {
+      state.settings.language = option.id;
+      document.documentElement.lang = option.id === "zh" ? "zh-CN" : "en";
+      saveState();
+      renderStaticText();
+      renderTabs();
+      renderActiveTab();
+    });
+    ui.languageOptions.appendChild(card);
+  });
 }
 
-function bindGlobalControls() {
-  document.getElementById("add-idea").addEventListener("click", () => {
-    state.ideas.unshift({ id: uid("idea"), title: "New idea", notes: "" });
-    saveState();
-    renderIdeas();
-  });
-
-  document.getElementById("add-outline-item").addEventListener("click", () => {
-    state.outline.push({ id: uid("beat"), title: "New beat", summary: "" });
-    saveState();
-    renderOutline();
-  });
-
-  document.getElementById("add-scene").addEventListener("click", () => {
-    state.scenes.push({
-      id: uid("scene"),
-      title: "New scene",
-      chapter: "",
-      objective: "",
-      conflict: "",
-      outcome: "",
-    });
-    saveState();
-    renderScenes();
-  });
-
-  document.getElementById("add-pointer").addEventListener("click", () => {
-    state.plotPointers.push({ id: uid("plot"), label: "New plot pointer", detail: "", payoff: "" });
-    saveState();
-    renderPlotPointers();
-    renderConnections();
-  });
-
-  document.getElementById("add-tag").addEventListener("click", () => {
-    state.tags.push({ id: uid("tag"), name: "New tag", color: "#b88b5f", notes: "" });
-    saveState();
-    renderTags();
-  });
-
-  document.getElementById("add-link").addEventListener("click", () => {
-    const firstCharacter = state.characters[0]?.id ?? "";
-    const firstPlot = state.plotPointers[0]?.id ?? firstCharacter;
-    state.connections.push({
-      id: uid("link"),
-      from: firstCharacter,
-      to: firstPlot,
-      label: "New connection",
-      type: "plot",
-    });
-    saveState();
-    renderConnections();
-  });
-
-  document.getElementById("add-character").addEventListener("click", () => {
-    const character = {
-      id: uid("char"),
-      name: "New character",
-      role: "Supporting",
-      archetype: "",
-      desire: "",
-      fear: "",
-      contradiction: "",
-      relationships: "",
-      arc: "",
-      analysis: "",
-    };
-    state.characters.push(character);
-    state.activeCharacterId = character.id;
-    saveState();
-    renderCharacters();
-    renderConnections();
-  });
-
-  ui.resetButton.addEventListener("click", () => {
-    Object.assign(state, structuredClone(seedState));
-    saveState();
-    renderNav();
-    renderAll();
-  });
-
+function bindEvents() {
   ui.exportButton.addEventListener("click", exportState);
-  ui.importInput.addEventListener("change", importState);
+  ui.importButton.addEventListener("click", importStateFromFile);
+  ui.newFolderButton.addEventListener("click", createFolder);
+  ui.newWorkButton.addEventListener("click", createWork);
+  ui.newCategoryButton.addEventListener("click", createCategory);
+  ui.postButton.addEventListener("click", createPost);
+
+  ui.inspirationSearch.addEventListener("input", (event) => {
+    state.inspiration.search = event.target.value;
+    saveState();
+    renderInspiration();
+  });
+
+  ui.workTitleInput.addEventListener("input", (event) => {
+    const work = getActiveWork();
+    if (!work) return;
+    work.title = event.target.value;
+    saveState();
+  });
+  ui.workTitleInput.addEventListener("blur", renderStorage);
+
+  ui.workContentInput.addEventListener("input", (event) => {
+    const work = getActiveWork();
+    if (!work) return;
+    work.content = event.target.value;
+    saveState();
+  });
+
+  const toolBindings = [
+    [ui.toolFormatting, "formatting"],
+    [ui.toolOutline, "outline"],
+    [ui.toolDetailedOutline, "detailedOutline"],
+    [ui.toolPlot, "plot"],
+    [ui.toolTags, "tags"],
+    [ui.toolMindMap, "mindMap"],
+    [ui.toolCharacters, "characters"],
+  ];
+
+  toolBindings.forEach(([element, key]) => {
+    element.addEventListener("input", (event) => {
+      const work = getActiveWork();
+      if (!work) return;
+      work.tools[key] = event.target.value;
+      saveState();
+    });
+  });
 
   if (window.storyForgeDesktop?.onMenuAction) {
     window.storyForgeDesktop.onMenuAction((action) => {
@@ -361,436 +723,186 @@ function bindGlobalControls() {
       if (action === "import-project") importFromDesktop();
       if (action === "reset-project") {
         Object.assign(state, structuredClone(seedState));
+        document.documentElement.lang = "zh-CN";
+        applyTheme(state.settings.theme);
         saveState();
-        renderNav();
-        renderAll();
+        renderStaticText();
+        renderTabs();
+        renderActiveTab();
       }
     });
   }
 }
 
-function renderIdeas() {
-  renderCollection(ui.ideasList, state.ideas, {
-    titleLabel: "Idea",
-    fields: [
-      { key: "title", label: "Idea title", type: "text" },
-      { key: "notes", label: "Notes", type: "textarea" },
-    ],
-    onChange: () => saveState(),
-    onDelete: (id) => {
-      state.ideas = state.ideas.filter((item) => item.id !== id);
-      saveState();
-      renderIdeas();
-    },
-  });
-}
-
-function renderOutline() {
-  renderCollection(ui.outlineList, state.outline, {
-    titleLabel: "Beat",
-    fields: [
-      { key: "title", label: "Beat title", type: "text" },
-      { key: "summary", label: "Summary", type: "textarea" },
-    ],
-    onChange: () => saveState(),
-    onDelete: (id) => {
-      state.outline = state.outline.filter((item) => item.id !== id);
-      saveState();
-      renderOutline();
-    },
-    onReorder: (nextItems) => {
-      state.outline = nextItems;
-      saveState();
-      renderOutline();
-    },
-  });
-}
-
-function renderScenes() {
-  renderCollection(ui.sceneList, state.scenes, {
-    titleLabel: "Scene",
-    fields: [
-      { key: "title", label: "Scene title", type: "text" },
-      { key: "chapter", label: "Chapter", type: "text" },
-      { key: "objective", label: "Objective", type: "textarea" },
-      { key: "conflict", label: "Conflict", type: "textarea" },
-      { key: "outcome", label: "Outcome", type: "textarea" },
-    ],
-    onChange: () => saveState(),
-    onDelete: (id) => {
-      state.scenes = state.scenes.filter((item) => item.id !== id);
-      saveState();
-      renderScenes();
-    },
-  });
-}
-
-function renderPlotPointers() {
-  renderCollection(ui.plotList, state.plotPointers, {
-    titleLabel: "Pointer",
-    fields: [
-      { key: "label", label: "Label", type: "text" },
-      { key: "detail", label: "Detail", type: "textarea" },
-      { key: "payoff", label: "Payoff", type: "textarea" },
-    ],
-    onChange: () => {
-      saveState();
-      renderConnections();
-    },
-    onDelete: (id) => {
-      state.plotPointers = state.plotPointers.filter((item) => item.id !== id);
-      state.connections = state.connections.filter((link) => link.from !== id && link.to !== id);
-      saveState();
-      renderPlotPointers();
-      renderConnections();
-    },
-  });
-}
-
-function renderTags() {
-  renderCollection(ui.tagList, state.tags, {
-    titleLabel: "Tag",
-    fields: [
-      { key: "name", label: "Tag name", type: "text" },
-      { key: "color", label: "Color", type: "text" },
-      { key: "notes", label: "Notes", type: "textarea" },
-    ],
-    onChange: () => {
-      saveState();
-      paintTagSummary();
-    },
-    onDelete: (id) => {
-      state.tags = state.tags.filter((item) => item.id !== id);
-      saveState();
-      renderTags();
-    },
-  });
-  paintTagSummary();
-}
-
-function paintTagSummary() {
-  ui.tagSummary.innerHTML = "";
-  state.tags.forEach((tag) => {
-    const pill = document.createElement("span");
-    pill.className = "tag-pill";
-    pill.style.background = `${tag.color}33`;
-    pill.innerHTML = `<strong>${escapeHtml(tag.name)}</strong><span>${escapeHtml(tag.notes)}</span>`;
-    ui.tagSummary.appendChild(pill);
-  });
-}
-
-function renderConnections() {
-  const nodes = [
-    ...state.characters.map((character, index) => ({
-      id: character.id,
-      label: character.name,
-      type: character.role,
-      x: 40 + (index % 2) * 220,
-      y: 40 + Math.floor(index / 2) * 180,
-    })),
-    ...state.plotPointers.map((pointer, index) => ({
-      id: pointer.id,
-      label: pointer.label,
-      type: "Plot pointer",
-      x: 460 + (index % 2) * 220,
-      y: 40 + Math.floor(index / 2) * 180,
-    })),
-  ];
-
-  ui.mindMap.innerHTML = "";
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", "0 0 900 700");
-
-  state.connections.forEach((connection) => {
-    const from = nodes.find((node) => node.id === connection.from);
-    const to = nodes.find((node) => node.id === connection.to);
-    if (!from || !to) return;
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", String(from.x + 75));
-    line.setAttribute("y1", String(from.y + 44));
-    line.setAttribute("x2", String(to.x + 75));
-    line.setAttribute("y2", String(to.y + 44));
-    line.setAttribute("stroke", connection.type === "character" ? "#9f4328" : "#d0a75f");
-    line.setAttribute("stroke-width", "3");
-    line.setAttribute("stroke-linecap", "round");
-    svg.appendChild(line);
-  });
-
-  ui.mindMap.appendChild(svg);
-
-  nodes.forEach((node) => {
-    const box = document.createElement("div");
-    box.className = "map-node";
-    box.style.left = `${node.x}px`;
-    box.style.top = `${node.y}px`;
-    box.innerHTML = `<strong>${escapeHtml(node.label)}</strong><span>${escapeHtml(node.type)}</span>`;
-    ui.mindMap.appendChild(box);
-  });
-
-  renderConnectionList();
-}
-
-function renderConnectionList() {
-  ui.connectionList.innerHTML = "";
-  state.connections.forEach((connection) => {
-    const card = document.createElement("div");
-    card.className = "item-card";
-
-    const fromLabel = resolveEntityName(connection.from);
-    const toLabel = resolveEntityName(connection.to);
-
-    card.innerHTML = `
-      <header>
-        <strong>${escapeHtml(connection.label)}</strong>
-        <div class="item-card-actions">
-          <button class="small-button" data-action="delete">Delete</button>
-        </div>
-      </header>
-      <label>From</label>
-      <select data-key="from">${renderEntityOptions(connection.from)}</select>
-      <label>To</label>
-      <select data-key="to">${renderEntityOptions(connection.to)}</select>
-      <label>Type</label>
-      <select data-key="type">
-        <option value="character" ${connection.type === "character" ? "selected" : ""}>Character</option>
-        <option value="plot" ${connection.type === "plot" ? "selected" : ""}>Plot</option>
-      </select>
-      <label>Connection label</label>
-      <input data-key="label" type="text" value="${escapeAttribute(connection.label)}" />
-      <p class="muted">${escapeHtml(fromLabel)} -> ${escapeHtml(toLabel)}</p>
-    `;
-
-    card.querySelectorAll("[data-key]").forEach((input) => {
-      input.addEventListener("input", (event) => {
-        connection[event.target.dataset.key] = event.target.value;
-        saveState();
-        renderConnections();
-      });
-    });
-
-    card.querySelector("[data-action='delete']").addEventListener("click", () => {
-      state.connections = state.connections.filter((item) => item.id !== connection.id);
-      saveState();
-      renderConnections();
-    });
-
-    ui.connectionList.appendChild(card);
-  });
-}
-
-function renderEntityOptions(selectedId) {
-  const entities = [
-    ...state.characters.map((item) => ({ id: item.id, label: `${item.name} (Character)` })),
-    ...state.plotPointers.map((item) => ({ id: item.id, label: `${item.label} (Plot)` })),
-  ];
-  return entities
-    .map(
-      (entity) =>
-        `<option value="${escapeAttribute(entity.id)}" ${
-          entity.id === selectedId ? "selected" : ""
-        }>${escapeHtml(entity.label)}</option>`,
-    )
-    .join("");
-}
-
-function renderCharacters() {
-  ui.characterList.innerHTML = "";
-  state.characters.forEach((character) => {
+function renderToolbar() {
+  ui.editorToolbar.innerHTML = "";
+  toolbarActions.forEach((action) => {
     const button = document.createElement("button");
-    button.className = character.id === state.activeCharacterId ? "active" : "";
-    button.innerHTML = `<strong>${escapeHtml(character.name)}</strong><br /><span>${escapeHtml(
-      character.role,
-    )}</span>`;
-    button.addEventListener("click", () => {
-      state.activeCharacterId = character.id;
-      saveState();
-      renderCharacters();
-    });
-    ui.characterList.appendChild(button);
+    button.className = "toolbar-button";
+    button.textContent = action.label;
+    button.addEventListener("click", () => wrapSelection(action.before, action.after));
+    ui.editorToolbar.appendChild(button);
   });
+}
 
-  const activeCharacter = state.characters.find((character) => character.id === state.activeCharacterId);
-  if (!activeCharacter) {
-    ui.characterEmpty.classList.remove("hidden");
-    ui.characterDetail.classList.add("hidden");
-    return;
+function wrapSelection(before, after) {
+  const editor = ui.workContentInput;
+  const start = editor.selectionStart;
+  const end = editor.selectionEnd;
+  const selected = editor.value.slice(start, end);
+  const nextValue = editor.value.slice(0, start) + before + selected + after + editor.value.slice(end);
+  editor.value = nextValue;
+  editor.focus();
+  editor.selectionStart = start + before.length;
+  editor.selectionEnd = end + before.length;
+  const work = getActiveWork();
+  if (!work) return;
+  work.content = nextValue;
+  saveState();
+  renderStorage();
+}
+
+function createFolder() {
+  const name = prompt(t("prompts").folder, t("defaultFolder"));
+  if (name === null) return;
+
+  const folder = {
+    id: uid("folder"),
+    name: name.trim() || t("defaultFolder"),
+  };
+
+  state.storage.folders.push(folder);
+  state.storage.activeFolderId = folder.id;
+  saveState();
+  renderStorage();
+}
+
+function createWork() {
+  if (!state.storage.activeFolderId && state.storage.folders[0]) {
+    state.storage.activeFolderId = state.storage.folders[0].id;
+  }
+  if (!state.storage.activeFolderId) {
+    createFolder();
+    if (!state.storage.activeFolderId) return;
   }
 
-  ui.characterEmpty.classList.add("hidden");
-  ui.characterDetail.classList.remove("hidden");
-  ui.characterDetail.innerHTML = `
-    <div class="section-header">
-      <div>
-        <p class="eyebrow">Character Analysis</p>
-        <h3>${escapeHtml(activeCharacter.name)}</h3>
-      </div>
-      <button id="delete-character" class="ghost-button">Delete Character</button>
-    </div>
-    <div class="analysis-grid">
-      <div>
-        <label>Name</label>
-        <input data-key="name" type="text" value="${escapeAttribute(activeCharacter.name)}" />
-      </div>
-      <div>
-        <label>Role</label>
-        <input data-key="role" type="text" value="${escapeAttribute(activeCharacter.role)}" />
-      </div>
-      <div>
-        <label>Archetype</label>
-        <input data-key="archetype" type="text" value="${escapeAttribute(activeCharacter.archetype)}" />
-      </div>
-      <div>
-        <label>Arc</label>
-        <input data-key="arc" type="text" value="${escapeAttribute(activeCharacter.arc)}" />
-      </div>
-    </div>
-    <label>Desire</label>
-    <textarea data-key="desire">${escapeHtml(activeCharacter.desire)}</textarea>
-    <label>Fear</label>
-    <textarea data-key="fear">${escapeHtml(activeCharacter.fear)}</textarea>
-    <label>Contradiction</label>
-    <textarea data-key="contradiction">${escapeHtml(activeCharacter.contradiction)}</textarea>
-    <label>Relationships</label>
-    <textarea data-key="relationships">${escapeHtml(activeCharacter.relationships)}</textarea>
-    <label>Analysis</label>
-    <textarea data-key="analysis">${escapeHtml(activeCharacter.analysis)}</textarea>
-  `;
+  const name = prompt(t("prompts").work, t("defaultWork"));
+  if (name === null) return;
 
-  ui.characterDetail.querySelectorAll("[data-key]").forEach((field) => {
-    field.addEventListener("input", (event) => {
-      activeCharacter[event.target.dataset.key] = event.target.value;
-      saveState();
-      renderCharacters();
-      renderConnections();
-    });
-  });
+  const work = {
+    id: uid("work"),
+    folderId: state.storage.activeFolderId,
+    title: name.trim() || t("defaultWork"),
+    content: "",
+    tools: {
+      formatting: "",
+      outline: "",
+      detailedOutline: "",
+      plot: "",
+      tags: "",
+      mindMap: "",
+      characters: "",
+    },
+  };
 
-  ui.characterDetail.querySelector("#delete-character").addEventListener("click", () => {
-    state.characters = state.characters.filter((character) => character.id !== activeCharacter.id);
-    state.connections = state.connections.filter(
-      (connection) => connection.from !== activeCharacter.id && connection.to !== activeCharacter.id,
-    );
-    state.activeCharacterId = state.characters[0]?.id ?? null;
-    saveState();
-    renderCharacters();
-    renderConnections();
-  });
+  state.storage.works.push(work);
+  state.storage.activeWorkId = work.id;
+  saveState();
+  renderStorage();
 }
 
-function renderCollection(root, items, config) {
-  root.innerHTML = "";
-  items.forEach((item, index) => {
-    const card = document.createElement("div");
-    card.className = "item-card";
+function deleteFolder(folderId) {
+  const remainingFolders = state.storage.folders.filter((folder) => folder.id !== folderId);
+  const removedWorks = state.storage.works.filter((work) => work.folderId === folderId).map((work) => work.id);
+  state.storage.folders = remainingFolders;
+  state.storage.works = state.storage.works.filter((work) => work.folderId !== folderId);
 
-    const fieldsMarkup = config.fields
-      .map((field) => {
-        if (field.type === "textarea") {
-          return `
-            <label>${field.label}</label>
-            <textarea data-key="${field.key}">${escapeHtml(item[field.key] ?? "")}</textarea>
-          `;
-        }
+  if (state.storage.activeFolderId === folderId) {
+    state.storage.activeFolderId = remainingFolders[0]?.id ?? null;
+  }
+  if (removedWorks.includes(state.storage.activeWorkId)) {
+    state.storage.activeWorkId =
+      state.storage.works.find((work) => work.folderId === state.storage.activeFolderId)?.id ?? null;
+  }
 
-        return `
-          <label>${field.label}</label>
-          <input data-key="${field.key}" type="text" value="${escapeAttribute(item[field.key] ?? "")}" />
-        `;
-      })
-      .join("");
+  saveState();
+  renderStorage();
+}
 
-    card.innerHTML = `
-      <header>
-        <strong>${config.titleLabel} ${index + 1}</strong>
-        <div class="item-card-actions">
-          ${
-            config.onReorder
-              ? `<button class="small-button" data-action="up">Up</button>
-                 <button class="small-button" data-action="down">Down</button>`
-              : ""
-          }
-          <button class="small-button" data-action="delete">Delete</button>
-        </div>
-      </header>
-      ${fieldsMarkup}
-    `;
+function createCategory() {
+  const name = prompt(t("prompts").category, t("defaultCategory"));
+  if (name === null) return;
 
-    card.querySelectorAll("[data-key]").forEach((input) => {
-      input.addEventListener("input", (event) => {
-        item[event.target.dataset.key] = event.target.value;
-        config.onChange();
-      });
-    });
+  const category = { id: uid("cat"), name: name.trim() || t("defaultCategory") };
+  state.inspiration.categories.push(category);
+  state.inspiration.activeCategoryId = category.id;
+  saveState();
+  renderInspiration();
+}
 
-    const deleteButton = card.querySelector("[data-action='delete']");
-    deleteButton.addEventListener("click", () => config.onDelete(item.id));
+function createPost() {
+  const textValue = ui.postInput.value.trim();
+  if (!textValue) return;
 
-    if (config.onReorder) {
-      card.querySelector("[data-action='up']").addEventListener("click", () => {
-        if (index === 0) return;
-        const nextItems = [...items];
-        [nextItems[index - 1], nextItems[index]] = [nextItems[index], nextItems[index - 1]];
-        config.onReorder(nextItems);
-      });
+  state.inspiration.posts.push({
+    id: uid("post"),
+    categoryId: ui.postCategorySelect.value || null,
+    text: textValue,
+    author: "author",
+    createdAt: formatTimestamp(new Date()),
+  });
 
-      card.querySelector("[data-action='down']").addEventListener("click", () => {
-        if (index === items.length - 1) return;
-        const nextItems = [...items];
-        [nextItems[index + 1], nextItems[index]] = [nextItems[index], nextItems[index + 1]];
-        config.onReorder(nextItems);
-      });
-    }
+  ui.postInput.value = "";
+  saveState();
+  renderInspiration();
+}
 
-    root.appendChild(card);
+function getFilteredPosts() {
+  const needle = state.inspiration.search.trim().toLowerCase();
+  return state.inspiration.posts.filter((post) => {
+    const category = state.inspiration.categories.find((item) => item.id === post.categoryId)?.name ?? "";
+    const matchesCategory =
+      state.inspiration.activeCategoryId === "all" || post.categoryId === state.inspiration.activeCategoryId;
+    const matchesSearch =
+      !needle ||
+      post.text.toLowerCase().includes(needle) ||
+      category.toLowerCase().includes(needle);
+    return matchesCategory && matchesSearch;
   });
 }
 
-function renderMarkdown(markdown) {
-  const escaped = escapeHtml(markdown);
-  return escaped
-    .split(/\n{2,}/)
-    .map((block) => {
-      if (block.startsWith("# ")) return `<h1>${block.slice(2)}</h1>`;
-      if (block.startsWith("## ")) return `<h2>${block.slice(3)}</h2>`;
-      if (block.startsWith("> ")) return `<blockquote>${block.slice(2)}</blockquote>`;
-      if (block.split("\n").every((line) => line.startsWith("- "))) {
-        const items = block
-          .split("\n")
-          .map((line) => `<li>${line.slice(2)}</li>`)
-          .join("");
-        return `<ul>${items}</ul>`;
-      }
-      return `<p>${inlineMarkdown(block).replace(/\n/g, "<br />")}</p>`;
-    })
-    .join("");
+function getActiveFolder() {
+  return state.storage.folders.find((folder) => folder.id === state.storage.activeFolderId) ?? null;
 }
 
-function inlineMarkdown(text) {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/_(.+?)_/g, "<em>$1</em>");
+function getActiveWork() {
+  return state.storage.works.find((work) => work.id === state.storage.activeWorkId) ?? null;
 }
 
-function resolveEntityName(id) {
-  return (
-    state.characters.find((item) => item.id === id)?.name ??
-    state.plotPointers.find((item) => item.id === id)?.label ??
-    "Unknown"
-  );
+function applyTheme(themeId) {
+  const theme = themes[themeId] ?? themes.ember;
+  const root = document.documentElement;
+  root.style.setProperty("--bg", theme.vars.bg);
+  root.style.setProperty("--bg-accent", theme.vars.bgAccent);
+  root.style.setProperty("--surface", theme.vars.surface);
+  root.style.setProperty("--surface-strong", theme.vars.surfaceStrong);
+  root.style.setProperty("--sidebar", theme.vars.sidebar);
+  root.style.setProperty("--text", theme.vars.text);
+  root.style.setProperty("--muted", theme.vars.muted);
+  root.style.setProperty("--border", theme.vars.border);
+  root.style.setProperty("--accent", theme.vars.accent);
+  root.style.setProperty("--accent-strong", theme.vars.accentStrong);
+  root.style.setProperty("--accent-soft", theme.vars.accentSoft);
 }
 
 async function exportState() {
   const content = JSON.stringify(state, null, 2);
 
   if (window.storyForgeDesktop?.saveProjectFile) {
-    const result = await window.storyForgeDesktop.saveProjectFile({
-      defaultName: `${slugify(state.projectTitle)}.json`,
+    await window.storyForgeDesktop.saveProjectFile({
+      defaultName: "story-forge-project.json",
       content,
     });
-
-    if (!result?.canceled && result?.filePath) {
-      alert(`Project exported to:\n${result.filePath}`);
-    }
     return;
   }
 
@@ -798,55 +910,67 @@ async function exportState() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${slugify(state.projectTitle)}.json`;
+  link.download = "story-forge-project.json";
   link.click();
   URL.revokeObjectURL(url);
 }
 
-function importState(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
+async function importStateFromFile() {
+  if (window.storyForgeDesktop?.openProjectFile) {
+    await importFromDesktop();
+    return;
+  }
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const imported = JSON.parse(String(reader.result));
-      Object.keys(state).forEach((key) => delete state[key]);
-      Object.assign(state, imported);
-      saveState();
-      renderNav();
-      renderAll();
-    } catch (error) {
-      alert("Invalid JSON file.");
-    }
-  };
-  reader.readAsText(file);
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "application/json";
+  input.addEventListener("change", () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => loadImportedState(String(reader.result));
+    reader.readAsText(file);
+  });
+  input.click();
 }
 
 async function importFromDesktop() {
-  if (!window.storyForgeDesktop?.openProjectFile) return;
-
   const result = await window.storyForgeDesktop.openProjectFile();
   if (result?.canceled || !result?.content) return;
+  loadImportedState(result.content);
+}
 
+function loadImportedState(raw) {
   try {
-    const imported = JSON.parse(result.content);
+    const imported = mergeState(structuredClone(seedState), JSON.parse(raw));
     Object.keys(state).forEach((key) => delete state[key]);
     Object.assign(state, imported);
+    document.documentElement.lang = state.settings.language === "zh" ? "zh-CN" : "en";
+    applyTheme(state.settings.theme);
     saveState();
-    renderNav();
-    renderAll();
+    renderStaticText();
+    renderTabs();
+    renderActiveTab();
   } catch (error) {
     alert("Invalid JSON file.");
   }
+}
+
+function formatTimestamp(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
 }
 
 function uid(prefix) {
   return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
-function slugify(text) {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+function text(id, value) {
+  document.getElementById(id).textContent = value;
 }
 
 function escapeHtml(value) {
