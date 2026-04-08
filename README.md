@@ -12,6 +12,8 @@ Story Forge is built for long-form fiction workflows. It combines the core writi
 - Search and category creation for inspiration posts
 - A `Settings` page for app color themes and language switching
 - English and Chinese interface support
+- Built-in offline English and Chinese fonts
+- Responsive layout that adapts to different window sizes
 - Local project persistence plus JSON import/export
 
 ## Desktop App
@@ -25,6 +27,8 @@ Desktop-specific behavior includes:
 - File-based JSON import/export through system dialogs
 - Packaging support for downloadable builds
 - Custom app icon for packaged builds
+- Offline bundled typography for desktop use
+- Window-size-aware layout that reflows the writing workspace on narrower screens
 
 ## Local Development
 
@@ -98,6 +102,19 @@ Then run it from:
 
 The app still works as a plain local web app. If needed, you can open `index.html` directly in a browser, but the desktop version is the intended primary experience.
 
+## Typography
+
+The app now bundles its selected open-source fonts locally instead of relying on online font loading.
+
+Included font families:
+
+- `Source Sans 3`
+- `Merriweather`
+- `Noto Sans SC`
+- `Noto Serif SC`
+
+That means packaged desktop builds can render the selected English and Chinese fonts even when offline.
+
 ## Project Structure
 
 - `index.html` contains the app shell
@@ -108,3 +125,4 @@ The app still works as a plain local web app. If needed, you can open `index.htm
 - `package.json` contains Electron scripts and packaging workflow
 - `electron-builder.json` contains package targets and build resource configuration
 - `assets/` contains application icon resources
+- `assets/fonts/` contains bundled offline font files used by the app
