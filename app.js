@@ -151,6 +151,7 @@ const state = loadState();
 const ui = {
   navList: document.getElementById("nav-list"),
   projectTitle: document.getElementById("project-title"),
+  runtimeBadge: document.getElementById("runtime-badge"),
   draftTitle: document.getElementById("draft-title"),
   draftEditor: document.getElementById("draft-editor"),
   draftPreview: document.getElementById("draft-preview"),
@@ -197,6 +198,7 @@ function saveState() {
 
 function renderAll() {
   ui.projectTitle.textContent = state.projectTitle;
+  ui.runtimeBadge.textContent = window.storyForgeDesktop ? "Desktop App Mode" : "Browser Mode";
   ui.draftTitle.value = state.draft.title;
   ui.draftEditor.value = state.draft.content;
   ui.draftPreview.innerHTML = renderMarkdown(state.draft.content);
@@ -352,6 +354,19 @@ function bindGlobalControls() {
 
   ui.exportButton.addEventListener("click", exportState);
   ui.importInput.addEventListener("change", importState);
+
+  if (window.storyForgeDesktop?.onMenuAction) {
+    window.storyForgeDesktop.onMenuAction((action) => {
+      if (action === "export-project") exportState();
+      if (action === "import-project") importFromDesktop();
+      if (action === "reset-project") {
+        Object.assign(state, structuredClone(seedState));
+        saveState();
+        renderNav();
+        renderAll();
+      }
+    });
+  }
 }
 
 function renderIdeas() {
@@ -764,8 +779,22 @@ function resolveEntityName(id) {
   );
 }
 
-function exportState() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+async function exportState() {
+  const content = JSON.stringify(state, null, 2);
+
+  if (window.storyForgeDesktop?.saveProjectFile) {
+    const result = await window.storyForgeDesktop.saveProjectFile({
+      defaultName: `${slugify(state.projectTitle)}.json`,
+      content,
+    });
+
+    if (!result?.canceled && result?.filePath) {
+      alert(`Project exported to:\n${result.filePath}`);
+    }
+    return;
+  }
+
+  const blob = new Blob([content], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -792,6 +821,24 @@ function importState(event) {
     }
   };
   reader.readAsText(file);
+}
+
+async function importFromDesktop() {
+  if (!window.storyForgeDesktop?.openProjectFile) return;
+
+  const result = await window.storyForgeDesktop.openProjectFile();
+  if (result?.canceled || !result?.content) return;
+
+  try {
+    const imported = JSON.parse(result.content);
+    Object.keys(state).forEach((key) => delete state[key]);
+    Object.assign(state, imported);
+    saveState();
+    renderNav();
+    renderAll();
+  } catch (error) {
+    alert("Invalid JSON file.");
+  }
 }
 
 function uid(prefix) {

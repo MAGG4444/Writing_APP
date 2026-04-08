@@ -1,0 +1,52 @@
+{
+  "name": "story-forge",
+  "productName": "Story Forge",
+  "version": "1.0.0",
+  "description": "A local desktop writing studio for authors.",
+  "main": "main.js",
+  "author": "MAGG4444",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.magg4444.storyforge",
+    "productName": "Story Forge",
+    "files": [
+      "app.js",
+      "index.html",
+      "main.js",
+      "package.json",
+      "preload.js",
+      "styles.css"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ],
+      "category": "Office"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.productivity"
+    }
+  }
+}
