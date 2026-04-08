@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Story Forge</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div>
+          <p class="eyebrow">Local Writing Studio</p>
+          <h1>Story Forge</h1>
+          <p class="sidebar-copy">
+            Edit drafts, capture ideas, structure plots, and track characters in one local workspace.
+          </p>
+        </div>
+        <nav class="nav-list" id="nav-list"></nav>
+        <div class="sidebar-footer">
+          <p>Data is saved locally in your browser.</p>
+          <button id="reset-button" class="ghost-button">Reset Sample Project</button>
+        </div>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Current Project</p>
+            <h2 id="project-title"></h2>
+          </div>
+          <div class="topbar-actions">
+            <button id="export-button" class="ghost-button">Export JSON</button>
+            <label class="import-label">
+              Import JSON
+              <input id="import-input" type="file" accept="application/json" />
+            </label>
+          </div>
+        </header>
+
+        <section class="view active" data-view="workspace">
+          <div class="hero-card">
+            <div>
+              <p class="eyebrow">Draft Workspace</p>
+              <h3>Write with quick formatting support</h3>
+            </div>
+            <div class="toolbar" id="editor-toolbar"></div>
+          </div>
+          <div class="grid two-up">
+            <article class="panel">
+              <label for="draft-title">Draft title</label>
+              <input id="draft-title" type="text" />
+              <label for="draft-editor">Main draft</label>
+              <textarea id="draft-editor" class="editor"></textarea>
+            </article>
+            <article class="panel">
+              <p class="panel-title">Formatting Notes</p>
+              <p class="muted">
+                Buttons insert lightweight markdown-style formatting so you can keep the draft portable.
+              </p>
+              <div id="draft-preview" class="preview prose"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" data-view="ideas">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Idea Capture</p>
+              <h3>Keep fragments before they disappear</h3>
+            </div>
+            <button id="add-idea" class="primary-button">New Idea</button>
+          </div>
+          <div id="ideas-list" class="stack-list"></div>
+        </section>
+
+        <section class="view" data-view="outline">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Outline</p>
+              <h3>High-level structure</h3>
+            </div>
+            <button id="add-outline-item" class="primary-button">Add Beat</button>
+          </div>
+          <div id="outline-list" class="stack-list"></div>
+        </section>
+
+        <section class="view" data-view="detailed-outline">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Detailed Outline</p>
+              <h3>Scene-by-scene planning</h3>
+            </div>
+            <button id="add-scene" class="primary-button">Add Scene</button>
+          </div>
+          <div id="scene-list" class="stack-list"></div>
+        </section>
+
+        <section class="view" data-view="plot">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Plot Pointers</p>
+              <h3>Track motivations, stakes, and payoffs</h3>
+            </div>
+            <button id="add-pointer" class="primary-button">Add Pointer</button>
+          </div>
+          <div id="plot-list" class="stack-list"></div>
+        </section>
+
+        <section class="view" data-view="tags">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Tags</p>
+              <h3>Group threads, themes, and revision passes</h3>
+            </div>
+            <button id="add-tag" class="primary-button">Add Tag</button>
+          </div>
+          <div class="grid two-up">
+            <article class="panel">
+              <div id="tag-list" class="stack-list compact"></div>
+            </article>
+            <article class="panel">
+              <p class="panel-title">Tag Reference</p>
+              <div id="tag-summary" class="tag-cloud"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" data-view="mind-map">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Mind Map</p>
+              <h3>Character and plot relationships</h3>
+            </div>
+            <button id="add-link" class="primary-button">Add Connection</button>
+          </div>
+          <div class="grid two-up">
+            <article class="panel panel-tall">
+              <div id="mind-map" class="mind-map"></div>
+            </article>
+            <article class="panel panel-tall">
+              <div id="connection-list" class="stack-list compact"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" data-view="characters">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Characters</p>
+              <h3>Roles, arcs, and analysis</h3>
+            </div>
+            <button id="add-character" class="primary-button">Add Character</button>
+          </div>
+          <div class="character-layout">
+            <aside id="character-list" class="panel character-list"></aside>
+            <article class="panel character-detail">
+              <div id="character-empty" class="empty-state">
+                Select a character to open the dedicated analysis page.
+              </div>
+              <div id="character-detail" class="character-analysis hidden"></div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
