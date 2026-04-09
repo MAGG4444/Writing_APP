@@ -6,7 +6,7 @@ Story Forge is a local desktop writing studio for authors who want drafting, out
 
 Story Forge is built for long-form fiction workflows. It combines the core writing surfaces authors usually have to split across multiple tools:
 
-- A bottom-tab `Storage` workspace for folders, works, and text editing
+- A real file-management library page for folders, works, and chapter navigation
 - A right-side writing tools panel for formatting rules, outline, detailed outline, plot pointers, tags, mind-map notes, and character analysis
 - An `Inspiration` page with conversation-style idea capture
 - Search and category creation for inspiration posts
@@ -25,10 +25,27 @@ Desktop-specific behavior includes:
 - Native desktop window
 - App menu for import, export, and reset actions
 - File-based JSON import/export through system dialogs
+- Local persisted library data for folders, works, and chapters
 - Packaging support for downloadable builds
 - Custom app icon for packaged builds
 - Offline bundled typography for desktop use
 - Window-size-aware layout that reflows the writing workspace on narrower screens
+
+## Library Workflow
+
+The main library page is now a real directory manager rather than a static showcase.
+
+It supports:
+
+- Root-directory and nested-folder navigation
+- Breadcrumb path display plus "go up" navigation
+- Folder creation, rename, delete, and enter actions
+- Work creation, rename, delete, and open actions
+- Automatic first-chapter creation for new works
+- Chapter-level entry into the editor
+- Returning from the editor back to the previous directory context
+- Search and sort controls for the current directory
+- Project import/export from the desktop app menu
 
 ## Local Development
 
@@ -58,6 +75,8 @@ On Linux, the generated outputs include:
 
 - `Story Forge-1.0.0.AppImage`
 - `Story Forge-1.0.0.tar.gz`
+
+The old lowercase tarball naming (`story-forge-1.0.0.tar.gz`) is no longer part of the intended release output and can be removed if it appears from older builds.
 
 Windows and macOS targets are also configured in `package.json`, but those are best built on their native platforms or CI runners for reliable release packaging.
 
@@ -119,8 +138,8 @@ That means packaged desktop builds can render the selected English and Chinese f
 
 - `index.html` contains the app shell
 - `styles.css` contains the visual system and layout
-- `app.js` contains the tab logic, local state handling, themes, and localization
-- `main.js` contains the Electron main process
+- `app.js` contains the renderer-side state model, library manager, editor routing, and UI logic
+- `main.js` contains the Electron main process plus desktop library persistence
 - `preload.js` exposes the safe desktop bridge to the renderer
 - `package.json` contains Electron scripts and packaging workflow
 - `electron-builder.json` contains package targets and build resource configuration

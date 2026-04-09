@@ -3,6 +3,8 @@ const { app, BrowserWindow, Menu, dialog, ipcMain } = require("electron");
 const fs = require("node:fs/promises");
 
 const isMac = process.platform === "darwin";
+const LIBRARY_DIRNAME = "story-forge-library-v2";
+const LIBRARY_STATE_FILE = "library-state.json";
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -80,6 +82,157 @@ function sendMenuAction(window, action) {
   window.webContents.send("menu-action", action);
 }
 
+function getLibraryRoot() {
+  return path.join(app.getPath("userData"), LIBRARY_DIRNAME);
+}
+
+function getLibraryStatePath() {
+  return path.join(getLibraryRoot(), LIBRARY_STATE_FILE);
+}
+
+async function ensureLibraryRoot() {
+  const root = getLibraryRoot();
+  await fs.mkdir(root, { recursive: true });
+  return root;
+}
+
+function normalizeFolder(folder) {
+  return {
+    id: String(folder.id),
+    name: String(folder.name || "未命名文件夹"),
+    parentId: folder.parentId == null ? null : String(folder.parentId),
+    createdAt: String(folder.createdAt || new Date().toISOString()),
+  };
+}
+
+function normalizeWork(work) {
+  return {
+    id: String(work.id),
+    title: String(work.title || "未命名作品"),
+    description: String(work.description || ""),
+    folderId: work.folderId == null ? null : String(work.folderId),
+    chapterIds: Array.isArray(work.chapterIds) ? work.chapterIds.map((id) => String(id)) : [],
+    updatedAt: String(work.updatedAt || new Date().toISOString()),
+    createdAt: String(work.createdAt || new Date().toISOString()),
+    lastOpenedChapterId: work.lastOpenedChapterId == null ? null : String(work.lastOpenedChapterId),
+  };
+}
+
+function normalizeChapter(chapter) {
+  const content = String(chapter.content || "");
+  return {
+    id: String(chapter.id),
+    workId: String(chapter.workId),
+    title: String(chapter.title || "未命名章节"),
+    content,
+    savedContent: String(chapter.savedContent ?? content),
+    notes: String(chapter.notes || ""),
+    bookmarks: Array.isArray(chapter.bookmarks) ? chapter.bookmarks.map((item) => String(item)) : [],
+    wordGoal: Number(chapter.wordGoal) || 2000,
+    outline: String(chapter.outline || ""),
+    wordCount: Number(chapter.wordCount) || countWords(content),
+    updatedAt: String(chapter.updatedAt || new Date().toISOString()),
+    createdAt: String(chapter.createdAt || new Date().toISOString()),
+    dirty: Boolean(chapter.dirty),
+    saveStatus: String(chapter.saveStatus || "已保存"),
+    saveTime: String(chapter.saveTime || "刚刚"),
+    versions: Array.isArray(chapter.versions) ? chapter.versions : [],
+    history: {
+      undo: Array.isArray(chapter.history?.undo) ? chapter.history.undo : [],
+      redo: Array.isArray(chapter.history?.redo) ? chapter.history.redo : [],
+    },
+  };
+}
+
+function countWords(text) {
+  const source = String(text).trim();
+  if (!source) return 0;
+  const cjkCount = (source.match(/[\u3400-\u9fff]/g) || []).length;
+  const latinCount = source
+    .replace(/[\u3400-\u9fff]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+  return cjkCount + latinCount;
+}
+
+function migrateLegacyWorks(legacyWorks) {
+  const folders = [];
+  const works = [];
+  const chapters = [];
+  const now = new Date().toISOString();
+
+  for (const legacyWork of legacyWorks || []) {
+    const work = normalizeWork({
+      id: legacyWork.id,
+      title: legacyWork.title,
+      description: legacyWork.description,
+      folderId: null,
+      chapterIds: (legacyWork.chapters || []).map((chapter) => chapter.id),
+      updatedAt: now,
+      createdAt: now,
+      lastOpenedChapterId: legacyWork.chapters?.[0]?.id ?? null,
+    });
+    works.push(work);
+
+    for (const legacyChapter of legacyWork.chapters || []) {
+      chapters.push(
+        normalizeChapter({
+          ...legacyChapter,
+          workId: work.id,
+          updatedAt: now,
+          createdAt: now,
+          wordCount: countWords(legacyChapter.content || ""),
+        }),
+      );
+    }
+  }
+
+  return { folders, works, chapters };
+}
+
+function normalizeLibraryState(payload) {
+  if (Array.isArray(payload)) {
+    return migrateLegacyWorks(payload);
+  }
+
+  const state = payload && typeof payload === "object" ? payload : {};
+  const folders = Array.isArray(state.folders) ? state.folders.map(normalizeFolder) : [];
+  const chapters = Array.isArray(state.chapters) ? state.chapters.map(normalizeChapter) : [];
+  const chapterMap = new Map(chapters.map((chapter) => [chapter.id, chapter]));
+  const works = Array.isArray(state.works)
+    ? state.works.map((work) => {
+        const normalized = normalizeWork(work);
+        normalized.chapterIds = normalized.chapterIds.filter((chapterId) => chapterMap.has(chapterId));
+        if (!normalized.lastOpenedChapterId || !chapterMap.has(normalized.lastOpenedChapterId)) {
+          normalized.lastOpenedChapterId = normalized.chapterIds[0] ?? null;
+        }
+        return normalized;
+      })
+    : [];
+
+  const workIds = new Set(works.map((work) => work.id));
+  const filteredChapters = chapters.filter((chapter) => workIds.has(chapter.workId));
+  return { folders, works, chapters: filteredChapters };
+}
+
+async function saveLibrary(libraryPayload) {
+  await ensureLibraryRoot();
+  const library = normalizeLibraryState(libraryPayload);
+  await fs.writeFile(getLibraryStatePath(), JSON.stringify(library, null, 2), "utf8");
+}
+
+async function loadLibrary() {
+  await ensureLibraryRoot();
+  try {
+    const raw = await fs.readFile(getLibraryStatePath(), "utf8");
+    return normalizeLibraryState(JSON.parse(raw));
+  } catch (error) {
+    if (error.code === "ENOENT") return { folders: [], works: [], chapters: [] };
+    throw error;
+  }
+}
+
 ipcMain.handle("project:save", async (_event, payload) => {
   const result = await dialog.showSaveDialog({
     title: "Export Story Forge Project",
@@ -88,7 +241,6 @@ ipcMain.handle("project:save", async (_event, payload) => {
   });
 
   if (result.canceled || !result.filePath) return result;
-
   await fs.writeFile(result.filePath, payload.content, "utf8");
   return result;
 });
@@ -101,10 +253,51 @@ ipcMain.handle("project:open", async () => {
   });
 
   if (result.canceled || !result.filePaths[0]) return result;
-
   const filePath = result.filePaths[0];
   const content = await fs.readFile(filePath, "utf8");
   return { canceled: false, filePath, content };
+});
+
+ipcMain.handle("text:open", async () => {
+  const result = await dialog.showOpenDialog({
+    title: "Import Text Document",
+    properties: ["openFile"],
+    filters: [{ name: "Text Document", extensions: ["txt"] }],
+  });
+
+  if (result.canceled || !result.filePaths[0]) return result;
+  const filePath = result.filePaths[0];
+  const content = await fs.readFile(filePath, "utf8");
+  return { canceled: false, filePath, content };
+});
+
+ipcMain.handle("text:save", async (_event, payload) => {
+  const result = await dialog.showSaveDialog({
+    title: "Export Text Document",
+    defaultPath: payload.defaultName,
+    filters: [{ name: "Text Document", extensions: ["txt"] }],
+  });
+
+  if (result.canceled || !result.filePath) return result;
+  await fs.writeFile(result.filePath, payload.content, "utf8");
+  return result;
+});
+
+ipcMain.handle("library:bootstrap", async (_event, seedLibrary) => {
+  const library = await loadLibrary();
+  if (library.folders.length > 0 || library.works.length > 0 || library.chapters.length > 0) {
+    return library;
+  }
+  if (seedLibrary && typeof seedLibrary === "object") {
+    await saveLibrary(seedLibrary);
+    return loadLibrary();
+  }
+  return { folders: [], works: [], chapters: [] };
+});
+
+ipcMain.handle("library:sync", async (_event, library) => {
+  await saveLibrary(library);
+  return loadLibrary();
 });
 
 app.whenReady().then(() => {

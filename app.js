@@ -1,426 +1,359 @@
-const STORAGE_KEY = "story-forge-state-v2";
+const STORAGE_KEY = "story-forge-workbench-v3";
 
-const themes = {
-  ember: {
-    id: "ember",
-    name: { zh: "琥珀手稿", en: "Ember Manuscript" },
-    source: { zh: "Story Forge 内置主题", en: "Built-in Story Forge theme" },
-    vars: {
-      bg: "#f6efe6",
-      bgAccent: "#ead9c8",
-      surface: "rgba(255, 250, 244, 0.84)",
-      surfaceStrong: "#fffaf5",
-      sidebar: "rgba(255, 247, 239, 0.72)",
-      text: "#2f231c",
-      muted: "#706154",
-      border: "rgba(87, 62, 42, 0.14)",
-      accent: "#9f4328",
-      accentStrong: "#7e321b",
-      accentSoft: "rgba(159, 67, 40, 0.12)",
+const themePresets = [
+  {
+    id: "light",
+    name: "浅色",
+    palette: {
+      bg: "#f6f3ee",
+      panel: "rgba(255, 253, 250, 0.88)",
+      panelStrong: "#ffffff",
+      text: "#261d17",
+      muted: "#76685d",
+      line: "rgba(62, 43, 29, 0.12)",
+      accent: "#a64b2a",
+      accentSoft: "rgba(166, 75, 42, 0.12)",
     },
-    swatches: ["#f6efe6", "#ead9c8", "#9f4328", "#2f231c"],
   },
-  catppuccinLatte: {
-    id: "catppuccinLatte",
-    name: { zh: "Catppuccin Latte", en: "Catppuccin Latte" },
-    source: { zh: "基于 Catppuccin Palette", en: "Based on Catppuccin Palette" },
-    vars: {
-      bg: "#eff1f5",
-      bgAccent: "#dce0e8",
-      surface: "rgba(255, 255, 255, 0.78)",
-      surfaceStrong: "#ffffff",
-      sidebar: "rgba(220, 224, 232, 0.58)",
-      text: "#4c4f69",
-      muted: "#6c6f85",
-      border: "rgba(76, 79, 105, 0.12)",
-      accent: "#dc8a78",
-      accentStrong: "#d20f39",
-      accentSoft: "rgba(220, 138, 120, 0.14)",
+  {
+    id: "dark",
+    name: "深色",
+    palette: {
+      bg: "#17171b",
+      panel: "rgba(32, 32, 38, 0.92)",
+      panelStrong: "#262730",
+      text: "#f3f2ef",
+      muted: "#aaa6a0",
+      line: "rgba(255, 255, 255, 0.12)",
+      accent: "#f28a5d",
+      accentSoft: "rgba(242, 138, 93, 0.18)",
     },
-    swatches: ["#eff1f5", "#dce0e8", "#dc8a78", "#4c4f69"],
   },
-  nord: {
-    id: "nord",
-    name: { zh: "Nord Frost", en: "Nord Frost" },
-    source: { zh: "基于 Nord 配色", en: "Based on Nord colors" },
-    vars: {
-      bg: "#eceff4",
-      bgAccent: "#d8dee9",
-      surface: "rgba(255, 255, 255, 0.76)",
-      surfaceStrong: "#ffffff",
-      sidebar: "rgba(216, 222, 233, 0.7)",
-      text: "#2e3440",
-      muted: "#4c566a",
-      border: "rgba(46, 52, 64, 0.12)",
-      accent: "#5e81ac",
-      accentStrong: "#4c6d95",
-      accentSoft: "rgba(94, 129, 172, 0.14)",
+  {
+    id: "eyeCare",
+    name: "护眼",
+    palette: {
+      bg: "#eef3e4",
+      panel: "rgba(248, 251, 241, 0.9)",
+      panelStrong: "#ffffff",
+      text: "#253021",
+      muted: "#677063",
+      line: "rgba(37, 48, 33, 0.12)",
+      accent: "#598157",
+      accentSoft: "rgba(89, 129, 87, 0.14)",
     },
-    swatches: ["#eceff4", "#d8dee9", "#5e81ac", "#2e3440"],
   },
-  dracula: {
-    id: "dracula",
-    name: { zh: "Dracula Classic", en: "Dracula Classic" },
-    source: { zh: "基于 Dracula Theme", en: "Based on Dracula Theme" },
-    vars: {
-      bg: "#282a36",
-      bgAccent: "#44475a",
-      surface: "rgba(52, 55, 70, 0.88)",
-      surfaceStrong: "#343746",
-      sidebar: "rgba(33, 34, 44, 0.9)",
-      text: "#f8f8f2",
-      muted: "#bd93f9",
-      border: "rgba(248, 248, 242, 0.12)",
-      accent: "#ff79c6",
-      accentStrong: "#ff5555",
-      accentSoft: "rgba(255, 121, 198, 0.18)",
+  {
+    id: "cream",
+    name: "米白",
+    palette: {
+      bg: "#f5eee3",
+      panel: "rgba(253, 248, 241, 0.92)",
+      panelStrong: "#fffdf8",
+      text: "#302219",
+      muted: "#857565",
+      line: "rgba(48, 34, 25, 0.12)",
+      accent: "#b67930",
+      accentSoft: "rgba(182, 121, 48, 0.14)",
     },
-    swatches: ["#282a36", "#44475a", "#ff79c6", "#f8f8f2"],
+  },
+  {
+    id: "ink",
+    name: "墨黑",
+    palette: {
+      bg: "#101114",
+      panel: "rgba(23, 25, 29, 0.94)",
+      panelStrong: "#1c1f24",
+      text: "#f2f2f0",
+      muted: "#9ea2a8",
+      line: "rgba(255, 255, 255, 0.1)",
+      accent: "#6ea5ff",
+      accentSoft: "rgba(110, 165, 255, 0.18)",
+    },
+  },
+];
+
+const fontChoices = [
+  { id: "system", name: "系统默认", family: '"Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif' },
+  { id: "serif", name: "思源宋体", family: '"Noto Serif SC", serif' },
+  { id: "sans", name: "思源黑体", family: '"Noto Sans SC", sans-serif' },
+  { id: "wenkai", name: '"霞鹜文楷"', family: '"LXGW WenKai", "Noto Serif SC", serif' },
+  { id: "jetbrains", name: "JetBrains Mono", family: '"JetBrains Mono", "Source Sans 3", monospace' },
+];
+
+const inspirationCategories = ["all", "人物", "剧情", "对白", "设定", "场景", "待补充"];
+const punctuationChoices = ["，", "。", "？", "！", "“”", "（）", "——", "……"];
+const phraseChoices = ["转场提示", "冲突升级", "伏笔回收", "环境描写", "情绪推进"];
+
+const DEFAULT_CHAPTER_TEMPLATE = {
+  blank: {
+    chapterTitle: "第一章",
+    content: "",
+    notes: "从这里开始写。",
+    outline: "",
+  },
+  intro: {
+    chapterTitle: "第一章：开场",
+    content:
+      "先写下这一幕的起点。\n\n人物在什么地方？他此刻最想解决的是什么？第一句应该把读者直接带进场景。",
+    notes: "开篇目标：建立人物、地点和冲突。",
+    outline: "1. 进入场景\n2. 抛出问题\n3. 留下继续读下去的动力",
+  },
+  outline: {
+    chapterTitle: "第一章：大纲起笔",
+    content: "场景一：\n\n场景二：\n\n场景三：",
+    notes: "先按大纲写，再补足细节。",
+    outline: "1. 开场\n2. 冲突升级\n3. 本章收束",
   },
 };
 
-const englishFonts = {
-  sourceSans3: {
-    id: "sourceSans3",
-    name: { zh: "Source Sans 3", en: "Source Sans 3" },
-    css: '"Source Sans 3"',
-  },
-  merriweather: {
-    id: "merriweather",
-    name: { zh: "Merriweather", en: "Merriweather" },
-    css: '"Merriweather"',
-  },
-};
+const state = loadState();
+const refs = {};
+const desktopApi = window.storyForgeDesktop ?? null;
+let autosaveTimer = null;
+let focusTimer = null;
+let suppressHistory = false;
 
-const chineseFonts = {
-  notoSansSc: {
-    id: "notoSansSc",
-    name: { zh: "思源黑体 / Noto Sans SC", en: "Noto Sans SC" },
-    css: '"Noto Sans SC"',
-  },
-  notoSerifSc: {
-    id: "notoSerifSc",
-    name: { zh: "思源宋体 / Noto Serif SC", en: "Noto Serif SC" },
-    css: '"Noto Serif SC"',
-  },
-};
+init();
 
-const translations = {
-  zh: {
-    appKicker: "本地写作工作台",
-    appTitle: "Story Forge",
-    appSubtitle: "底部三栏结构：作品存储、灵感存储、设置。",
-    runtimeBrowser: "浏览器模式",
-    runtimeDesktop: "桌面应用模式",
-    exportProject: "导出项目",
-    importProject: "导入项目",
-    storageTab: "存储",
-    storageMeta: "文件夹与作品",
-    inspirationTab: "灵感存储",
-    inspirationMeta: "对话式灵感流",
-    settingsTab: "设置",
-    settingsMeta: "主题与语言",
-    storageKicker: "作品资源库",
-    storageTitle: "文件夹与作品",
-    newFolder: "新建文件夹",
-    newWork: "新建作品",
-    toolsKicker: "编辑功能",
-    toolsTitle: "作品详情工具",
-    workTitleLabel: "作品标题",
-    editorLabel: "正文编辑器",
-    emptyWork: "先选择一个作品，或新建文件夹与作品。",
-    emptyTools: "右侧会显示当前作品的结构化编辑工具。",
-    formattingLabel: "格式与写作规则",
-    outlineLabel: "大纲页",
-    detailedOutlineLabel: "详细大纲页",
-    plotLabel: "Plot Pointers / 情节提示",
-    tagsLabel: "标签",
-    mindMapLabel: "关系与 Mind-map 备注",
-    charactersLabel: "角色分析",
-    inspirationKicker: "灵感对话流",
-    inspirationTitle: "灵感存储",
-    searchPlaceholder: "搜索灵感内容或分类",
-    allCategories: "全部分类",
-    newCategory: "新建分类",
-    postPlaceholder: "把一条灵感记录在这里……",
-    postButton: "发布灵感",
-    uncategorized: "未分类",
-    noPosts: "还没有匹配的灵感记录。",
-    appearanceKicker: "外观",
-    appearanceTitle: "颜色风格",
-    languageKicker: "语言",
-    languageTitle: "界面语言",
-    typographyKicker: "字体",
-    typographyTitle: "中英文字体",
-    englishFontLabel: "英文字体",
-    chineseFontLabel: "中文字体",
-    fontPreview:
-      "The orchard remembers every footstep.\n果园记得每一步脚印。\n\nWrite in the tone that fits your story.",
-    themeSource:
-      "主题候选包含内置方案，以及基于开源配色项目的方案：Catppuccin、Nord、Dracula。",
-    languageZh: "中文",
-    languageEn: "英文",
-    folderCount: "作品数",
-    deleteFolder: "删除文件夹",
-    deleteWork: "删除作品",
-    renameHint: "可直接点击文字进行修改",
-    defaultFolder: "未命名文件夹",
-    defaultWork: "未命名作品",
-    defaultCategory: "新分类",
-    prompts: {
-      folder: "输入新文件夹名称",
-      work: "输入新作品名称",
-      category: "输入新分类名称",
-    },
-    postedAt: "发布于",
-  },
-  en: {
-    appKicker: "Local Writing Studio",
-    appTitle: "Story Forge",
-    appSubtitle: "Three bottom tabs: storage, inspiration, and settings.",
-    runtimeBrowser: "Browser Mode",
-    runtimeDesktop: "Desktop App Mode",
-    exportProject: "Export Project",
-    importProject: "Import Project",
-    storageTab: "Storage",
-    storageMeta: "Folders and works",
-    inspirationTab: "Inspiration",
-    inspirationMeta: "Conversation feed",
-    settingsTab: "Settings",
-    settingsMeta: "Theme and language",
-    storageKicker: "Project Library",
-    storageTitle: "Folders and Works",
-    newFolder: "New Folder",
-    newWork: "New Work",
-    toolsKicker: "Editing Tools",
-    toolsTitle: "Work Detail Tools",
-    workTitleLabel: "Work title",
-    editorLabel: "Main editor",
-    emptyWork: "Select a work first, or create a folder and a work.",
-    emptyTools: "The structured writing tools for the current work appear here.",
-    formattingLabel: "Formatting and writing rules",
-    outlineLabel: "Outline page",
-    detailedOutlineLabel: "Detailed outline page",
-    plotLabel: "Plot pointers",
-    tagsLabel: "Tags",
-    mindMapLabel: "Mind-map and relationship notes",
-    charactersLabel: "Character analysis",
-    inspirationKicker: "Conversation Feed",
-    inspirationTitle: "Inspiration Storage",
-    searchPlaceholder: "Search inspiration text or categories",
-    allCategories: "All categories",
-    newCategory: "New Category",
-    postPlaceholder: "Drop a new spark of inspiration here...",
-    postButton: "Post Inspiration",
-    uncategorized: "Uncategorized",
-    noPosts: "No inspiration posts match the current filter.",
-    appearanceKicker: "Appearance",
-    appearanceTitle: "Color Styles",
-    languageKicker: "Language",
-    languageTitle: "App Language",
-    typographyKicker: "Typography",
-    typographyTitle: "English and Chinese Fonts",
-    englishFontLabel: "English font",
-    chineseFontLabel: "Chinese font",
-    fontPreview:
-      "The orchard remembers every footstep.\n果园记得每一步脚印。\n\nWrite in the tone that fits your story.",
-    themeSource:
-      "Theme options include a built-in style plus presets based on open-source palette projects: Catppuccin, Nord, and Dracula.",
-    languageZh: "Chinese",
-    languageEn: "English",
-    folderCount: "Works",
-    deleteFolder: "Delete folder",
-    deleteWork: "Delete work",
-    renameHint: "You can edit names directly",
-    defaultFolder: "Untitled Folder",
-    defaultWork: "Untitled Work",
-    defaultCategory: "New Category",
-    prompts: {
-      folder: "Enter a new folder name",
-      work: "Enter a new work name",
-      category: "Enter a new category name",
-    },
-    postedAt: "Posted",
-  },
-};
+async function init() {
+  ensureStateIntegrity();
+  await bootstrapDesktopLibrary();
+  document.getElementById("app").innerHTML = AppShell();
+  collectRefs();
+  bindEvents();
+  hydrateEditor();
+  updateAll();
+}
 
-const seedState = {
-  activeTab: "storage",
-  settings: {
-    theme: "ember",
-    language: "zh",
-    englishFont: "sourceSans3",
-    chineseFont: "notoSansSc",
-  },
-  storage: {
-    activeFolderId: "folder-1",
+function loadState() {
+  const seed = createSeedState();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return seed;
+    return deepMerge(seed, JSON.parse(raw));
+  } catch (error) {
+    console.error(error);
+    return seed;
+  }
+}
+
+function createSeedState() {
+  const createdAt = "2026-04-07T20:00:00.000Z";
+  const updatedAt = "2026-04-08T01:20:00.000Z";
+
+  return {
+    route: "library",
+    activeFolderId: "folder-serial",
+    activeTab: "writing",
     activeWorkId: "work-1",
+    activeChapterId: "chapter-1",
     folders: [
-      {
-        id: "folder-1",
-        name: "长篇项目",
-      },
-      {
-        id: "folder-2",
-        name: "角色实验",
-      },
+      { id: "folder-serial", name: "长篇连载", parentId: null, createdAt },
+      { id: "folder-short", name: "短篇练习", parentId: null, createdAt },
+      { id: "folder-world", name: "世界观设定", parentId: null, createdAt },
+      { id: "folder-archive", name: "已完结", parentId: null, createdAt },
+      { id: "folder-world-port", name: "旧港资料", parentId: "folder-world", createdAt },
     ],
     works: [
       {
         id: "work-1",
-        folderId: "folder-1",
-        title: "玻璃果园",
-        content:
-          "第一章\n\nLena 回到果园，原本想尽快处理遗产问题离开，却听见温室深处传来不可能存在的音乐。",
-        tools: {
-          formatting: "第一人称与近景描写为主，关键线索第一次出现时加粗处理。",
-          outline: "回乡 -> 异常声音 -> 家族压力 -> 决定调查",
-          detailedOutline:
-            "场景 1：到站，编辑催稿。\n场景 2：夜里回到果园。\n场景 3：发现隐藏钥匙。",
-          plot: "核心悬念：是谁让果园拥有记忆？\n中段推进：兄长开始销毁旧记录。",
-          tags: "家族秘密, 记忆, 修订第一轮",
-          mindMap: "Lena -> Tomas：亲情与对立并存。\nLena -> 果园：被召回的继承关系。",
-          characters:
-            "Lena：逃离过去但不断回头。\nTomas：维护家业的代价越来越高。\nMara：推动真相曝光。",
-        },
+        title: "雾海长歌",
+        description: "长篇悬疑航海小说，围绕旧港与失踪航线展开。",
+        folderId: "folder-serial",
+        chapterIds: ["chapter-1", "chapter-2"],
+        updatedAt,
+        createdAt,
+        lastOpenedChapterId: "chapter-1",
       },
       {
         id: "work-2",
-        folderId: "folder-1",
-        title: "城市夜航",
-        content: "一部偏悬疑的都市故事草稿。",
-        tools: {
-          formatting: "短句与节奏优先。",
-          outline: "失踪案 -> 错位线索 -> 夜间追踪",
-          detailedOutline: "",
-          plot: "",
-          tags: "悬疑, 都市",
-          mindMap: "",
-          characters: "",
-        },
+        title: "星砂档案",
+        description: "偏科幻的多线叙事项目，用于演示目录和编辑页跳转。",
+        folderId: "folder-short",
+        chapterIds: ["chapter-3"],
+        updatedAt: "2026-04-07T23:11:00.000Z",
+        createdAt,
+        lastOpenedChapterId: "chapter-3",
       },
       {
         id: "work-3",
-        folderId: "folder-2",
-        title: "配角档案",
-        content: "这里集中写配角的语气、动机和背景。",
-        tools: {
-          formatting: "",
-          outline: "",
-          detailedOutline: "",
-          plot: "",
-          tags: "角色",
-          mindMap: "",
-          characters: "为每个配角保留一个欲望、一个恐惧、一个矛盾。",
-        },
-      },
-    ],
-  },
-  inspiration: {
-    activeCategoryId: "all",
-    search: "",
-    categories: [
-      { id: "cat-1", name: "场景" },
-      { id: "cat-2", name: "对白" },
-      { id: "cat-3", name: "设定" },
-    ],
-    posts: [
-      {
-        id: "post-1",
-        categoryId: "cat-1",
-        text: "如果开场不是到家，而是她先在火车站丢了一页手稿，节奏会更紧。",
-        author: "author",
-        createdAt: "2026-04-08 13:10",
+        title: "港务局口述史",
+        description: "世界观补充文档，整理旧港职能、派系与口述记录。",
+        folderId: "folder-world-port",
+        chapterIds: ["chapter-4"],
+        updatedAt: "2026-04-07T21:05:00.000Z",
+        createdAt,
+        lastOpenedChapterId: "chapter-4",
       },
       {
-        id: "post-2",
-        categoryId: "cat-2",
-        text: "“你不是回来继承果园的，你是回来替它作证的。”",
-        author: "system",
-        createdAt: "2026-04-08 13:12",
+        id: "work-4",
+        title: "未归档随笔",
+        description: "放在根目录的零散灵感项目。",
+        folderId: null,
+        chapterIds: ["chapter-5"],
+        updatedAt: "2026-04-06T14:08:00.000Z",
+        createdAt,
+        lastOpenedChapterId: "chapter-5",
       },
     ],
-  },
-};
-
-const toolbarActions = [
-  { label: "H1", before: "# ", after: "" },
-  { label: "H2", before: "## ", after: "" },
-  { label: "B", before: "**", after: "**" },
-  { label: "I", before: "_", after: "_" },
-  { label: "•", before: "- ", after: "" },
-  { label: ">", before: "> ", after: "" },
-];
-
-const state = loadState();
-
-const ui = {
-  bottomTabs: document.getElementById("bottom-tabs"),
-  runtimeBadge: document.getElementById("runtime-badge"),
-  exportButton: document.getElementById("export-button"),
-  importButton: document.getElementById("import-button"),
-  folderList: document.getElementById("folder-list"),
-  newFolderButton: document.getElementById("new-folder-button"),
-  newWorkButton: document.getElementById("new-work-button"),
-  workEmpty: document.getElementById("work-empty"),
-  workEditor: document.getElementById("work-editor"),
-  workTitleInput: document.getElementById("work-title-input"),
-  currentFolderChip: document.getElementById("current-folder-chip"),
-  editorToolbar: document.getElementById("editor-toolbar"),
-  workContentInput: document.getElementById("work-content-input"),
-  toolFields: document.getElementById("tool-fields"),
-  toolEmpty: document.getElementById("tool-empty"),
-  toolFormatting: document.getElementById("tool-formatting"),
-  toolOutline: document.getElementById("tool-outline"),
-  toolDetailedOutline: document.getElementById("tool-detailed-outline"),
-  toolPlot: document.getElementById("tool-plot"),
-  toolTags: document.getElementById("tool-tags"),
-  toolMindMap: document.getElementById("tool-mind-map"),
-  toolCharacters: document.getElementById("tool-characters"),
-  inspirationSearch: document.getElementById("inspiration-search"),
-  categoryList: document.getElementById("category-list"),
-  newCategoryButton: document.getElementById("new-category-button"),
-  postList: document.getElementById("post-list"),
-  postCategorySelect: document.getElementById("post-category-select"),
-  postInput: document.getElementById("post-input"),
-  postButton: document.getElementById("post-button"),
-  themeGrid: document.getElementById("theme-grid"),
-  languageOptions: document.getElementById("language-options"),
-  englishFontSelect: document.getElementById("english-font-select"),
-  chineseFontSelect: document.getElementById("chinese-font-select"),
-  fontPreview: document.getElementById("font-preview"),
-};
-
-init();
-
-function init() {
-  document.documentElement.lang = state.settings.language === "zh" ? "zh-CN" : "en";
-  applyTheme(state.settings.theme);
-  applyTypography();
-  renderStaticText();
-  renderTabs();
-  renderToolbar();
-  bindEvents();
-  renderActiveTab();
+    chapters: [
+      createSeedChapter({
+        id: "chapter-1",
+        workId: "work-1",
+        title: "第一章：风从旧港吹来",
+        content:
+          "海风先撞上窗，再撞上她的名字。\n\n林序推开旧港旅馆的木门，雨水顺着伞骨滴落成一圈冷白。她知道自己回来得太晚了，但长街尽头那盏始终没有熄灭的灯，又像是在等她把故事重新写下去。\n\n她把箱子放在门边，先记下第一句：这座港口从不真正欢迎归来者。",
+        notes: "本章任务：建立旧港氛围，放出“灯塔未熄”的悬念。",
+        bookmarks: ["旧港入口", "旅馆灯", "第一句手稿"],
+        wordGoal: 2500,
+        outline: "1. 回港\n2. 旅馆旧灯\n3. 第一句手稿回归",
+        updatedAt: "2026-04-08T01:20:00.000Z",
+        createdAt,
+        versions: [{ id: "version-1", label: "自动保存版本", time: "今天 20:12", content: "海风先撞上窗，再撞上她的名字。" }],
+      }),
+      createSeedChapter({
+        id: "chapter-2",
+        workId: "work-1",
+        title: "第二章：灯塔后的回声",
+        content: "码头封锁线升起的时候，灯塔的雾号只响了一次。\n\n她记下另一个问题：是谁比风更早知道她会回来？",
+        notes: "推进封锁线和港务长线索。",
+        bookmarks: ["封锁线", "雾号"],
+        wordGoal: 2200,
+        outline: "1. 码头封锁\n2. 港务长出现\n3. 灯塔雾号",
+        updatedAt: "2026-04-07T23:45:00.000Z",
+        createdAt,
+      }),
+      createSeedChapter({
+        id: "chapter-3",
+        workId: "work-2",
+        title: "序章：第九观测站",
+        content: "她在观测站的玻璃墙前，看见宇宙像一份尚未签收的报告。",
+        notes: "序章负责抛出观测站事故。",
+        bookmarks: ["观测站"],
+        wordGoal: 1800,
+        outline: "1. 观测站夜景\n2. 事故预警",
+        updatedAt: "2026-04-07T22:11:00.000Z",
+        createdAt,
+      }),
+      createSeedChapter({
+        id: "chapter-4",
+        workId: "work-3",
+        title: "港务局职责沿革",
+        content: "旧港的管理权在三次事故之后才真正集中到港务局。",
+        notes: "作为设定资料，不必追求章节感。",
+        bookmarks: [],
+        wordGoal: 1200,
+        outline: "1. 事故前\n2. 职能集中\n3. 派系冲突",
+        updatedAt: "2026-04-07T21:05:00.000Z",
+        createdAt,
+      }),
+      createSeedChapter({
+        id: "chapter-5",
+        workId: "work-4",
+        title: "灵感草稿",
+        content: "她在车站捡起的不是纸，而是别人替她写过的一次结局。",
+        notes: "",
+        bookmarks: [],
+        wordGoal: 800,
+        outline: "",
+        updatedAt: "2026-04-06T14:08:00.000Z",
+        createdAt,
+      }),
+    ],
+    inspirations: {
+      activeCategory: "all",
+      search: "",
+      sort: "newest",
+      items: [
+        { id: "inspiration-1", text: "她不是回来找答案，而是回来确认自己是否还属于这里。", category: "剧情", createdAt: "21:05", pinned: true, favorite: true },
+        { id: "inspiration-2", text: "对白：‘你走的时候像离家，回来却像潜入。’", category: "对白", createdAt: "20:48", pinned: false, favorite: false },
+        { id: "inspiration-3", text: "人物关系：林序与港务长是旧识，但彼此都知道一半真相。", category: "人物", createdAt: "20:30", pinned: false, favorite: true },
+      ],
+    },
+    account: {
+      loggedIn: false,
+      nickname: "未登录用户",
+      avatar: "SF",
+      syncStatus: "本地写作中",
+    },
+    theme: {
+      presets: themePresets,
+      currentId: "cream",
+      nightMode: false,
+    },
+    font: {
+      families: fontChoices,
+      currentId: "system",
+      size: 18,
+      lineHeight: 1.9,
+      letterSpacing: 0,
+    },
+    ui: {
+      autosaveEnabled: true,
+      replaceOpen: false,
+      sidebarCollapsed: false,
+      sidebarSection: "notes",
+      selectionVisible: false,
+      selectionStart: 0,
+      selectionEnd: 0,
+      lastFocused: false,
+      focusMode: false,
+      findQuery: "",
+      replaceQuery: "",
+      focusStartedAt: null,
+      focusAccumulated: 0,
+      libraryScrollTop: 0,
+      libraryCreateOpen: false,
+      libraryEntityMenu: null,
+      librarySearch: "",
+      librarySort: "updated-desc",
+      libraryWorkViewId: "work-1",
+      modal: null,
+    },
+  };
 }
 
-function loadState() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return structuredClone(seedState);
-    return mergeState(structuredClone(seedState), JSON.parse(saved));
-  } catch (error) {
-    console.error("Failed to load state", error);
-    return structuredClone(seedState);
-  }
+function createSeedChapter({
+  id,
+  workId,
+  title,
+  content,
+  notes,
+  bookmarks,
+  wordGoal,
+  outline,
+  updatedAt,
+  createdAt,
+  versions = [],
+}) {
+  return {
+    id,
+    workId,
+    title,
+    content,
+    savedContent: content,
+    notes,
+    bookmarks,
+    wordGoal,
+    outline,
+    wordCount: countWords(content),
+    updatedAt,
+    createdAt,
+    dirty: false,
+    saveStatus: "已保存",
+    saveTime: "刚刚",
+    versions,
+    history: { undo: [], redo: [] },
+  };
 }
 
-function mergeState(base, incoming) {
+function deepMerge(base, incoming) {
   if (Array.isArray(base) || Array.isArray(incoming)) return incoming ?? base;
   const result = { ...base };
   Object.keys(incoming || {}).forEach((key) => {
     if (typeof incoming[key] === "object" && incoming[key] && typeof base[key] === "object" && base[key]) {
-      result[key] = mergeState(base[key], incoming[key]);
+      result[key] = deepMerge(base[key], incoming[key]);
     } else {
       result[key] = incoming[key];
     }
@@ -428,642 +361,2432 @@ function mergeState(base, incoming) {
   return result;
 }
 
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+function ensureStateIntegrity() {
+  migrateLegacyNestedWorks();
+
+  state.folders = Array.isArray(state.folders) ? state.folders : [];
+  state.works = Array.isArray(state.works) ? state.works : [];
+  state.chapters = Array.isArray(state.chapters) ? state.chapters : [];
+
+  state.ui ??= {};
+  state.ui.libraryScrollTop ??= 0;
+  state.ui.libraryCreateOpen ??= false;
+  state.ui.libraryEntityMenu ??= null;
+  state.ui.librarySearch ??= "";
+  state.ui.librarySort ??= "updated-desc";
+  state.ui.libraryWorkViewId ??= null;
+
+  const folderIds = new Set(state.folders.map((folder) => folder.id));
+  state.folders = state.folders.map((folder) => ({
+    id: String(folder.id),
+    name: String(folder.name || "未命名文件夹"),
+    parentId: folder.parentId == null || !folderIds.has(String(folder.parentId)) ? null : String(folder.parentId),
+    createdAt: String(folder.createdAt || new Date().toISOString()),
+  }));
+
+  const worksById = new Map();
+  state.works = state.works.map((work) => {
+    const normalized = {
+      id: String(work.id),
+      title: String(work.title || "未命名作品"),
+      description: String(work.description || ""),
+      folderId: work.folderId == null ? null : String(work.folderId),
+      chapterIds: Array.isArray(work.chapterIds) ? work.chapterIds.map((id) => String(id)) : [],
+      updatedAt: String(work.updatedAt || new Date().toISOString()),
+      createdAt: String(work.createdAt || new Date().toISOString()),
+      lastOpenedChapterId: work.lastOpenedChapterId == null ? null : String(work.lastOpenedChapterId),
+    };
+    worksById.set(normalized.id, normalized);
+    return normalized;
+  });
+
+  state.chapters = state.chapters
+    .map((chapter) => {
+      const content = String(chapter.content || "");
+      return {
+        id: String(chapter.id),
+        workId: String(chapter.workId),
+        title: String(chapter.title || "未命名章节"),
+        content,
+        savedContent: String(chapter.savedContent ?? content),
+        notes: String(chapter.notes || ""),
+        bookmarks: Array.isArray(chapter.bookmarks) ? chapter.bookmarks.map((item) => String(item)) : [],
+        wordGoal: Number(chapter.wordGoal) || 2000,
+        outline: String(chapter.outline || ""),
+        wordCount: Number(chapter.wordCount) || countWords(content),
+        updatedAt: String(chapter.updatedAt || new Date().toISOString()),
+        createdAt: String(chapter.createdAt || new Date().toISOString()),
+        dirty: Boolean(chapter.dirty),
+        saveStatus: String(chapter.saveStatus || "已保存"),
+        saveTime: String(chapter.saveTime || "刚刚"),
+        versions: Array.isArray(chapter.versions) ? chapter.versions : [],
+        history: {
+          undo: Array.isArray(chapter.history?.undo) ? chapter.history.undo : [],
+          redo: Array.isArray(chapter.history?.redo) ? chapter.history.redo : [],
+        },
+      };
+    })
+    .filter((chapter) => worksById.has(chapter.workId));
+
+  const chaptersByWork = new Map();
+  state.chapters.forEach((chapter) => {
+    if (!chaptersByWork.has(chapter.workId)) chaptersByWork.set(chapter.workId, []);
+    chaptersByWork.get(chapter.workId).push(chapter.id);
+  });
+
+  state.works = state.works.map((work) => {
+    const allowedIds = new Set(chaptersByWork.get(work.id) ?? []);
+    work.chapterIds = work.chapterIds.filter((id) => allowedIds.has(id));
+    for (const chapterId of chaptersByWork.get(work.id) ?? []) {
+      if (!work.chapterIds.includes(chapterId)) work.chapterIds.push(chapterId);
+    }
+    if (!work.lastOpenedChapterId || !work.chapterIds.includes(work.lastOpenedChapterId)) {
+      work.lastOpenedChapterId = work.chapterIds[0] ?? null;
+    }
+    if (work.folderId != null && !state.folders.some((folder) => folder.id === work.folderId)) {
+      work.folderId = null;
+    }
+    return work;
+  });
+
+  if (state.activeFolderId != null && !getFolder(state.activeFolderId)) {
+    state.activeFolderId = null;
+  }
+
+  normalizeActiveSelection();
+  persist();
 }
 
-function t(key) {
-  return translations[state.settings.language][key];
+function migrateLegacyNestedWorks() {
+  if (Array.isArray(state.works) && state.works[0]?.chapters && !Array.isArray(state.chapters)) {
+    const migrated = migrateLegacyWorksToFlat(state.works);
+    state.folders = migrated.folders;
+    state.works = migrated.works;
+    state.chapters = migrated.chapters;
+    state.activeFolderId = migrated.works[0]?.folderId ?? null;
+  }
 }
 
-function renderStaticText() {
-  text("app-kicker", t("appKicker"));
-  text("app-title", t("appTitle"));
-  text("app-subtitle", t("appSubtitle"));
-  text("storage-kicker", t("storageKicker"));
-  text("storage-title", t("storageTitle"));
-  text("tools-kicker", t("toolsKicker"));
-  text("tools-title", t("toolsTitle"));
-  text("work-title-label", t("workTitleLabel"));
-  text("editor-label", t("editorLabel"));
-  text("tool-formatting-label", t("formattingLabel"));
-  text("tool-outline-label", t("outlineLabel"));
-  text("tool-detailed-outline-label", t("detailedOutlineLabel"));
-  text("tool-plot-label", t("plotLabel"));
-  text("tool-tags-label", t("tagsLabel"));
-  text("tool-mind-map-label", t("mindMapLabel"));
-  text("tool-characters-label", t("charactersLabel"));
-  text("inspiration-kicker", t("inspirationKicker"));
-  text("inspiration-title", t("inspirationTitle"));
-  text("appearance-kicker", t("appearanceKicker"));
-  text("appearance-title", t("appearanceTitle"));
-  text("language-kicker", t("languageKicker"));
-  text("language-title", t("languageTitle"));
-  text("typography-kicker", t("typographyKicker"));
-  text("typography-title", t("typographyTitle"));
-  text("english-font-label", t("englishFontLabel"));
-  text("chinese-font-label", t("chineseFontLabel"));
-  text("theme-source-note", t("themeSource"));
-  ui.exportButton.textContent = t("exportProject");
-  ui.importButton.textContent = t("importProject");
-  ui.newFolderButton.textContent = t("newFolder");
-  ui.newWorkButton.textContent = t("newWork");
-  ui.newCategoryButton.textContent = t("newCategory");
-  ui.postButton.textContent = t("postButton");
-  ui.inspirationSearch.placeholder = t("searchPlaceholder");
-  ui.postInput.placeholder = t("postPlaceholder");
-  ui.runtimeBadge.textContent = window.storyForgeDesktop ? t("runtimeDesktop") : t("runtimeBrowser");
-}
+function migrateLegacyWorksToFlat(legacyWorks) {
+  const works = [];
+  const chapters = [];
+  const createdAt = new Date().toISOString();
 
-function renderTabs() {
-  const tabs = [
-    { id: "storage", label: t("storageTab"), meta: t("storageMeta") },
-    { id: "inspiration", label: t("inspirationTab"), meta: t("inspirationMeta") },
-    { id: "settings", label: t("settingsTab"), meta: t("settingsMeta") },
-  ];
-
-  ui.bottomTabs.innerHTML = "";
-  tabs.forEach((tab) => {
-    const button = document.createElement("button");
-    button.className = `tab-button ${state.activeTab === tab.id ? "active" : ""}`;
-    button.innerHTML = `<span><strong>${escapeHtml(tab.label)}</strong><small>${escapeHtml(
-      tab.meta,
-    )}</small></span><span>${state.activeTab === tab.id ? "●" : "○"}</span>`;
-    button.addEventListener("click", () => {
-      state.activeTab = tab.id;
-      saveState();
-      renderActiveTab();
-      renderTabs();
+  for (const legacyWork of legacyWorks || []) {
+    const chapterIds = (legacyWork.chapters || []).map((chapter) => String(chapter.id));
+    works.push({
+      id: String(legacyWork.id),
+      title: String(legacyWork.title || "未命名作品"),
+      description: String(legacyWork.description || ""),
+      folderId: null,
+      chapterIds,
+      updatedAt: createdAt,
+      createdAt,
+      lastOpenedChapterId: chapterIds[0] ?? null,
     });
-    ui.bottomTabs.appendChild(button);
-  });
+
+    for (const legacyChapter of legacyWork.chapters || []) {
+      const content = String(legacyChapter.content || "");
+      chapters.push({
+        id: String(legacyChapter.id),
+        workId: String(legacyWork.id),
+        title: String(legacyChapter.title || "未命名章节"),
+        content,
+        savedContent: String(legacyChapter.savedContent ?? content),
+        notes: String(legacyChapter.notes || ""),
+        bookmarks: Array.isArray(legacyChapter.bookmarks) ? legacyChapter.bookmarks : [],
+        wordGoal: Number(legacyChapter.wordGoal) || 2000,
+        outline: String(legacyChapter.outline || ""),
+        wordCount: countWords(content),
+        updatedAt: createdAt,
+        createdAt,
+        dirty: Boolean(legacyChapter.dirty),
+        saveStatus: String(legacyChapter.saveStatus || "已保存"),
+        saveTime: String(legacyChapter.saveTime || "刚刚"),
+        versions: Array.isArray(legacyChapter.versions) ? legacyChapter.versions : [],
+        history: {
+          undo: Array.isArray(legacyChapter.history?.undo) ? legacyChapter.history.undo : [],
+          redo: Array.isArray(legacyChapter.history?.redo) ? legacyChapter.history.redo : [],
+        },
+      });
+    }
+  }
+
+  return { folders: [], works, chapters };
 }
 
-function renderActiveTab() {
-  document.querySelectorAll(".tab-view").forEach((view) => {
-    view.classList.toggle("active", view.dataset.tab === state.activeTab);
-  });
-
-  renderStorage();
-  renderInspiration();
-  renderSettings();
+async function bootstrapDesktopLibrary() {
+  if (!desktopApi?.bootstrapLibrary) return;
+  try {
+    const library = await desktopApi.bootstrapLibrary(getLibraryStatePayload());
+    applyLibraryState(library);
+    ensureStateIntegrity();
+  } catch (error) {
+    console.error("Failed to bootstrap desktop library", error);
+  }
 }
 
-function renderStorage() {
-  const activeFolder = getActiveFolder();
-  const activeWork = getActiveWork();
+async function syncLibraryToDesktop() {
+  if (!desktopApi?.syncLibrary) return;
+  const preferredFolderId = state.activeFolderId;
+  const preferredWorkId = state.activeWorkId;
+  const preferredChapterId = state.activeChapterId;
+  try {
+    const library = await desktopApi.syncLibrary(getLibraryStatePayload());
+    applyLibraryState(library);
+    state.activeFolderId = preferredFolderId;
+    normalizeActiveSelection(preferredWorkId, preferredChapterId);
+    persist();
+  } catch (error) {
+    console.error("Failed to sync desktop library", error);
+  }
+}
 
-  ui.folderList.innerHTML = "";
+function getLibraryStatePayload() {
+  return {
+    folders: state.folders,
+    works: state.works,
+    chapters: state.chapters,
+  };
+}
 
-  state.storage.folders.forEach((folder) => {
-    const works = state.storage.works.filter((work) => work.folderId === folder.id);
-    const card = document.createElement("div");
-    card.className = `folder-card ${folder.id === state.storage.activeFolderId ? "active" : ""}`;
-    card.innerHTML = `
-      <header>
-        <div class="grow">
-          <input data-folder-id="${folder.id}" class="folder-name-input" type="text" value="${escapeAttribute(
-            folder.name,
-          )}" />
-          <small>${t("folderCount")}: ${works.length}</small>
-        </div>
-        <button class="ghost-button delete-folder" data-folder-id="${folder.id}">${escapeHtml(
-          t("deleteFolder"),
-        )}</button>
-      </header>
-      <div class="work-list">
-        ${works
-          .map(
-            (work) => `
-              <button class="work-row ${
-                work.id === state.storage.activeWorkId ? "active" : ""
-              }" data-work-id="${work.id}" data-folder-id="${folder.id}">
-                <span>${escapeHtml(work.title)}</span>
-                <small>${work.content.length}</small>
-              </button>
-            `,
-          )
-          .join("")}
-      </div>
-    `;
-    ui.folderList.appendChild(card);
-  });
+function applyLibraryState(library) {
+  if (!library || typeof library !== "object") return;
+  if (Array.isArray(library.folders)) state.folders = library.folders;
+  if (Array.isArray(library.works)) state.works = library.works;
+  if (Array.isArray(library.chapters)) state.chapters = library.chapters;
+}
 
-  ui.folderList.querySelectorAll(".folder-name-input").forEach((input) => {
-    input.addEventListener("input", (event) => {
-      const folder = state.storage.folders.find((item) => item.id === event.target.dataset.folderId);
-      folder.name = event.target.value;
-      saveState();
-    });
-    input.addEventListener("blur", renderStorage);
-    input.addEventListener("focus", () => {
-      state.storage.activeFolderId = input.dataset.folderId;
-      saveState();
-      renderStorage();
-    });
-  });
+function normalizeActiveSelection(preferredWorkId = state.activeWorkId, preferredChapterId = state.activeChapterId) {
+  const preferredWork = getWork(preferredWorkId);
+  const preferredChapter = preferredWork ? getChapter(preferredChapterId) : null;
 
-  ui.folderList.querySelectorAll(".delete-folder").forEach((button) => {
-    button.addEventListener("click", () => deleteFolder(button.dataset.folderId));
-  });
-
-  ui.folderList.querySelectorAll(".work-row").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.storage.activeFolderId = button.dataset.folderId;
-      state.storage.activeWorkId = button.dataset.workId;
-      saveState();
-      renderStorage();
-    });
-  });
-
-  if (!activeWork) {
-    ui.workEmpty.classList.remove("hidden");
-    ui.workEditor.classList.add("hidden");
-    ui.toolFields.classList.add("hidden");
-    ui.toolEmpty.classList.remove("hidden");
-    ui.workEmpty.textContent = t("emptyWork");
-    ui.toolEmpty.textContent = t("emptyTools");
+  if (preferredWork && preferredChapter && preferredChapter.workId === preferredWork.id) {
+    state.activeWorkId = preferredWork.id;
+    state.activeChapterId = preferredChapter.id;
     return;
   }
 
-  ui.workEmpty.classList.add("hidden");
-  ui.workEditor.classList.remove("hidden");
-  ui.toolFields.classList.remove("hidden");
-  ui.toolEmpty.classList.add("hidden");
-
-  ui.workTitleInput.value = activeWork.title;
-  ui.currentFolderChip.textContent = activeFolder?.name ?? t("defaultFolder");
-  ui.workContentInput.value = activeWork.content;
-  ui.toolFormatting.value = activeWork.tools.formatting;
-  ui.toolOutline.value = activeWork.tools.outline;
-  ui.toolDetailedOutline.value = activeWork.tools.detailedOutline;
-  ui.toolPlot.value = activeWork.tools.plot;
-  ui.toolTags.value = activeWork.tools.tags;
-  ui.toolMindMap.value = activeWork.tools.mindMap;
-  ui.toolCharacters.value = activeWork.tools.characters;
+  const firstWork = state.works[0] ?? null;
+  const firstChapterId = firstWork?.chapterIds[0] ?? null;
+  state.activeWorkId = firstWork?.id ?? null;
+  state.activeChapterId = firstChapterId;
+  if (!firstWork) state.route = "library";
 }
 
-function renderInspiration() {
-  const activeCategoryId = state.inspiration.activeCategoryId;
-  const categories = state.inspiration.categories;
-  const posts = getFilteredPosts();
-  ui.inspirationSearch.value = state.inspiration.search;
-
-  ui.categoryList.innerHTML = "";
-
-  const allButton = document.createElement("button");
-  allButton.className = `chip-button ${activeCategoryId === "all" ? "active" : ""}`;
-  allButton.textContent = t("allCategories");
-  allButton.addEventListener("click", () => {
-    state.inspiration.activeCategoryId = "all";
-    saveState();
-    renderInspiration();
-  });
-  ui.categoryList.appendChild(allButton);
-
-  categories.forEach((category) => {
-    const button = document.createElement("button");
-    button.className = `chip-button ${activeCategoryId === category.id ? "active" : ""}`;
-    button.textContent = category.name;
-    button.addEventListener("click", () => {
-      state.inspiration.activeCategoryId = category.id;
-      saveState();
-      renderInspiration();
-    });
-    ui.categoryList.appendChild(button);
-  });
-
-  ui.postCategorySelect.innerHTML = `
-    <option value="">${escapeHtml(t("uncategorized"))}</option>
-    ${categories
-      .map(
-        (category) =>
-          `<option value="${escapeAttribute(category.id)}">${escapeHtml(category.name)}</option>`,
-      )
-      .join("")}
+function AppShell() {
+  return `
+    <div class="app-shell">
+      ${FileManagerPage()}
+      ${EditorPage()}
+      <div class="modal-root hidden" id="modal-root"></div>
+    </div>
   `;
-  if (activeCategoryId !== "all" && categories.some((category) => category.id === activeCategoryId)) {
-    ui.postCategorySelect.value = activeCategoryId;
-  }
-
-  ui.postList.innerHTML = "";
-  if (posts.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.textContent = t("noPosts");
-    ui.postList.appendChild(empty);
-    return;
-  }
-
-  posts.forEach((post) => {
-    const categoryName =
-      categories.find((category) => category.id === post.categoryId)?.name ?? t("uncategorized");
-    const card = document.createElement("article");
-    card.className = `post-card ${post.author === "author" ? "mine" : ""}`;
-    card.innerHTML = `
-      <header>
-        <strong>${escapeHtml(categoryName)}</strong>
-        <time>${escapeHtml(post.createdAt)}</time>
-      </header>
-      <p>${escapeHtml(post.text)}</p>
-    `;
-    ui.postList.appendChild(card);
-  });
 }
 
-function renderSettings() {
-  ui.themeGrid.innerHTML = "";
+function FileManagerPage() {
+  return `
+    <section class="library-page" id="library-page">
+      <header class="library-header surface">
+        <div class="library-header-row">
+          <div class="library-title-block">
+            <span class="section-kicker">文件管理页</span>
+            <h1>作品目录</h1>
+            <p>支持文件夹与作品两层管理，进入后可继续按章节写作。</p>
+          </div>
+        <div class="library-header-actions">
+          <button class="ghost-button" id="folder-up-button">返回上一级</button>
+          <div class="menu-wrap">
+            <button class="primary-button" id="create-entry-button">新建</button>
+            <div class="dropdown-menu hidden" id="create-entry-menu">
+                <button data-library-action="open-create-folder">新建文件夹</button>
+                <button data-library-action="open-create-work">新建作品</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="library-breadcrumb" id="library-breadcrumb"></div>
+        <div class="library-toolbar">
+          <input id="library-search-input" type="search" placeholder="搜索当前目录下的文件夹或作品" />
+          <select id="library-sort-select">
+            <option value="updated-desc">最近编辑优先</option>
+            <option value="title-asc">名称 A-Z</option>
+            <option value="created-desc">最新创建优先</option>
+          </select>
+        </div>
+      </header>
+      <div class="library-content" id="library-content">
+        <div class="library-list" id="library-list"></div>
+      </div>
+    </section>
+  `;
+}
 
-  Object.values(themes).forEach((theme) => {
-    const card = document.createElement("button");
-    card.className = `theme-card ${state.settings.theme === theme.id ? "active" : ""}`;
-    card.innerHTML = `
-      <div class="theme-preview">
-        <strong>${escapeHtml(theme.name[state.settings.language])}</strong>
-        <div class="swatches">
-          ${theme.swatches.map((swatch) => `<span class="swatch" style="background:${swatch}"></span>`).join("")}
+function EditorPage() {
+  return `
+    <section class="editor-page" id="editor-page">
+      ${TopBar()}
+      <div class="editor-body">
+        <div class="editor-column">
+          ${DocumentEditor()}
+        </div>
+        <aside class="chapter-sidebar surface" id="chapter-sidebar">
+          <div class="sidebar-header">
+            <strong>章节辅助</strong>
+            <button class="ghost-button compact-button" id="sidebar-toggle-button">收起</button>
+          </div>
+          <div class="sidebar-section">
+            <div class="sidebar-section-head">
+              <strong>章节备注</strong>
+              <button class="ghost-button compact-button" data-open-side="notes">定位</button>
+            </div>
+            <textarea id="chapter-notes-input" placeholder="记录当前章节备注"></textarea>
+          </div>
+          <div class="sidebar-section">
+            <div class="sidebar-section-head">
+              <strong>书签</strong>
+              <button class="ghost-button compact-button" id="add-bookmark-button">添加书签</button>
+            </div>
+            <div class="bookmark-list" id="bookmark-list"></div>
+          </div>
+        </aside>
+      </div>
+      ${BottomWorkspaceTabs()}
+    </section>
+  `;
+}
+
+function TopBar() {
+  return `
+    <header class="top-bar surface">
+      <button class="icon-button" id="back-button" title="返回文件管理页">←</button>
+      <div class="top-bar-meta">
+        <strong id="current-work-title"></strong>
+        <span id="current-chapter-title"></span>
+      </div>
+      <div class="top-bar-actions">
+        <span class="status-pill" id="save-status-pill"></span>
+        <button class="ghost-button" id="word-count-button"></button>
+        <div class="menu-wrap">
+          <button class="icon-button" id="more-menu-button">⋯</button>
+          <div class="dropdown-menu hidden" id="more-menu">
+            <button data-menu-action="rename-chapter">重命名章节</button>
+            <button data-menu-action="move-chapter">移动章节</button>
+            <button data-menu-action="delete-chapter">删除章节</button>
+            <button data-menu-action="history">历史版本</button>
+            <button data-menu-action="export">导出</button>
+            <button data-menu-action="focus">专注模式</button>
+            <button data-menu-action="night">夜间模式</button>
+          </div>
         </div>
       </div>
-      <p>${escapeHtml(theme.source[state.settings.language])}</p>
-    `;
-    card.addEventListener("click", () => {
-      state.settings.theme = theme.id;
-      applyTheme(theme.id);
-      saveState();
-      renderSettings();
-      renderTabs();
-      renderStaticText();
-    });
-    ui.themeGrid.appendChild(card);
-  });
+    </header>
+  `;
+}
 
-  ui.languageOptions.innerHTML = "";
-  [
-    { id: "zh", label: t("languageZh") },
-    { id: "en", label: t("languageEn") },
-  ].forEach((option) => {
-    const card = document.createElement("button");
-    card.className = `language-card ${state.settings.language === option.id ? "active" : ""}`;
-    card.innerHTML = `<strong>${escapeHtml(option.label)}</strong><p>${escapeHtml(option.id.toUpperCase())}</p>`;
-    card.addEventListener("click", () => {
-      state.settings.language = option.id;
-      document.documentElement.lang = option.id === "zh" ? "zh-CN" : "en";
-      saveState();
-      renderStaticText();
-      renderTabs();
-      renderActiveTab();
-    });
-    ui.languageOptions.appendChild(card);
-  });
+function DocumentEditor() {
+  return `
+    <section class="editor-main surface">
+      <div class="find-replace-bar hidden" id="find-replace-bar">
+        <input id="find-query-input" type="text" placeholder="查找" />
+        <input id="replace-query-input" type="text" placeholder="替换为" />
+        <button class="ghost-button" id="find-next-button">查找下一个</button>
+        <button class="ghost-button" id="replace-button">替换</button>
+      </div>
+      <div class="selection-toolbar hidden" id="selection-toolbar">
+        <button class="ghost-button compact-button" data-selection-action="quote">引用</button>
+        <button class="ghost-button compact-button" data-selection-action="divider">插入分隔</button>
+        <button class="ghost-button compact-button" data-selection-action="bookmark">设为书签</button>
+      </div>
+      <textarea id="document-editor" class="document-editor" spellcheck="false" placeholder="开始写作……"></textarea>
+    </section>
+  `;
+}
 
-  ui.englishFontSelect.innerHTML = Object.values(englishFonts)
-    .map(
-      (font) =>
-        `<option value="${escapeAttribute(font.id)}" ${
-          font.id === state.settings.englishFont ? "selected" : ""
-        }>${escapeHtml(font.name[state.settings.language])}</option>`,
-    )
-    .join("");
+function BottomWorkspaceTabs() {
+  return `
+    <section class="bottom-workspace surface">
+      <div class="workspace-panels">
+        <section class="workspace-panel" data-panel="writing">${WritingPanel()}</section>
+        <section class="workspace-panel hidden" data-panel="inspiration">${InspirationPanel()}</section>
+        <section class="workspace-panel hidden" data-panel="settings">${SettingsPanel()}</section>
+      </div>
+      <nav class="workspace-tabs">
+        <button class="tab-chip active" data-tab="writing">写作</button>
+        <button class="tab-chip" data-tab="inspiration">灵感记录</button>
+        <button class="tab-chip" data-tab="settings">设置</button>
+      </nav>
+    </section>
+  `;
+}
 
-  ui.chineseFontSelect.innerHTML = Object.values(chineseFonts)
-    .map(
-      (font) =>
-        `<option value="${escapeAttribute(font.id)}" ${
-          font.id === state.settings.chineseFont ? "selected" : ""
-        }>${escapeHtml(font.name[state.settings.language])}</option>`,
-    )
-    .join("");
+function WritingPanel() {
+  return `
+    <div class="writing-panel" id="writing-panel">
+      <div class="tool-group">
+        <label>快捷标点</label>
+        <div class="chip-row">
+          ${punctuationChoices.map((item) => `<button class="chip" data-insert-text="${escapeAttribute(item)}">${escapeHtml(item)}</button>`).join("")}
+        </div>
+      </div>
+      <div class="tool-group">
+        <label>常用短语</label>
+        <div class="chip-row">
+          ${phraseChoices.map((item) => `<button class="chip" data-insert-text="${escapeAttribute(item)}">${escapeHtml(item)}</button>`).join("")}
+        </div>
+      </div>
+      <div class="tool-grid two-col">
+        <button class="ghost-button" data-writing-action="divider">插入分隔符</button>
+        <button class="ghost-button" data-writing-action="toggle-find">查找替换</button>
+        <button class="ghost-button" data-writing-action="undo">撤销</button>
+        <button class="ghost-button" data-writing-action="redo">重做</button>
+        <button class="ghost-button" data-writing-action="prev">上一章节</button>
+        <button class="ghost-button" data-writing-action="next">下一章节</button>
+      </div>
+      <div class="tool-grid three-col">
+        <div class="tool-card stat-card">
+          <label>字数目标</label>
+          <input id="word-goal-input" type="number" min="0" />
+          <small id="word-goal-progress"></small>
+        </div>
+        <div class="tool-card stat-card">
+          <label>专注计时</label>
+          <strong id="focus-timer-value">0h 0m 0s</strong>
+          <small>仅在编辑器获得焦点时计时</small>
+        </div>
+        <div class="tool-card stat-card">
+          <label>断点续写</label>
+          <button class="ghost-button" data-writing-action="resume">回到上次光标</button>
+          <small id="resume-hint">保存上一次编辑位置</small>
+        </div>
+      </div>
+      <div class="tool-grid two-col">
+        <button class="tool-card action-card" data-writing-action="open-notes">
+          <strong>章节备注入口</strong>
+          <small>展开右侧备注面板</small>
+        </button>
+        <button class="tool-card action-card" data-writing-action="open-bookmarks">
+          <strong>书签入口</strong>
+          <small>查看并管理书签</small>
+        </button>
+      </div>
+    </div>
+  `;
+}
 
-  ui.fontPreview.innerHTML = `<div>${escapeHtml(t("fontPreview")).replaceAll("\n", "<br />")}</div>`;
-  ui.fontPreview.style.fontFamily = `${englishFonts[state.settings.englishFont].css}, ${
-    chineseFonts[state.settings.chineseFont].css
-  }, "Segoe UI", sans-serif`;
+function InspirationPanel() {
+  return `
+    <div class="inspiration-panel" id="inspiration-panel">
+      <div class="inspiration-toolbar">
+        <select id="inspiration-category-filter">
+          ${inspirationCategories.map((item) => `<option value="${item}">${item === "all" ? "全部" : item}</option>`).join("")}
+        </select>
+        <input id="inspiration-search-input" type="search" placeholder="搜索灵感内容" />
+        <button class="ghost-button" id="inspiration-sort-button">排序：最新</button>
+        <button class="primary-button" id="new-inspiration-button">新建灵感</button>
+      </div>
+      <div class="inspiration-chat-list" id="inspiration-chat-list"></div>
+    </div>
+  `;
+}
+
+function SettingsPanel() {
+  return `
+    <div class="settings-panel" id="settings-panel">
+      ${AccountCard()}
+      ${ThemeSelector()}
+      ${FontSelector()}
+      <section class="tool-card">
+        <div class="section-line">
+          <strong>编辑器行为</strong>
+          <small>控制返回前处理和自动保存逻辑。</small>
+        </div>
+        <label class="toggle-row">
+          <span>自动保存</span>
+          <input id="autosave-toggle" type="checkbox" />
+        </label>
+      </section>
+    </div>
+  `;
+}
+
+function AccountCard() {
+  return `<section class="account-card tool-card" id="account-card"></section>`;
+}
+
+function ThemeSelector() {
+  return `
+    <section class="tool-card">
+      <div class="section-line">
+        <strong>主题</strong>
+        <small>支持可扩展的开源主题列表结构，后续可动态加载。</small>
+      </div>
+      <div class="theme-list" id="theme-list"></div>
+    </section>
+  `;
+}
+
+function FontSelector() {
+  return `
+    <section class="tool-card">
+      <div class="section-line">
+        <strong>字体与排版</strong>
+        <small>实时作用于正文编辑器、顶部栏和按钮。</small>
+      </div>
+      <label>开源字体</label>
+      <select id="font-family-select"></select>
+      <label>字号</label>
+      <input id="font-size-range" type="range" min="14" max="28" />
+      <label>行高</label>
+      <input id="line-height-range" type="range" min="1.4" max="2.6" step="0.1" />
+      <label>字间距</label>
+      <input id="letter-spacing-range" type="range" min="-1" max="4" step="0.1" />
+    </section>
+  `;
+}
+
+function collectRefs() {
+  refs.app = document.getElementById("app");
+  refs.libraryPage = document.getElementById("library-page");
+  refs.libraryBreadcrumb = document.getElementById("library-breadcrumb");
+  refs.folderUpButton = document.getElementById("folder-up-button");
+  refs.createEntryButton = document.getElementById("create-entry-button");
+  refs.createEntryMenu = document.getElementById("create-entry-menu");
+  refs.librarySearchInput = document.getElementById("library-search-input");
+  refs.librarySortSelect = document.getElementById("library-sort-select");
+  refs.libraryContent = document.getElementById("library-content");
+  refs.libraryList = document.getElementById("library-list");
+  refs.editorPage = document.getElementById("editor-page");
+  refs.backButton = document.getElementById("back-button");
+  refs.currentWorkTitle = document.getElementById("current-work-title");
+  refs.currentChapterTitle = document.getElementById("current-chapter-title");
+  refs.saveStatusPill = document.getElementById("save-status-pill");
+  refs.wordCountButton = document.getElementById("word-count-button");
+  refs.moreMenuButton = document.getElementById("more-menu-button");
+  refs.moreMenu = document.getElementById("more-menu");
+  refs.findReplaceBar = document.getElementById("find-replace-bar");
+  refs.findQueryInput = document.getElementById("find-query-input");
+  refs.replaceQueryInput = document.getElementById("replace-query-input");
+  refs.findNextButton = document.getElementById("find-next-button");
+  refs.replaceButton = document.getElementById("replace-button");
+  refs.selectionToolbar = document.getElementById("selection-toolbar");
+  refs.documentEditor = document.getElementById("document-editor");
+  refs.chapterSidebar = document.getElementById("chapter-sidebar");
+  refs.chapterNotesInput = document.getElementById("chapter-notes-input");
+  refs.bookmarkList = document.getElementById("bookmark-list");
+  refs.sidebarToggleButton = document.getElementById("sidebar-toggle-button");
+  refs.addBookmarkButton = document.getElementById("add-bookmark-button");
+  refs.workspacePanels = [...document.querySelectorAll(".workspace-panel")];
+  refs.workspaceTabs = [...document.querySelectorAll("[data-tab]")];
+  refs.wordGoalInput = document.getElementById("word-goal-input");
+  refs.wordGoalProgress = document.getElementById("word-goal-progress");
+  refs.focusTimerValue = document.getElementById("focus-timer-value");
+  refs.resumeHint = document.getElementById("resume-hint");
+  refs.inspirationCategoryFilter = document.getElementById("inspiration-category-filter");
+  refs.inspirationSearchInput = document.getElementById("inspiration-search-input");
+  refs.inspirationSortButton = document.getElementById("inspiration-sort-button");
+  refs.inspirationChatList = document.getElementById("inspiration-chat-list");
+  refs.accountCard = document.getElementById("account-card");
+  refs.themeList = document.getElementById("theme-list");
+  refs.fontFamilySelect = document.getElementById("font-family-select");
+  refs.fontSizeRange = document.getElementById("font-size-range");
+  refs.lineHeightRange = document.getElementById("line-height-range");
+  refs.letterSpacingRange = document.getElementById("letter-spacing-range");
+  refs.autosaveToggle = document.getElementById("autosave-toggle");
+  refs.modalRoot = document.getElementById("modal-root");
 }
 
 function bindEvents() {
-  ui.exportButton.addEventListener("click", exportState);
-  ui.importButton.addEventListener("click", importStateFromFile);
-  ui.newFolderButton.addEventListener("click", createFolder);
-  ui.newWorkButton.addEventListener("click", createWork);
-  ui.newCategoryButton.addEventListener("click", createCategory);
-  ui.postButton.addEventListener("click", createPost);
-  ui.englishFontSelect.addEventListener("change", (event) => {
-    state.settings.englishFont = event.target.value;
+  refs.folderUpButton.addEventListener("click", handleFolderUp);
+  refs.createEntryButton.addEventListener("click", () => {
+    state.ui.libraryCreateOpen = !state.ui.libraryCreateOpen;
+    updateLibraryHeader();
+    persist();
+  });
+  refs.librarySearchInput.addEventListener("input", (event) => {
+    state.ui.librarySearch = event.target.value;
+    renderLibraryPage();
+    persist();
+  });
+  refs.librarySortSelect.addEventListener("change", (event) => {
+    state.ui.librarySort = event.target.value;
+    renderLibraryPage();
+    persist();
+  });
+  refs.libraryContent.addEventListener("scroll", () => {
+    state.ui.libraryScrollTop = refs.libraryContent.scrollTop;
+    persist();
+  });
+  refs.backButton.addEventListener("click", handleBackNavigation);
+  refs.moreMenuButton.addEventListener("click", () => refs.moreMenu.classList.toggle("hidden"));
+  refs.wordCountButton.addEventListener("click", () => switchTab("writing"));
+  refs.findNextButton.addEventListener("click", findNext);
+  refs.replaceButton.addEventListener("click", replaceCurrent);
+  refs.findQueryInput.addEventListener("input", (event) => {
+    state.ui.findQuery = event.target.value;
+    persist();
+  });
+  refs.replaceQueryInput.addEventListener("input", (event) => {
+    state.ui.replaceQuery = event.target.value;
+    persist();
+  });
+  refs.documentEditor.addEventListener("beforeinput", handleBeforeInput);
+  refs.documentEditor.addEventListener("input", handleEditorInput);
+  refs.documentEditor.addEventListener("keydown", handleEditorKeydown);
+  refs.documentEditor.addEventListener("focus", handleEditorFocus);
+  refs.documentEditor.addEventListener("blur", handleEditorBlur);
+  refs.documentEditor.addEventListener("select", captureSelection);
+  refs.documentEditor.addEventListener("mouseup", captureSelection);
+  refs.documentEditor.addEventListener("keyup", captureSelection);
+  refs.chapterNotesInput.addEventListener("input", handleNotesInput);
+  refs.sidebarToggleButton.addEventListener("click", toggleSidebar);
+  refs.addBookmarkButton.addEventListener("click", () => addBookmarkFromSelection());
+  refs.wordGoalInput.addEventListener("input", handleWordGoalInput);
+  refs.inspirationCategoryFilter.addEventListener("change", (event) => {
+    state.inspirations.activeCategory = event.target.value;
+    renderInspirationList();
+    persist();
+  });
+  refs.inspirationSearchInput.addEventListener("input", (event) => {
+    state.inspirations.search = event.target.value;
+    renderInspirationList();
+    persist();
+  });
+  refs.inspirationSortButton.addEventListener("click", toggleInspirationSort);
+  refs.fontFamilySelect.addEventListener("change", (event) => {
+    state.font.currentId = event.target.value;
     applyTypography();
-    saveState();
-    renderSettings();
+    updateSettingsPanel();
+    persist();
   });
-  ui.chineseFontSelect.addEventListener("change", (event) => {
-    state.settings.chineseFont = event.target.value;
+  refs.fontSizeRange.addEventListener("input", (event) => {
+    state.font.size = Number(event.target.value);
     applyTypography();
-    saveState();
-    renderSettings();
+    updateSettingsPanel();
+    persist();
+  });
+  refs.lineHeightRange.addEventListener("input", (event) => {
+    state.font.lineHeight = Number(event.target.value);
+    applyTypography();
+    updateSettingsPanel();
+    persist();
+  });
+  refs.letterSpacingRange.addEventListener("input", (event) => {
+    state.font.letterSpacing = Number(event.target.value);
+    applyTypography();
+    updateSettingsPanel();
+    persist();
+  });
+  refs.autosaveToggle.addEventListener("change", (event) => {
+    state.ui.autosaveEnabled = event.target.checked;
+    if (event.target.checked && getCurrentChapter()?.dirty) void saveCurrentChapter();
+    updateSettingsPanel();
+    persist();
+  });
+  refs.workspaceTabs.forEach((button) => {
+    button.addEventListener("click", () => switchTab(button.dataset.tab));
+  });
+  refs.app.addEventListener("click", handleDelegatedClick);
+  refs.app.addEventListener("keydown", (event) => {
+    if (!state.ui.modal || event.key !== "Enter") return;
+    if (event.shiftKey || event.isComposing) return;
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (!refs.modalRoot.contains(target)) return;
+    if (target.tagName === "TEXTAREA") return;
+    if (target.tagName === "BUTTON") return;
+    event.preventDefault();
+    submitCurrentModalIfPossible();
   });
 
-  ui.inspirationSearch.addEventListener("input", (event) => {
-    state.inspiration.search = event.target.value;
-    saveState();
-    renderInspiration();
-  });
+  if (desktopApi?.onMenuAction) {
+    desktopApi.onMenuAction((action) => handleDesktopMenuAction(action));
+  }
+}
 
-  ui.workTitleInput.addEventListener("input", (event) => {
-    const work = getActiveWork();
-    if (!work) return;
-    work.title = event.target.value;
-    saveState();
-  });
-  ui.workTitleInput.addEventListener("blur", renderStorage);
-
-  ui.workContentInput.addEventListener("input", (event) => {
-    const work = getActiveWork();
-    if (!work) return;
-    work.content = event.target.value;
-    saveState();
-  });
-
-  const toolBindings = [
-    [ui.toolFormatting, "formatting"],
-    [ui.toolOutline, "outline"],
-    [ui.toolDetailedOutline, "detailedOutline"],
-    [ui.toolPlot, "plot"],
-    [ui.toolTags, "tags"],
-    [ui.toolMindMap, "mindMap"],
-    [ui.toolCharacters, "characters"],
-  ];
-
-  toolBindings.forEach(([element, key]) => {
-    element.addEventListener("input", (event) => {
-      const work = getActiveWork();
-      if (!work) return;
-      work.tools[key] = event.target.value;
-      saveState();
+async function handleDelegatedClick(event) {
+  if (event.target.id === "new-inspiration-button") {
+    state.inspirations.items.unshift({
+      id: uid("inspiration"),
+      text: "新灵感",
+      category: "待补充",
+      createdAt: timeNow(),
+      pinned: false,
+      favorite: false,
     });
-  });
-
-  if (window.storyForgeDesktop?.onMenuAction) {
-    window.storyForgeDesktop.onMenuAction((action) => {
-      if (action === "export-project") exportState();
-      if (action === "import-project") importFromDesktop();
-      if (action === "reset-project") {
-        Object.assign(state, structuredClone(seedState));
-        document.documentElement.lang = "zh-CN";
-        applyTheme(state.settings.theme);
-        applyTypography();
-        saveState();
-        renderStaticText();
-        renderTabs();
-        renderActiveTab();
-      }
-    });
-  }
-}
-
-function renderToolbar() {
-  ui.editorToolbar.innerHTML = "";
-  toolbarActions.forEach((action) => {
-    const button = document.createElement("button");
-    button.className = "toolbar-button";
-    button.textContent = action.label;
-    button.addEventListener("click", () => wrapSelection(action.before, action.after));
-    ui.editorToolbar.appendChild(button);
-  });
-}
-
-function wrapSelection(before, after) {
-  const editor = ui.workContentInput;
-  const start = editor.selectionStart;
-  const end = editor.selectionEnd;
-  const selected = editor.value.slice(start, end);
-  const nextValue = editor.value.slice(0, start) + before + selected + after + editor.value.slice(end);
-  editor.value = nextValue;
-  editor.focus();
-  editor.selectionStart = start + before.length;
-  editor.selectionEnd = end + before.length;
-  const work = getActiveWork();
-  if (!work) return;
-  work.content = nextValue;
-  saveState();
-  renderStorage();
-}
-
-function createFolder() {
-  const name = prompt(t("prompts").folder, t("defaultFolder"));
-  if (name === null) return;
-
-  const folder = {
-    id: uid("folder"),
-    name: name.trim() || t("defaultFolder"),
-  };
-
-  state.storage.folders.push(folder);
-  state.storage.activeFolderId = folder.id;
-  saveState();
-  renderStorage();
-}
-
-function createWork() {
-  if (!state.storage.activeFolderId && state.storage.folders[0]) {
-    state.storage.activeFolderId = state.storage.folders[0].id;
-  }
-  if (!state.storage.activeFolderId) {
-    createFolder();
-    if (!state.storage.activeFolderId) return;
-  }
-
-  const name = prompt(t("prompts").work, t("defaultWork"));
-  if (name === null) return;
-
-  const work = {
-    id: uid("work"),
-    folderId: state.storage.activeFolderId,
-    title: name.trim() || t("defaultWork"),
-    content: "",
-    tools: {
-      formatting: "",
-      outline: "",
-      detailedOutline: "",
-      plot: "",
-      tags: "",
-      mindMap: "",
-      characters: "",
-    },
-  };
-
-  state.storage.works.push(work);
-  state.storage.activeWorkId = work.id;
-  saveState();
-  renderStorage();
-}
-
-function deleteFolder(folderId) {
-  const remainingFolders = state.storage.folders.filter((folder) => folder.id !== folderId);
-  const removedWorks = state.storage.works.filter((work) => work.folderId === folderId).map((work) => work.id);
-  state.storage.folders = remainingFolders;
-  state.storage.works = state.storage.works.filter((work) => work.folderId !== folderId);
-
-  if (state.storage.activeFolderId === folderId) {
-    state.storage.activeFolderId = remainingFolders[0]?.id ?? null;
-  }
-  if (removedWorks.includes(state.storage.activeWorkId)) {
-    state.storage.activeWorkId =
-      state.storage.works.find((work) => work.folderId === state.storage.activeFolderId)?.id ?? null;
-  }
-
-  saveState();
-  renderStorage();
-}
-
-function createCategory() {
-  const name = prompt(t("prompts").category, t("defaultCategory"));
-  if (name === null) return;
-
-  const category = { id: uid("cat"), name: name.trim() || t("defaultCategory") };
-  state.inspiration.categories.push(category);
-  state.inspiration.activeCategoryId = category.id;
-  saveState();
-  renderInspiration();
-}
-
-function createPost() {
-  const textValue = ui.postInput.value.trim();
-  if (!textValue) return;
-
-  state.inspiration.posts.push({
-    id: uid("post"),
-    categoryId: ui.postCategorySelect.value || null,
-    text: textValue,
-    author: "author",
-    createdAt: formatTimestamp(new Date()),
-  });
-
-  ui.postInput.value = "";
-  saveState();
-  renderInspiration();
-}
-
-function getFilteredPosts() {
-  const needle = state.inspiration.search.trim().toLowerCase();
-  return state.inspiration.posts.filter((post) => {
-    const category = state.inspiration.categories.find((item) => item.id === post.categoryId)?.name ?? "";
-    const matchesCategory =
-      state.inspiration.activeCategoryId === "all" || post.categoryId === state.inspiration.activeCategoryId;
-    const matchesSearch =
-      !needle ||
-      post.text.toLowerCase().includes(needle) ||
-      category.toLowerCase().includes(needle);
-    return matchesCategory && matchesSearch;
-  });
-}
-
-function getActiveFolder() {
-  return state.storage.folders.find((folder) => folder.id === state.storage.activeFolderId) ?? null;
-}
-
-function getActiveWork() {
-  return state.storage.works.find((work) => work.id === state.storage.activeWorkId) ?? null;
-}
-
-function applyTheme(themeId) {
-  const theme = themes[themeId] ?? themes.ember;
-  const root = document.documentElement;
-  root.style.setProperty("--bg", theme.vars.bg);
-  root.style.setProperty("--bg-accent", theme.vars.bgAccent);
-  root.style.setProperty("--surface", theme.vars.surface);
-  root.style.setProperty("--surface-strong", theme.vars.surfaceStrong);
-  root.style.setProperty("--sidebar", theme.vars.sidebar);
-  root.style.setProperty("--text", theme.vars.text);
-  root.style.setProperty("--muted", theme.vars.muted);
-  root.style.setProperty("--border", theme.vars.border);
-  root.style.setProperty("--accent", theme.vars.accent);
-  root.style.setProperty("--accent-strong", theme.vars.accentStrong);
-  root.style.setProperty("--accent-soft", theme.vars.accentSoft);
-}
-
-function applyTypography() {
-  const englishFont = englishFonts[state.settings.englishFont] ?? englishFonts.sourceSans3;
-  const chineseFont = chineseFonts[state.settings.chineseFont] ?? chineseFonts.notoSansSc;
-  const root = document.documentElement;
-  root.style.setProperty("--font-en", englishFont.css);
-  root.style.setProperty("--font-zh", chineseFont.css);
-}
-
-async function exportState() {
-  const content = JSON.stringify(state, null, 2);
-
-  if (window.storyForgeDesktop?.saveProjectFile) {
-    await window.storyForgeDesktop.saveProjectFile({
-      defaultName: "story-forge-project.json",
-      content,
-    });
+    renderInspirationList();
+    persist();
     return;
   }
 
-  const blob = new Blob([content], { type: "application/json" });
+  const folderNav = event.target.closest("[data-folder-nav]");
+  if (folderNav) {
+    openFolder(folderNav.dataset.folderNav || null);
+    return;
+  }
+
+  const folderOpen = event.target.closest("[data-open-folder]");
+  if (folderOpen) {
+    openFolder(folderOpen.dataset.openFolder);
+    return;
+  }
+
+  const workOpen = event.target.closest("[data-open-work]");
+  if (workOpen) {
+    await openWorkDefault(workOpen.dataset.openWork);
+    return;
+  }
+
+  const workManage = event.target.closest("[data-manage-work]");
+  if (workManage) {
+    state.ui.libraryWorkViewId = workManage.dataset.manageWork;
+    updateAll();
+    persist();
+    return;
+  }
+
+  const chapterOpen = event.target.closest("[data-open-chapter]");
+  if (chapterOpen) {
+    await openChapter(chapterOpen.dataset.workId, chapterOpen.dataset.openChapter);
+    return;
+  }
+
+  const libraryAction = event.target.closest("[data-library-action]");
+  if (libraryAction) {
+    await handleLibraryAction(libraryAction.dataset.libraryAction);
+    return;
+  }
+
+  const entityMenuTrigger = event.target.closest("[data-entity-menu-trigger]");
+  if (entityMenuTrigger) {
+    const nextKey = `${entityMenuTrigger.dataset.entityType}:${entityMenuTrigger.dataset.entityId}`;
+    state.ui.libraryEntityMenu = state.ui.libraryEntityMenu === nextKey ? null : nextKey;
+    updateAll();
+    persist();
+    return;
+  }
+
+  const entityAction = event.target.closest("[data-entity-action]");
+  if (entityAction) {
+    await handleEntityAction(
+      entityAction.dataset.entityAction,
+      entityAction.dataset.entityType,
+      entityAction.dataset.entityId,
+    );
+    return;
+  }
+
+  const workAction = event.target.closest("[data-work-action]");
+  if (workAction) {
+    await handleWorkAction(workAction.dataset.workAction, workAction.dataset.workId);
+    return;
+  }
+
+  const chapterAction = event.target.closest("[data-chapter-action]");
+  if (chapterAction) {
+    await handleChapterAction(chapterAction.dataset.chapterAction, chapterAction.dataset.workId, chapterAction.dataset.chapterId);
+    return;
+  }
+
+  const menuAction = event.target.closest("[data-menu-action]");
+  if (menuAction) {
+    await handleMenuAction(menuAction.dataset.menuAction);
+    return;
+  }
+
+  const insertTrigger = event.target.closest("[data-insert-text]");
+  if (insertTrigger) {
+    insertAtCursor(insertTrigger.dataset.insertText);
+    return;
+  }
+
+  const writingAction = event.target.closest("[data-writing-action]");
+  if (writingAction) {
+    handleWritingAction(writingAction.dataset.writingAction);
+    return;
+  }
+
+  const inspirationAction = event.target.closest("[data-inspiration-action]");
+  if (inspirationAction) {
+    handleInspirationAction(inspirationAction.dataset.inspirationAction, inspirationAction.dataset.id);
+    return;
+  }
+
+  const selectionAction = event.target.closest("[data-selection-action]");
+  if (selectionAction) {
+    applySelectionAction(selectionAction.dataset.selectionAction);
+    return;
+  }
+
+  const themeCard = event.target.closest("[data-theme-id]");
+  if (themeCard) {
+    state.theme.currentId = themeCard.dataset.themeId;
+    if (state.theme.currentId !== "dark" && state.theme.currentId !== "ink") state.theme.nightMode = false;
+    applyTheme();
+    updateSettingsPanel();
+    persist();
+    return;
+  }
+
+  const bookmarkChip = event.target.closest("[data-bookmark-index]");
+  if (bookmarkChip) {
+    insertAtCursor(bookmarkChip.dataset.bookmarkText);
+    return;
+  }
+
+  const sideOpen = event.target.closest("[data-open-side]");
+  if (sideOpen) {
+    state.ui.sidebarCollapsed = false;
+    state.ui.sidebarSection = sideOpen.dataset.openSide;
+    updateSidebar();
+    return;
+  }
+
+  const modalAction = event.target.closest("[data-modal-action]");
+  if (modalAction) {
+    await handleModalAction(modalAction.dataset.modalAction);
+    return;
+  }
+
+  if (!event.target.closest(".menu-wrap") && !event.target.closest(".entity-menu-wrap")) {
+    refs.moreMenu.classList.add("hidden");
+    state.ui.libraryCreateOpen = false;
+    state.ui.libraryEntityMenu = null;
+    updateLibraryHeader();
+    renderLibraryPage();
+    persist();
+  }
+}
+
+function updateAll() {
+  updateRoute();
+  updateLibraryHeader();
+  renderLibraryPage();
+  hydrateEditor();
+  updateTopBar();
+  updateSidebar();
+  updateWorkspace();
+  updateSettingsPanel();
+  renderInspirationList();
+  applyTheme();
+  applyTypography();
+  updateModal();
+}
+
+function updateRoute() {
+  const onEditor = state.route === "editor" && Boolean(getCurrentChapter());
+  refs.libraryPage.classList.toggle("hidden", onEditor);
+  refs.editorPage.classList.toggle("hidden", !onEditor);
+  refs.editorPage.classList.toggle("focus-mode", state.ui.focusMode);
+  if (onEditor) {
+    requestAnimationFrame(() => refs.documentEditor.focus());
+  } else {
+    requestAnimationFrame(() => {
+      refs.libraryContent.scrollTop = state.ui.libraryScrollTop ?? 0;
+    });
+  }
+}
+
+function updateLibraryHeader() {
+  const path = getFolderPath(state.activeFolderId);
+  refs.folderUpButton.disabled = state.activeFolderId == null;
+  refs.createEntryMenu.classList.toggle("hidden", !state.ui.libraryCreateOpen);
+  refs.librarySearchInput.value = state.ui.librarySearch;
+  refs.librarySortSelect.value = state.ui.librarySort;
+  refs.libraryBreadcrumb.innerHTML = path
+    .map((folder, index) => {
+      const isLast = index === path.length - 1;
+      return `<button class="breadcrumb-chip ${isLast ? "active" : ""}" data-folder-nav="${folder.id ?? ""}">${escapeHtml(folder.name)}</button>`;
+    })
+    .join(`<span class="breadcrumb-sep">/</span>`);
+}
+
+function renderLibraryPage() {
+  const folders = getVisibleFoldersInFolder(state.activeFolderId);
+  const works = getVisibleWorksInFolder(state.activeFolderId);
+  const currentFolder = getFolder(state.activeFolderId);
+  const detailWork = getVisibleWorkDetail();
+  const searchLabel = state.ui.librarySearch.trim() ? ` · 搜索“${escapeHtml(state.ui.librarySearch.trim())}”` : "";
+
+  refs.libraryList.innerHTML = `
+    ${detailWork ? renderWorkDetailPanel(detailWork) : ""}
+    <section class="library-section surface">
+      <div class="library-section-head">
+        <div>
+          <strong>文件夹</strong>
+          <small>${currentFolder ? `${escapeHtml(currentFolder.name)} 内的子文件夹` : "根目录中的文件夹"}${searchLabel}</small>
+        </div>
+      </div>
+      <div class="folder-grid">
+        ${folders.length > 0 ? folders.map(renderFolderCard).join("") : `<div class="empty-state compact-empty">当前目录下还没有文件夹。</div>`}
+      </div>
+    </section>
+    <section class="library-section surface">
+      <div class="library-section-head">
+        <div>
+          <strong>作品</strong>
+          <small>${works.length} 个作品，可直接进入写作或展开章节管理。</small>
+        </div>
+      </div>
+      <div class="work-column">
+        ${works.length > 0 ? works.map(renderWorkCard).join("") : renderEmptyLibraryState()}
+      </div>
+    </section>
+  `;
+}
+
+function renderFolderCard(folder) {
+  return `
+    <article class="folder-card">
+      <button class="folder-main" data-open-folder="${folder.id}">
+        <div>
+          <strong>${escapeHtml(folder.name)}</strong>
+          <small>${getFoldersInFolder(folder.id).length} 个子文件夹 · ${getWorksInFolder(folder.id).length} 个作品</small>
+        </div>
+        <span class="folder-arrow">›</span>
+      </button>
+      <div class="entity-menu-wrap">
+        <button class="icon-button" data-entity-menu-trigger data-entity-type="folder" data-entity-id="${folder.id}">⋯</button>
+        ${renderEntityMenu("folder", folder.id)}
+      </div>
+    </article>
+  `;
+}
+
+function renderWorkCard(work) {
+  const chapters = getWorkChapters(work.id).slice(0, 3);
+  const totalWords = getWorkWordCount(work.id);
+  const folder = getFolder(work.folderId);
+
+  return `
+    <article class="work-card surface">
+      <div class="work-card-head">
+        <button class="work-main-entry" data-open-work="${work.id}">
+          <strong>${escapeHtml(work.title)}</strong>
+          <p>${escapeHtml(work.description || "暂无简介")}</p>
+        </button>
+        <div class="entity-menu-wrap">
+          <button class="icon-button" data-entity-menu-trigger data-entity-type="work" data-entity-id="${work.id}">⋯</button>
+          ${renderEntityMenu("work", work.id)}
+        </div>
+      </div>
+      <div class="work-meta-row">
+        <span class="tag">${work.chapterIds.length} 章</span>
+        <span class="meta-chip">${totalWords} 字</span>
+        <span class="meta-chip">${formatRelativeTime(work.updatedAt)}</span>
+        ${folder ? `<span class="meta-chip">所在：${escapeHtml(folder.name)}</span>` : `<span class="meta-chip">根目录</span>`}
+      </div>
+      <div class="chapter-list">
+        ${chapters.map((chapter) => renderChapterRow(work, chapter)).join("")}
+      </div>
+      <div class="work-card-footer">
+        <button class="ghost-button compact-button" data-open-work="${work.id}">继续写作</button>
+        <button class="ghost-button compact-button" data-manage-work="${work.id}">章节管理</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderChapterRow(work, chapter) {
+  return `
+    <div class="chapter-item">
+      <button class="chapter-row ${chapter.id === state.activeChapterId && work.id === state.activeWorkId ? "active" : ""}" data-work-id="${work.id}" data-open-chapter="${chapter.id}">
+        <span>${escapeHtml(chapter.title)}</span>
+        <small>${chapter.wordCount} 字</small>
+      </button>
+      <div class="inline-actions">
+        <button class="ghost-button compact-button" data-chapter-action="rename-chapter" data-work-id="${work.id}" data-chapter-id="${chapter.id}">重命名</button>
+        <button class="ghost-button compact-button" data-chapter-action="delete-chapter" data-work-id="${work.id}" data-chapter-id="${chapter.id}">删除</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderWorkDetailPanel(work) {
+  return `
+    <section class="library-section surface">
+      <div class="library-section-head">
+        <div>
+          <strong>章节管理</strong>
+          <small>${escapeHtml(work.title)} · 最近更新 ${formatRelativeTime(work.updatedAt)}</small>
+        </div>
+        <div class="inline-actions">
+          <button class="ghost-button compact-button" data-work-action="new-chapter" data-work-id="${work.id}">新建章节</button>
+          <button class="ghost-button compact-button" data-work-action="close-detail" data-work-id="${work.id}">收起</button>
+        </div>
+      </div>
+      <div class="chapter-list">
+        ${getWorkChapters(work.id).map((chapter) => renderChapterRow(work, chapter)).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderEmptyLibraryState() {
+  return `
+    <div class="empty-state">
+      <div>
+        <strong>当前目录还是空的</strong>
+        <p>还没有作品，点击右上角“新建”开始创作。</p>
+      </div>
+    </div>
+  `;
+}
+
+function renderEntityMenu(type, id) {
+  const isVisible = state.ui.libraryEntityMenu === `${type}:${id}`;
+  const buttons =
+    type === "folder"
+      ? [
+          `<button data-entity-action="enter" data-entity-type="folder" data-entity-id="${id}">进入文件夹</button>`,
+          `<button data-entity-action="rename" data-entity-type="folder" data-entity-id="${id}">重命名</button>`,
+          `<button data-entity-action="delete" data-entity-type="folder" data-entity-id="${id}">删除</button>`,
+        ]
+      : [
+          `<button data-entity-action="open" data-entity-type="work" data-entity-id="${id}">进入编辑页</button>`,
+          `<button data-entity-action="detail" data-entity-type="work" data-entity-id="${id}">章节管理</button>`,
+          `<button data-entity-action="rename" data-entity-type="work" data-entity-id="${id}">重命名</button>`,
+          `<button data-entity-action="delete" data-entity-type="work" data-entity-id="${id}">删除</button>`,
+        ];
+
+  return `<div class="dropdown-menu ${isVisible ? "" : "hidden"}">${buttons.join("")}</div>`;
+}
+
+function hydrateEditor() {
+  const chapter = getCurrentChapter();
+  refs.documentEditor.disabled = !chapter;
+  refs.chapterNotesInput.disabled = !chapter;
+  refs.wordGoalInput.disabled = !chapter;
+  if (!chapter) {
+    refs.documentEditor.value = "";
+    refs.chapterNotesInput.value = "";
+    refs.wordGoalInput.value = "0";
+    refs.documentEditor.placeholder = "请先从目录页选择章节或新建章节。";
+    refs.findQueryInput.value = state.ui.findQuery;
+    refs.replaceQueryInput.value = state.ui.replaceQuery;
+    return;
+  }
+  refs.documentEditor.placeholder = "开始写作……";
+  if (refs.documentEditor.value !== chapter.content) refs.documentEditor.value = chapter.content;
+  refs.chapterNotesInput.value = chapter.notes;
+  refs.findQueryInput.value = state.ui.findQuery;
+  refs.replaceQueryInput.value = state.ui.replaceQuery;
+  refs.wordGoalInput.value = String(chapter.wordGoal);
+}
+
+function updateTopBar() {
+  const work = getCurrentWork();
+  const chapter = getCurrentChapter();
+  refs.currentWorkTitle.textContent = work?.title ?? "未选择作品";
+  refs.currentChapterTitle.textContent = chapter?.title ?? "请先返回目录页选择章节";
+  refs.wordCountButton.textContent = `${countWords(chapter?.content ?? "")} 字`;
+  refs.saveStatusPill.textContent = chapter ? `${chapter.saveStatus} · ${chapter.saveTime}` : "未打开章节";
+}
+
+function updateSidebar() {
+  const chapter = getCurrentChapter();
+  refs.chapterSidebar.classList.toggle("collapsed", state.ui.sidebarCollapsed);
+  refs.sidebarToggleButton.textContent = state.ui.sidebarCollapsed ? "展开" : "收起";
+  refs.chapterNotesInput.parentElement.classList.toggle("muted-section", state.ui.sidebarSection !== "notes");
+  refs.bookmarkList.parentElement.classList.toggle("muted-section", state.ui.sidebarSection !== "bookmarks");
+  if (!chapter) {
+    refs.bookmarkList.innerHTML = `<span class="empty-inline">请先打开章节</span>`;
+    return;
+  }
+  refs.bookmarkList.innerHTML =
+    chapter.bookmarks.length > 0
+      ? chapter.bookmarks
+          .map((item, index) => `<button class="bookmark-pill" data-bookmark-index="${index}" data-bookmark-text="${escapeAttribute(item)}">${escapeHtml(item)}</button>`)
+          .join("")
+      : `<span class="empty-inline">还没有书签</span>`;
+}
+
+function updateWorkspace() {
+  const chapter = getCurrentChapter();
+  refs.workspaceTabs.forEach((button) => {
+    button.classList.toggle("active", button.dataset.tab === state.activeTab);
+  });
+  refs.workspacePanels.forEach((panel) => {
+    panel.classList.toggle("hidden", panel.dataset.panel !== state.activeTab);
+  });
+  refs.findReplaceBar.classList.toggle("hidden", !state.ui.replaceOpen);
+  refs.selectionToolbar.classList.toggle("hidden", !state.ui.selectionVisible);
+  refs.resumeHint.textContent = `上次位置：${state.ui.selectionStart}`;
+  refs.wordGoalProgress.textContent = chapter ? `当前 ${countWords(chapter.content)} / 目标 ${chapter.wordGoal}` : "请先选择章节";
+  refs.focusTimerValue.textContent = formatDuration(getFocusSeconds());
+}
+
+function updateSettingsPanel() {
+  if (!state.account.loggedIn) {
+    refs.accountCard.innerHTML = `
+      <div>
+        <strong>未登录</strong>
+        <p>登录后可同步草稿，但不会打断当前写作。</p>
+      </div>
+      <div class="tool-grid two-col">
+        <button class="primary-button" data-account-action="email-login">邮箱登录</button>
+        <button class="ghost-button" data-account-action="third-party-login">第三方登录</button>
+      </div>
+    `;
+  } else {
+    refs.accountCard.innerHTML = `
+      <div class="account-main">
+        <span class="avatar">${escapeHtml(state.account.avatar)}</span>
+        <div>
+          <strong>${escapeHtml(state.account.nickname)}</strong>
+          <p>${escapeHtml(state.account.syncStatus)}</p>
+        </div>
+      </div>
+      <button class="ghost-button" data-account-action="logout">退出登录</button>
+    `;
+  }
+
+  refs.themeList.innerHTML = state.theme.presets
+    .map(
+      (theme) => `
+        <button class="theme-card ${theme.id === state.theme.currentId ? "active" : ""}" data-theme-id="${theme.id}">
+          <span>${escapeHtml(theme.name)}</span>
+          <span class="theme-swatches">
+            <i style="background:${theme.palette.bg}"></i>
+            <i style="background:${theme.palette.panel}"></i>
+            <i style="background:${theme.palette.accent}"></i>
+          </span>
+        </button>
+      `,
+    )
+    .join("");
+
+  refs.fontFamilySelect.innerHTML = state.font.families
+    .map((font) => `<option value="${font.id}" ${font.id === state.font.currentId ? "selected" : ""}>${escapeHtml(font.name)}</option>`)
+    .join("");
+  refs.fontSizeRange.value = String(state.font.size);
+  refs.lineHeightRange.value = String(state.font.lineHeight);
+  refs.letterSpacingRange.value = String(state.font.letterSpacing);
+  refs.autosaveToggle.checked = state.ui.autosaveEnabled;
+
+  refs.accountCard.querySelectorAll("[data-account-action]").forEach((button) => {
+    button.addEventListener("click", () => handleAccountAction(button.dataset.accountAction));
+  });
+}
+
+function renderInspirationList() {
+  refs.inspirationCategoryFilter.value = state.inspirations.activeCategory;
+  refs.inspirationSearchInput.value = state.inspirations.search;
+  refs.inspirationSortButton.textContent = `排序：${state.inspirations.sort === "newest" ? "最新" : "最早"}`;
+  const items = getVisibleInspirations();
+  refs.inspirationChatList.innerHTML =
+    items.length === 0
+      ? `<div class="empty-state">没有符合条件的灵感。</div>`
+      : items
+          .map(
+            (item) => `
+              <article class="inspiration-bubble ${item.pinned ? "pinned" : ""}">
+                <header>
+                  <span class="tag">${escapeHtml(item.category)}</span>
+                  <time>${escapeHtml(item.createdAt)}</time>
+                </header>
+                <p>${escapeHtml(item.text)}</p>
+                <footer>
+                  <button data-inspiration-action="favorite" data-id="${item.id}">${item.favorite ? "取消收藏" : "收藏"}</button>
+                  <button data-inspiration-action="pin" data-id="${item.id}">${item.pinned ? "取消置顶" : "置顶"}</button>
+                  <button data-inspiration-action="insert" data-id="${item.id}">插入正文</button>
+                  <button data-inspiration-action="edit" data-id="${item.id}">编辑</button>
+                  <button data-inspiration-action="delete" data-id="${item.id}">删除</button>
+                </footer>
+              </article>
+            `,
+          )
+          .join("");
+}
+
+function updateModal() {
+  const modal = state.ui.modal;
+  refs.modalRoot.classList.toggle("hidden", !modal);
+  if (!modal) {
+    refs.modalRoot.innerHTML = "";
+    return;
+  }
+
+  refs.modalRoot.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal-card surface">
+        <strong>${escapeHtml(modal.title)}</strong>
+        ${modal.message ? `<p>${escapeHtml(modal.message)}</p>` : ""}
+        ${modal.body ?? ""}
+        <div class="modal-actions">
+          ${modal.actions
+            .map((action) => `<button class="${action.primary ? "primary-button" : "ghost-button"}" data-modal-action="${action.id}">${escapeHtml(action.label)}</button>`)
+            .join("")}
+        </div>
+      </div>
+    </div>
+  `;
+  queueModalFocus();
+}
+
+async function handleLibraryAction(action) {
+  state.ui.libraryCreateOpen = false;
+  if (action === "open-create-folder") {
+    openCreateFolderModal();
+  }
+  if (action === "open-create-work") {
+    openCreateWorkModal();
+  }
+  updateLibraryHeader();
+  persist();
+}
+
+async function handleEntityAction(action, type, id) {
+  state.ui.libraryEntityMenu = null;
+
+  if (type === "folder") {
+    if (action === "enter") openFolder(id);
+    if (action === "rename") openRenameModal("folder", id);
+    if (action === "delete") openDeleteFolderModal(id);
+    return;
+  }
+
+  if (type === "work") {
+    if (action === "open") await openWorkDefault(id);
+    if (action === "detail") {
+      state.ui.libraryWorkViewId = id;
+      updateAll();
+      persist();
+    }
+    if (action === "rename") openRenameModal("work", id);
+    if (action === "delete") openDeleteWorkModal(id);
+  }
+}
+
+async function handleWorkAction(action, workId) {
+  const work = getWork(workId);
+  if (!work) return;
+
+  if (action === "new-chapter") {
+    openCreateChapterModal(work.id);
+    return;
+  }
+
+  if (action === "close-detail") {
+    state.ui.libraryWorkViewId = null;
+    updateAll();
+    persist();
+  }
+}
+
+async function handleChapterAction(action, workId, chapterId) {
+  const work = getWork(workId);
+  const chapter = getChapter(chapterId);
+  if (!work || !chapter) return;
+
+  if (action === "rename-chapter") {
+    openRenameModal("chapter", chapter.id);
+    return;
+  }
+
+  if (action === "delete-chapter") {
+    openDeleteChapterModal(work.id, chapter.id);
+  }
+}
+
+function openCreateFolderModal() {
+  state.ui.modal = {
+    type: "create-folder",
+    title: "新建文件夹",
+    body: `
+      <div class="modal-form">
+        <label>文件夹名称</label>
+        <input id="modal-folder-name" type="text" placeholder="例如：长篇连载" />
+        <label>父级位置</label>
+        <select id="modal-folder-parent">${renderFolderOptions(state.activeFolderId, true)}</select>
+      </div>
+    `,
+    actions: [
+      { id: "cancel-modal", label: "取消", primary: false },
+      { id: "submit-create-folder", label: "创建文件夹", primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openCreateWorkModal() {
+  state.ui.modal = {
+    type: "create-work",
+    title: "新建作品",
+    body: `
+      <div class="modal-form">
+        <label>作品名称</label>
+        <input id="modal-work-title" type="text" placeholder="输入作品名称" />
+        <label>作品简介</label>
+        <textarea id="modal-work-description" rows="4" placeholder="简要说明作品方向"></textarea>
+        <label>所属文件夹</label>
+        <select id="modal-work-folder">${renderFolderOptions(state.activeFolderId, true)}</select>
+        <label>默认章节模板</label>
+        <select id="modal-work-template">
+          <option value="blank">空白章节</option>
+          <option value="intro">开场模板</option>
+          <option value="outline">大纲模板</option>
+        </select>
+      </div>
+    `,
+    actions: [
+      { id: "cancel-modal", label: "取消", primary: false },
+      { id: "submit-create-work", label: "创建作品", primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openCreateChapterModal(workId) {
+  state.ui.modal = {
+    type: "create-chapter",
+    payload: { workId },
+    title: "新建章节",
+    body: `
+      <div class="modal-form">
+        <label>章节标题</label>
+        <input id="modal-chapter-title" type="text" placeholder="输入章节标题" />
+      </div>
+    `,
+    actions: [
+      { id: "cancel-modal", label: "取消", primary: false },
+      { id: "submit-create-chapter", label: "创建章节", primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openRenameModal(entityType, entityId) {
+  const entity = entityType === "folder" ? getFolder(entityId) : entityType === "work" ? getWork(entityId) : getChapter(entityId);
+  if (!entity) return;
+  state.ui.modal = {
+    type: "rename-entity",
+    payload: { entityType, entityId },
+    title: entityType === "folder" ? "重命名文件夹" : entityType === "work" ? "重命名作品" : "重命名章节",
+    body: `
+      <div class="modal-form">
+        <label>名称</label>
+        <input id="modal-rename-value" type="text" value="${escapeAttribute(entity.name ?? entity.title)}" />
+      </div>
+    `,
+    actions: [
+      { id: "cancel-modal", label: "取消", primary: false },
+      { id: "submit-rename-entity", label: "保存", primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openDeleteWorkModal(workId) {
+  const work = getWork(workId);
+  if (!work) return;
+  state.ui.modal = {
+    type: "delete-work",
+    payload: { workId },
+    title: "删除作品",
+    message: `确认删除作品“${work.title}”？将同时删除该作品下的全部章节数据。`,
+    actions: [
+      { id: "cancel-modal", label: "取消", primary: false },
+      { id: "confirm-delete-work", label: "删除作品", primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openDeleteChapterModal(workId, chapterId) {
+  const chapter = getChapter(chapterId);
+  if (!chapter) return;
+  state.ui.modal = {
+    type: "delete-chapter",
+    payload: { workId, chapterId },
+    title: "删除章节",
+    message: `确认删除章节“${chapter.title}”？`,
+    actions: [
+      { id: "cancel-modal", label: "取消", primary: false },
+      { id: "confirm-delete-chapter", label: "删除章节", primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openDeleteFolderModal(folderId) {
+  const folder = getFolder(folderId);
+  if (!folder) return;
+  const descendantIds = getDescendantFolderIds(folder.id);
+  const affectedWorks = state.works.filter((work) => [folder.id, ...descendantIds].includes(work.folderId));
+  const affectedChapterCount = affectedWorks.reduce((sum, work) => sum + work.chapterIds.length, 0);
+  state.ui.modal = {
+    type: "delete-folder",
+    payload: { folderId },
+    title: "删除文件夹",
+    body: `
+      <div class="modal-copy-block">
+        <p>当前文件夹“${escapeHtml(folder.name)}”下共影响 ${descendantIds.length + 1} 个文件夹、${affectedWorks.length} 个作品、${affectedChapterCount} 个章节。</p>
+        <p>你可以选择直接删除全部内容，或仅删除文件夹并将内部作品与子文件夹上移到上一级。</p>
+      </div>
+    `,
+    actions: [
+      { id: "cancel-modal", label: "取消", primary: false },
+      { id: "confirm-delete-folder-keep", label: "删除文件夹并上移内容", primary: false },
+      { id: "confirm-delete-folder-all", label: "连同内容一起删除", primary: true },
+    ],
+  };
+  updateModal();
+}
+
+async function handleModalAction(action) {
+  if (action === "cancel-modal" || action === "close-modal" || action === "cancel-back") {
+    state.ui.modal = null;
+    updateModal();
+    return;
+  }
+
+  if (action === "submit-create-folder") {
+    const name = refs.modalRoot.querySelector("#modal-folder-name")?.value.trim();
+    const parentId = getNullableValue(refs.modalRoot.querySelector("#modal-folder-parent")?.value);
+    if (!name) return;
+    state.folders.push({ id: uid("folder"), name, parentId, createdAt: new Date().toISOString() });
+    state.activeFolderId = parentId;
+    state.ui.modal = null;
+    await syncLibraryToDesktop();
+    updateAll();
+    return;
+  }
+
+  if (action === "submit-create-work") {
+    const title = refs.modalRoot.querySelector("#modal-work-title")?.value.trim();
+    const description = refs.modalRoot.querySelector("#modal-work-description")?.value.trim() || "";
+    const folderId = getNullableValue(refs.modalRoot.querySelector("#modal-work-folder")?.value);
+    const templateId = refs.modalRoot.querySelector("#modal-work-template")?.value || "blank";
+    if (!title) return;
+    createWorkWithInitialChapter({ title, description, folderId, templateId });
+    state.activeFolderId = folderId;
+    state.ui.modal = null;
+    await syncLibraryToDesktop();
+    updateAll();
+    return;
+  }
+
+  if (action === "submit-create-chapter") {
+    const workId = state.ui.modal?.payload?.workId;
+    const work = getWork(workId);
+    const title = refs.modalRoot.querySelector("#modal-chapter-title")?.value.trim();
+    if (!work || !title) return;
+    const chapter = createChapterForWork(work.id, title);
+    work.chapterIds.push(chapter.id);
+    work.updatedAt = new Date().toISOString();
+    work.lastOpenedChapterId = chapter.id;
+    state.activeWorkId = work.id;
+    state.activeChapterId = chapter.id;
+    state.ui.libraryWorkViewId = work.id;
+    state.ui.modal = null;
+    await syncLibraryToDesktop();
+    updateAll();
+    return;
+  }
+
+  if (action === "submit-rename-entity") {
+    const next = refs.modalRoot.querySelector("#modal-rename-value")?.value.trim();
+    const payload = state.ui.modal?.payload;
+    if (!payload || !next) return;
+    if (payload.entityType === "folder") getFolder(payload.entityId).name = next;
+    if (payload.entityType === "work") getWork(payload.entityId).title = next;
+    if (payload.entityType === "chapter") getChapter(payload.entityId).title = next;
+    state.ui.modal = null;
+    await syncLibraryToDesktop();
+    updateAll();
+    return;
+  }
+
+  if (action === "confirm-delete-work") {
+    const workId = state.ui.modal?.payload?.workId;
+    deleteWork(workId);
+    state.ui.modal = null;
+    await syncLibraryToDesktop();
+    updateAll();
+    return;
+  }
+
+  if (action === "confirm-delete-chapter") {
+    const { workId, chapterId } = state.ui.modal?.payload ?? {};
+    deleteChapter(workId, chapterId);
+    state.ui.modal = null;
+    await syncLibraryToDesktop();
+    updateAll();
+    return;
+  }
+
+  if (action === "confirm-delete-folder-all") {
+    const folderId = state.ui.modal?.payload?.folderId;
+    deleteFolderAndContents(folderId);
+    state.ui.modal = null;
+    await syncLibraryToDesktop();
+    updateAll();
+    return;
+  }
+
+  if (action === "confirm-delete-folder-keep") {
+    const folderId = state.ui.modal?.payload?.folderId;
+    deleteFolderKeepContents(folderId);
+    state.ui.modal = null;
+    await syncLibraryToDesktop();
+    updateAll();
+    return;
+  }
+
+  if (action === "save-and-back") {
+    await saveCurrentChapter();
+    state.route = "library";
+    state.ui.modal = null;
+    updateAll();
+    return;
+  }
+
+  if (action === "discard-and-back") {
+    const chapter = getCurrentChapter();
+    if (!chapter) return;
+    chapter.content = chapter.savedContent;
+    chapter.dirty = false;
+    chapter.saveStatus = "已保存";
+    chapter.saveTime = "回退到上次保存";
+    hydrateEditor();
+    state.route = "library";
+    state.ui.modal = null;
+    updateAll();
+  }
+}
+
+function createWorkWithInitialChapter({ title, description, folderId, templateId }) {
+  const now = new Date().toISOString();
+  const workId = uid("work");
+  const template = DEFAULT_CHAPTER_TEMPLATE[templateId] ?? DEFAULT_CHAPTER_TEMPLATE.blank;
+  const chapter = createChapterForWork(workId, template.chapterTitle, template);
+
+  state.works.unshift({
+    id: workId,
+    title,
+    description,
+    folderId,
+    chapterIds: [chapter.id],
+    updatedAt: now,
+    createdAt: now,
+    lastOpenedChapterId: chapter.id,
+  });
+  state.ui.libraryWorkViewId = workId;
+  state.activeWorkId = workId;
+  state.activeChapterId = chapter.id;
+}
+
+function createChapterForWork(workId, title, template = DEFAULT_CHAPTER_TEMPLATE.blank) {
+  const now = new Date().toISOString();
+  const chapter = {
+    id: uid("chapter"),
+    workId,
+    title,
+    content: template.content ?? "",
+    savedContent: template.content ?? "",
+    notes: template.notes ?? "",
+    bookmarks: [],
+    wordGoal: 2000,
+    outline: template.outline ?? "",
+    wordCount: countWords(template.content ?? ""),
+    updatedAt: now,
+    createdAt: now,
+    dirty: false,
+    saveStatus: "已保存",
+    saveTime: "刚刚",
+    versions: [],
+    history: { undo: [], redo: [] },
+  };
+  state.chapters.push(chapter);
+  return chapter;
+}
+
+function deleteWork(workId) {
+  const work = getWork(workId);
+  if (!work) return;
+  state.chapters = state.chapters.filter((chapter) => chapter.workId !== work.id);
+  state.works = state.works.filter((item) => item.id !== work.id);
+  if (state.ui.libraryWorkViewId === work.id) state.ui.libraryWorkViewId = null;
+  if (state.activeWorkId === work.id) normalizeActiveSelection();
+}
+
+function deleteChapter(workId, chapterId) {
+  const work = getWork(workId);
+  const chapter = getChapter(chapterId);
+  if (!work || !chapter) return;
+  work.chapterIds = work.chapterIds.filter((id) => id !== chapter.id);
+  state.chapters = state.chapters.filter((item) => item.id !== chapter.id);
+  if (work.lastOpenedChapterId === chapter.id) work.lastOpenedChapterId = work.chapterIds[0] ?? null;
+  work.updatedAt = new Date().toISOString();
+  if (work.chapterIds.length === 0) {
+    deleteWork(work.id);
+  } else if (state.activeChapterId === chapter.id) {
+    state.activeWorkId = work.id;
+    state.activeChapterId = work.chapterIds[0];
+    state.route = "library";
+  }
+}
+
+function deleteFolderAndContents(folderId) {
+  const folder = getFolder(folderId);
+  if (!folder) return;
+  const descendantIds = [folder.id, ...getDescendantFolderIds(folder.id)];
+  const workIds = state.works.filter((work) => descendantIds.includes(work.folderId)).map((work) => work.id);
+  state.chapters = state.chapters.filter((chapter) => !workIds.includes(chapter.workId));
+  state.works = state.works.filter((work) => !workIds.includes(work.id));
+  state.folders = state.folders.filter((item) => !descendantIds.includes(item.id));
+  if (descendantIds.includes(state.activeFolderId)) state.activeFolderId = folder.parentId;
+  if (workIds.includes(state.ui.libraryWorkViewId)) state.ui.libraryWorkViewId = null;
+  normalizeActiveSelection();
+}
+
+function deleteFolderKeepContents(folderId) {
+  const folder = getFolder(folderId);
+  if (!folder) return;
+  state.folders.forEach((item) => {
+    if (item.parentId === folder.id) item.parentId = folder.parentId;
+  });
+  state.works.forEach((work) => {
+    if (work.folderId === folder.id) work.folderId = folder.parentId;
+  });
+  state.folders = state.folders.filter((item) => item.id !== folder.id);
+  if (state.activeFolderId === folder.id) state.activeFolderId = folder.parentId;
+}
+
+async function handleBackNavigation() {
+  const chapter = getCurrentChapter();
+  if (!chapter) {
+    state.route = "library";
+    updateRoute();
+    return;
+  }
+  if (!chapter.dirty) {
+    state.route = "library";
+    updateRoute();
+    return;
+  }
+  if (state.ui.autosaveEnabled) {
+    await saveCurrentChapter();
+    state.route = "library";
+    updateRoute();
+    return;
+  }
+  state.ui.modal = {
+    type: "back-confirm",
+    title: "返回文件管理页？",
+    message: "当前章节还有未保存修改，返回前请决定如何处理。",
+    actions: [
+      { id: "save-and-back", label: "保存并返回", primary: true },
+      { id: "discard-and-back", label: "不保存直接返回", primary: false },
+      { id: "cancel-back", label: "取消", primary: false },
+    ],
+  };
+  updateModal();
+}
+
+function handleFolderUp() {
+  const current = getFolder(state.activeFolderId);
+  openFolder(current?.parentId ?? null);
+}
+
+function openFolder(folderId) {
+  state.activeFolderId = folderId ?? null;
+  state.ui.libraryWorkViewId = getWorksInFolder(state.activeFolderId)[0]?.id ?? null;
+  state.ui.libraryEntityMenu = null;
+  state.ui.libraryScrollTop = 0;
+  updateAll();
+  persist();
+}
+
+async function openWorkDefault(workId) {
+  const work = getWork(workId);
+  if (!work) return;
+  const targetChapterId = work.lastOpenedChapterId && work.chapterIds.includes(work.lastOpenedChapterId) ? work.lastOpenedChapterId : work.chapterIds[0];
+  if (!targetChapterId) return;
+  await openChapter(work.id, targetChapterId);
+}
+
+async function openChapter(workId, chapterId) {
+  const previous = getCurrentChapter();
+  if (previous && previous.dirty && state.ui.autosaveEnabled) await saveCurrentChapter();
+  state.ui.libraryScrollTop = refs.libraryContent?.scrollTop ?? state.ui.libraryScrollTop;
+  state.activeWorkId = workId;
+  state.activeChapterId = chapterId;
+  state.route = "editor";
+  state.activeTab = "writing";
+  const work = getWork(workId);
+  if (work) {
+    work.lastOpenedChapterId = chapterId;
+    work.updatedAt = new Date().toISOString();
+  }
+  hydrateEditor();
+  updateAll();
+  restoreSelection(0, 0);
+}
+
+function handleBeforeInput() {
+  if (suppressHistory) return;
+  const chapter = getCurrentChapter();
+  if (!chapter) return;
+  pushUndoSnapshot(chapter, refs.documentEditor.value, refs.documentEditor.selectionStart, refs.documentEditor.selectionEnd);
+}
+
+function handleEditorInput() {
+  const chapter = getCurrentChapter();
+  const work = getCurrentWork();
+  if (!chapter || !work) return;
+  chapter.content = refs.documentEditor.value;
+  chapter.wordCount = countWords(chapter.content);
+  chapter.updatedAt = new Date().toISOString();
+  chapter.dirty = chapter.content !== chapter.savedContent;
+  chapter.saveStatus = state.ui.autosaveEnabled ? "保存中" : "未保存";
+  chapter.saveTime = "刚刚修改";
+  work.updatedAt = chapter.updatedAt;
+  work.lastOpenedChapterId = chapter.id;
+  state.account.syncStatus = state.account.loggedIn ? "同步等待中" : "本地写作中";
+  state.ui.selectionStart = refs.documentEditor.selectionStart;
+  state.ui.selectionEnd = refs.documentEditor.selectionEnd;
+  updateTopBar();
+  updateWorkspace();
+  persist();
+  queueAutosave();
+}
+
+function handleEditorKeydown(event) {
+  const pairs = { "(": ")", "（": "）", "[": "]", "【": "】", "\"": "\"", "“": "”", "'": "'" };
+
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f") {
+    event.preventDefault();
+    state.ui.replaceOpen = true;
+    updateWorkspace();
+    refs.findQueryInput.focus();
+    return;
+  }
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !event.shiftKey) {
+    event.preventDefault();
+    undoEditor();
+    return;
+  }
+  if ((event.metaKey || event.ctrlKey) && (event.key.toLowerCase() === "y" || (event.key.toLowerCase() === "z" && event.shiftKey))) {
+    event.preventDefault();
+    redoEditor();
+    return;
+  }
+  if (pairs[event.key] && !event.metaKey && !event.ctrlKey && !event.altKey) {
+    event.preventDefault();
+    insertPair(event.key, pairs[event.key]);
+  }
+}
+
+function handleEditorFocus() {
+  state.ui.lastFocused = true;
+  startFocusTimer();
+}
+
+function handleEditorBlur() {
+  state.ui.lastFocused = false;
+  stopFocusTimer();
+}
+
+function handleNotesInput(event) {
+  const chapter = getCurrentChapter();
+  if (!chapter) return;
+  chapter.notes = event.target.value;
+  persist();
+}
+
+function handleWordGoalInput(event) {
+  const chapter = getCurrentChapter();
+  if (!chapter) return;
+  chapter.wordGoal = Number(event.target.value) || 0;
+  updateWorkspace();
+  persist();
+}
+
+function handleWritingAction(action) {
+  if (action === "divider") insertAtCursor("\n\n——\n\n");
+  if (action === "toggle-find") {
+    state.ui.replaceOpen = !state.ui.replaceOpen;
+    updateWorkspace();
+  }
+  if (action === "undo") undoEditor();
+  if (action === "redo") redoEditor();
+  if (action === "prev") jumpChapter(-1);
+  if (action === "next") jumpChapter(1);
+  if (action === "resume") restoreSelection(state.ui.selectionStart, state.ui.selectionEnd);
+  if (action === "open-notes") {
+    state.ui.sidebarCollapsed = false;
+    state.ui.sidebarSection = "notes";
+    updateSidebar();
+  }
+  if (action === "open-bookmarks") {
+    state.ui.sidebarCollapsed = false;
+    state.ui.sidebarSection = "bookmarks";
+    updateSidebar();
+  }
+}
+
+async function handleMenuAction(action) {
+  refs.moreMenu.classList.add("hidden");
+  const chapter = getCurrentChapter();
+  const work = getCurrentWork();
+  if (!chapter || !work) return;
+
+  if (action === "rename-chapter") {
+    openRenameModal("chapter", chapter.id);
+    return;
+  }
+
+  if (action === "move-chapter") {
+    const currentIndex = work.chapterIds.findIndex((id) => id === chapter.id);
+    const nextIndex = Number(prompt(`移动到章节序号（1 - ${work.chapterIds.length}）`, String(currentIndex + 1))) - 1;
+    if (Number.isInteger(nextIndex) && nextIndex >= 0 && nextIndex < work.chapterIds.length) {
+      work.chapterIds.splice(currentIndex, 1);
+      work.chapterIds.splice(nextIndex, 0, chapter.id);
+      work.updatedAt = new Date().toISOString();
+      await syncLibraryToDesktop();
+      updateAll();
+    }
+    return;
+  }
+
+  if (action === "delete-chapter") {
+    openDeleteChapterModal(work.id, chapter.id);
+    return;
+  }
+
+  if (action === "history") {
+    state.ui.modal = {
+      type: "history",
+      title: "历史版本",
+      message: "以下是当前章节自动保存过的版本。",
+      body: `<div class="history-list">${
+        chapter.versions.length > 0
+          ? chapter.versions.map((version) => `<div class="history-row"><strong>${escapeHtml(version.label)}</strong><span>${escapeHtml(version.time)}</span></div>`).join("")
+          : `<div class="empty-inline">暂无历史版本</div>`
+      }</div>`,
+      actions: [{ id: "close-modal", label: "关闭", primary: true }],
+    };
+    updateModal();
+    return;
+  }
+
+  if (action === "export") {
+    exportCurrentChapter();
+    return;
+  }
+
+  if (action === "focus") {
+    state.ui.focusMode = !state.ui.focusMode;
+    refs.editorPage.classList.toggle("focus-mode", state.ui.focusMode);
+    persist();
+    return;
+  }
+
+  if (action === "night") {
+    state.theme.nightMode = !state.theme.nightMode;
+    applyTheme();
+    persist();
+  }
+}
+
+function handleInspirationAction(action, id) {
+  const item = state.inspirations.items.find((entry) => entry.id === id);
+  if (!item) return;
+  if (action === "favorite") item.favorite = !item.favorite;
+  if (action === "pin") item.pinned = !item.pinned;
+  if (action === "insert") insertAtCursor(item.text);
+  if (action === "edit") {
+    const next = prompt("编辑灵感", item.text);
+    if (next) item.text = next;
+  }
+  if (action === "delete") {
+    state.inspirations.items = state.inspirations.items.filter((entry) => entry.id !== id);
+  }
+  renderInspirationList();
+  persist();
+}
+
+function handleAccountAction(action) {
+  const chapter = getCurrentChapter();
+  if (action === "email-login") {
+    state.account.loggedIn = true;
+    state.account.nickname = "邮箱用户";
+    state.account.avatar = "EM";
+    state.account.syncStatus = chapter?.dirty ? "同步等待中" : "已连接云端，同步正常";
+  }
+  if (action === "third-party-login") {
+    state.account.loggedIn = true;
+    state.account.nickname = "第三方用户";
+    state.account.avatar = "TP";
+    state.account.syncStatus = chapter?.dirty ? "同步等待中" : "已连接云端，同步正常";
+  }
+  if (action === "logout") {
+    state.account.loggedIn = false;
+    state.account.nickname = "未登录用户";
+    state.account.avatar = "SF";
+    state.account.syncStatus = "本地写作中";
+  }
+  updateSettingsPanel();
+  persist();
+}
+
+function jumpChapter(direction) {
+  const work = getCurrentWork();
+  if (!work || work.chapterIds.length === 0) return;
+  const chapters = getWorkChapters(work.id);
+  const currentIndex = chapters.findIndex((chapter) => chapter.id === state.activeChapterId);
+  const nextIndex = Math.max(0, Math.min(chapters.length - 1, currentIndex + direction));
+  if (nextIndex === currentIndex) return;
+  void openChapter(work.id, chapters[nextIndex].id);
+}
+
+function captureSelection() {
+  const start = refs.documentEditor.selectionStart;
+  const end = refs.documentEditor.selectionEnd;
+  state.ui.selectionStart = start;
+  state.ui.selectionEnd = end;
+  state.ui.selectionVisible = end > start;
+  refs.selectionToolbar.classList.toggle("hidden", !state.ui.selectionVisible);
+  persist();
+}
+
+function restoreSelection(start, end) {
+  refs.documentEditor.focus();
+  refs.documentEditor.selectionStart = start;
+  refs.documentEditor.selectionEnd = end;
+  captureSelection();
+}
+
+function handleBeforeSelectionMutation() {
+  const chapter = getCurrentChapter();
+  if (!chapter) return;
+  pushUndoSnapshot(chapter, refs.documentEditor.value, refs.documentEditor.selectionStart, refs.documentEditor.selectionEnd);
+}
+
+function insertAtCursor(text) {
+  refs.documentEditor.focus();
+  handleBeforeSelectionMutation();
+  const start = refs.documentEditor.selectionStart ?? state.ui.selectionStart;
+  const end = refs.documentEditor.selectionEnd ?? state.ui.selectionEnd;
+  refs.documentEditor.setRangeText(text, start, end, "end");
+  handleEditorInput();
+  captureSelection();
+}
+
+function insertPair(left, right) {
+  refs.documentEditor.focus();
+  handleBeforeSelectionMutation();
+  const start = refs.documentEditor.selectionStart;
+  const end = refs.documentEditor.selectionEnd;
+  const selected = refs.documentEditor.value.slice(start, end);
+  refs.documentEditor.setRangeText(`${left}${selected}${right}`, start, end, "select");
+  refs.documentEditor.selectionStart = start + 1;
+  refs.documentEditor.selectionEnd = end + 1;
+  handleEditorInput();
+  captureSelection();
+}
+
+function applySelectionAction(action) {
+  const chapter = getCurrentChapter();
+  if (!chapter) return;
+  const start = refs.documentEditor.selectionStart;
+  const end = refs.documentEditor.selectionEnd;
+  if (start === end) return;
+  const selected = refs.documentEditor.value.slice(start, end);
+  if (action === "quote") {
+    insertAtCursor(`“${selected}”`);
+    return;
+  }
+  if (action === "divider") {
+    insertAtCursor(`\n\n—— ${selected} ——\n\n`);
+    return;
+  }
+  if (action === "bookmark") {
+    chapter.bookmarks.unshift(selected.slice(0, 18));
+    updateSidebar();
+    persist();
+    state.ui.selectionVisible = false;
+    refs.selectionToolbar.classList.add("hidden");
+  }
+}
+
+function addBookmarkFromSelection() {
+  const chapter = getCurrentChapter();
+  if (!chapter) return;
+  const start = refs.documentEditor.selectionStart;
+  const end = refs.documentEditor.selectionEnd;
+  const source = start !== end ? refs.documentEditor.value.slice(start, end) : `书签 ${chapter.bookmarks.length + 1}`;
+  chapter.bookmarks.unshift(source.slice(0, 18));
+  updateSidebar();
+  persist();
+}
+
+function pushUndoSnapshot(chapter, content, selectionStart, selectionEnd) {
+  const stack = chapter.history.undo;
+  const last = stack[stack.length - 1];
+  if (last && last.content === content) return;
+  stack.push({ content, selectionStart, selectionEnd });
+  if (stack.length > 120) stack.shift();
+  chapter.history.redo = [];
+}
+
+function undoEditor() {
+  const chapter = getCurrentChapter();
+  if (!chapter) return;
+  const previous = chapter.history.undo.pop();
+  if (!previous) return;
+  chapter.history.redo.push({
+    content: refs.documentEditor.value,
+    selectionStart: refs.documentEditor.selectionStart,
+    selectionEnd: refs.documentEditor.selectionEnd,
+  });
+  applySnapshot(previous);
+}
+
+function redoEditor() {
+  const chapter = getCurrentChapter();
+  if (!chapter) return;
+  const next = chapter.history.redo.pop();
+  if (!next) return;
+  chapter.history.undo.push({
+    content: refs.documentEditor.value,
+    selectionStart: refs.documentEditor.selectionStart,
+    selectionEnd: refs.documentEditor.selectionEnd,
+  });
+  applySnapshot(next);
+}
+
+function applySnapshot(snapshot) {
+  suppressHistory = true;
+  refs.documentEditor.value = snapshot.content;
+  refs.documentEditor.selectionStart = snapshot.selectionStart;
+  refs.documentEditor.selectionEnd = snapshot.selectionEnd;
+  suppressHistory = false;
+  handleEditorInput();
+  captureSelection();
+}
+
+function findNext() {
+  const query = state.ui.findQuery;
+  if (!query) return;
+  const content = refs.documentEditor.value;
+  const startFrom = refs.documentEditor.selectionEnd || 0;
+  let index = content.indexOf(query, startFrom);
+  if (index === -1) index = content.indexOf(query, 0);
+  if (index === -1) return;
+  restoreSelection(index, index + query.length);
+}
+
+function replaceCurrent() {
+  const start = refs.documentEditor.selectionStart;
+  const end = refs.documentEditor.selectionEnd;
+  if (start === end) return;
+  handleBeforeSelectionMutation();
+  refs.documentEditor.setRangeText(state.ui.replaceQuery, start, end, "end");
+  handleEditorInput();
+  captureSelection();
+}
+
+function queueAutosave() {
+  clearTimeout(autosaveTimer);
+  if (!state.ui.autosaveEnabled) return;
+  autosaveTimer = setTimeout(() => {
+    void saveCurrentChapter();
+  }, 700);
+}
+
+async function saveCurrentChapter() {
+  clearTimeout(autosaveTimer);
+  const chapter = getCurrentChapter();
+  const work = getCurrentWork();
+  if (!chapter || !work) return;
+  if (!chapter.dirty && chapter.saveStatus === "已保存") return;
+  chapter.savedContent = chapter.content;
+  chapter.wordCount = countWords(chapter.content);
+  chapter.updatedAt = new Date().toISOString();
+  chapter.dirty = false;
+  chapter.saveStatus = "已保存";
+  chapter.saveTime = timeNow();
+  work.updatedAt = chapter.updatedAt;
+  work.lastOpenedChapterId = chapter.id;
+  if (!chapter.versions[0] || chapter.versions[0].content !== chapter.content) {
+    chapter.versions.unshift({ id: uid("version"), label: "自动保存版本", time: `今天 ${timeNow()}`, content: chapter.content });
+    chapter.versions = chapter.versions.slice(0, 20);
+  }
+  state.account.syncStatus = state.account.loggedIn ? "已连接云端，同步正常" : "本地写作中";
+  await syncLibraryToDesktop();
+  updateTopBar();
+  persist();
+}
+
+function startFocusTimer() {
+  if (focusTimer) return;
+  state.ui.focusStartedAt ??= Date.now();
+  focusTimer = setInterval(() => {
+    refs.focusTimerValue.textContent = formatDuration(getFocusSeconds());
+  }, 1000);
+}
+
+function stopFocusTimer() {
+  if (state.ui.focusStartedAt) {
+    state.ui.focusAccumulated += Date.now() - state.ui.focusStartedAt;
+    state.ui.focusStartedAt = null;
+  }
+  clearInterval(focusTimer);
+  focusTimer = null;
+  updateWorkspace();
+  persist();
+}
+
+function getFocusSeconds() {
+  const running = state.ui.focusStartedAt ? Date.now() - state.ui.focusStartedAt : 0;
+  return Math.floor((state.ui.focusAccumulated + running) / 1000);
+}
+
+function toggleSidebar() {
+  state.ui.sidebarCollapsed = !state.ui.sidebarCollapsed;
+  updateSidebar();
+  persist();
+}
+
+function switchTab(tabId) {
+  state.activeTab = tabId;
+  updateWorkspace();
+  if (tabId === "writing") refs.documentEditor.focus();
+  persist();
+}
+
+function toggleInspirationSort() {
+  state.inspirations.sort = state.inspirations.sort === "newest" ? "oldest" : "newest";
+  renderInspirationList();
+  persist();
+}
+
+function getVisibleInspirations() {
+  let items = [...state.inspirations.items];
+  if (state.inspirations.activeCategory !== "all") items = items.filter((item) => item.category === state.inspirations.activeCategory);
+  if (state.inspirations.search.trim()) {
+    const keyword = state.inspirations.search.trim().toLowerCase();
+    items = items.filter((item) => item.text.toLowerCase().includes(keyword) || item.category.toLowerCase().includes(keyword));
+  }
+  items.sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    return state.inspirations.sort === "newest" ? b.createdAt.localeCompare(a.createdAt) : a.createdAt.localeCompare(b.createdAt);
+  });
+  return items;
+}
+
+function exportCurrentChapter() {
+  const chapter = getCurrentChapter();
+  if (!chapter) return;
+  const payload = { defaultName: `${slugify(chapter.title || "chapter")}.txt`, content: chapter.content };
+  if (desktopApi?.saveTextFile) {
+    desktopApi.saveTextFile(payload);
+    return;
+  }
+  const blob = new Blob([payload.content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "story-forge-project.json";
+  link.download = payload.defaultName;
   link.click();
   URL.revokeObjectURL(url);
 }
 
-async function importStateFromFile() {
-  if (window.storyForgeDesktop?.openProjectFile) {
-    await importFromDesktop();
+async function exportProjectFile() {
+  const payload = {
+    defaultName: `story-forge-project-${new Date().toISOString().slice(0, 10)}.json`,
+    content: JSON.stringify(getLibraryStatePayload(), null, 2),
+  };
+  if (desktopApi?.saveProjectFile) {
+    await desktopApi.saveProjectFile(payload);
     return;
   }
-
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = "application/json";
-  input.addEventListener("change", () => {
-    const file = input.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => loadImportedState(String(reader.result));
-    reader.readAsText(file);
-  });
-  input.click();
+  const blob = new Blob([payload.content], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = payload.defaultName;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
-async function importFromDesktop() {
-  const result = await window.storyForgeDesktop.openProjectFile();
-  if (result?.canceled || !result?.content) return;
-  loadImportedState(result.content);
-}
-
-function loadImportedState(raw) {
+async function importProjectFile() {
+  if (!desktopApi?.openProjectFile) return;
+  const result = await desktopApi.openProjectFile();
+  if (!result || result.canceled || !result.content) return;
   try {
-    const imported = mergeState(structuredClone(seedState), JSON.parse(raw));
-    Object.keys(state).forEach((key) => delete state[key]);
-    Object.assign(state, imported);
-    document.documentElement.lang = state.settings.language === "zh" ? "zh-CN" : "en";
-    applyTheme(state.settings.theme);
-    applyTypography();
-    saveState();
-    renderStaticText();
-    renderTabs();
-    renderActiveTab();
+    const imported = JSON.parse(result.content);
+    applyLibraryState(imported);
+    ensureStateIntegrity();
+    await syncLibraryToDesktop();
+    updateAll();
   } catch (error) {
-    alert("Invalid JSON file.");
+    console.error("Failed to import project file", error);
+    state.ui.modal = {
+      type: "import-error",
+      title: "导入失败",
+      message: "项目文件格式无法识别，请确认它是有效的 Story Forge 导出文件。",
+      actions: [{ id: "close-modal", label: "关闭", primary: true }],
+    };
+    updateModal();
   }
 }
 
-function formatTimestamp(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
+async function handleDesktopMenuAction(action) {
+  if (action === "import-project") {
+    await importProjectFile();
+    return;
+  }
+  if (action === "export-project") {
+    await exportProjectFile();
+    return;
+  }
+  if (action === "reset-project") {
+    Object.assign(state, createSeedState());
+    ensureStateIntegrity();
+    void syncLibraryToDesktop().then(() => updateAll());
+  }
+}
+
+function applyTheme() {
+  const selected = state.theme.presets.find((item) => item.id === state.theme.currentId) ?? state.theme.presets[0];
+  const palette = state.theme.nightMode ? themePresets.find((item) => item.id === "ink").palette : selected.palette;
+  const root = document.documentElement;
+  root.style.setProperty("--bg", palette.bg);
+  root.style.setProperty("--panel", palette.panel);
+  root.style.setProperty("--panel-strong", palette.panelStrong);
+  root.style.setProperty("--text", palette.text);
+  root.style.setProperty("--muted", palette.muted);
+  root.style.setProperty("--line", palette.line);
+  root.style.setProperty("--accent", palette.accent);
+  root.style.setProperty("--accent-soft", palette.accentSoft);
+}
+
+function applyTypography() {
+  const family = state.font.families.find((item) => item.id === state.font.currentId) ?? state.font.families[0];
+  const root = document.documentElement;
+  root.style.setProperty("--font-family", family.family);
+  root.style.setProperty("--editor-font-size", `${state.font.size}px`);
+  root.style.setProperty("--editor-line-height", String(state.font.lineHeight));
+  root.style.setProperty("--editor-letter-spacing", `${state.font.letterSpacing}px`);
+}
+
+function getFolder(folderId) {
+  return state.folders.find((folder) => folder.id === folderId) ?? null;
+}
+
+function getWork(workId) {
+  return state.works.find((work) => work.id === workId) ?? null;
+}
+
+function getChapter(chapterId) {
+  return state.chapters.find((chapter) => chapter.id === chapterId) ?? null;
+}
+
+function getCurrentWork() {
+  return getWork(state.activeWorkId);
+}
+
+function getCurrentChapter() {
+  return getChapter(state.activeChapterId);
+}
+
+function getFoldersInFolder(parentId) {
+  return state.folders
+    .filter((folder) => (folder.parentId ?? null) === (parentId ?? null))
+    .sort((left, right) => left.createdAt.localeCompare(right.createdAt, "zh-Hans-CN"));
+}
+
+function getWorksInFolder(folderId) {
+  return state.works
+    .filter((work) => (work.folderId ?? null) === (folderId ?? null))
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+}
+
+function getVisibleFoldersInFolder(folderId) {
+  const keyword = state.ui.librarySearch.trim().toLowerCase();
+  let folders = getFoldersInFolder(folderId);
+  if (keyword) {
+    folders = folders.filter((folder) => folder.name.toLowerCase().includes(keyword));
+  }
+  return sortFolders(folders);
+}
+
+function getVisibleWorksInFolder(folderId) {
+  const keyword = state.ui.librarySearch.trim().toLowerCase();
+  let works = getWorksInFolder(folderId);
+  if (keyword) {
+    works = works.filter((work) => {
+      const haystack = `${work.title} ${work.description}`.toLowerCase();
+      return haystack.includes(keyword);
+    });
+  }
+  return sortWorks(works);
+}
+
+function sortFolders(folders) {
+  const items = [...folders];
+  if (state.ui.librarySort === "created-desc") {
+    return items.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  }
+  return items.sort((left, right) => left.name.localeCompare(right.name, "zh-Hans-CN", { numeric: true }));
+}
+
+function sortWorks(works) {
+  const items = [...works];
+  if (state.ui.librarySort === "title-asc") {
+    return items.sort((left, right) => left.title.localeCompare(right.title, "zh-Hans-CN", { numeric: true }));
+  }
+  if (state.ui.librarySort === "created-desc") {
+    return items.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  }
+  return items.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+}
+
+function getWorkChapters(workId) {
+  const work = getWork(workId);
+  if (!work) return [];
+  return work.chapterIds.map((chapterId) => getChapter(chapterId)).filter(Boolean);
+}
+
+function getWorkWordCount(workId) {
+  return getWorkChapters(workId).reduce((sum, chapter) => sum + (chapter.wordCount || countWords(chapter.content)), 0);
+}
+
+function getFolderPath(folderId) {
+  const path = [{ id: null, name: "全部作品" }];
+  let current = getFolder(folderId);
+  const stack = [];
+  while (current) {
+    stack.unshift({ id: current.id, name: current.name });
+    current = getFolder(current.parentId);
+  }
+  return path.concat(stack);
+}
+
+function getDescendantFolderIds(folderId) {
+  const result = [];
+  const stack = [folderId];
+  while (stack.length > 0) {
+    const currentId = stack.pop();
+    const children = state.folders.filter((folder) => folder.parentId === currentId);
+    for (const child of children) {
+      result.push(child.id);
+      stack.push(child.id);
+    }
+  }
+  return result;
+}
+
+function getVisibleWorkDetail() {
+  const work = getWork(state.ui.libraryWorkViewId);
+  if (!work) return null;
+  if ((work.folderId ?? null) !== (state.activeFolderId ?? null)) return null;
+  return work;
+}
+
+function renderFolderOptions(selectedId, includeRoot) {
+  const options = [];
+  if (includeRoot) {
+    options.push(`<option value="">根目录</option>`);
+  }
+  state.folders.forEach((folder) => {
+    const depth = getFolderDepth(folder.id);
+    const prefix = "　".repeat(depth);
+    options.push(
+      `<option value="${folder.id}" ${folder.id === selectedId ? "selected" : ""}>${escapeHtml(`${prefix}${folder.name}`)}</option>`,
+    );
+  });
+  return options.join("");
+}
+
+function queueModalFocus() {
+  requestAnimationFrame(() => {
+    const preferred = refs.modalRoot.querySelector(
+      "#modal-chapter-title, #modal-work-title, #modal-folder-name, #modal-rename-value",
+    );
+    preferred?.focus();
+    if (preferred && "select" in preferred) preferred.select();
+  });
+}
+
+function submitCurrentModalIfPossible() {
+  const modal = state.ui.modal;
+  if (!modal) return;
+  const primaryAction = modal.actions.find((action) => action.primary);
+  if (primaryAction) {
+    void handleModalAction(primaryAction.id);
+  }
+}
+
+function getFolderDepth(folderId) {
+  let depth = 0;
+  let current = getFolder(folderId);
+  while (current?.parentId) {
+    depth += 1;
+    current = getFolder(current.parentId);
+  }
+  return depth;
+}
+
+function getNullableValue(value) {
+  return value ? value : null;
+}
+
+function countWords(text) {
+  const source = String(text).trim();
+  if (!source) return 0;
+  const cjkCount = (source.match(/[\u3400-\u9fff]/g) || []).length;
+  const latinCount = source
+    .replace(/[\u3400-\u9fff]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+  return cjkCount + latinCount;
+}
+
+function persist() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
 function uid(prefix) {
   return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
-function text(id, value) {
-  document.getElementById(id).textContent = value;
+function timeNow() {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
+
+function formatDuration(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remain = seconds % 60;
+  return `${hours}h ${minutes}m ${remain}s`;
+}
+
+function formatRelativeTime(value) {
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) return "刚刚";
+  const diff = Date.now() - time;
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "刚刚";
+  if (minutes < 60) return `${minutes} 分钟前`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} 小时前`;
+  const days = Math.floor(hours / 24);
+  return `${days} 天前`;
+}
+
+function slugify(text) {
+  return String(text)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 function escapeHtml(value) {
