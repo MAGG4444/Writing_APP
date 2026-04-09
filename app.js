@@ -265,6 +265,7 @@ function createSeedState() {
       activeCategory: "all",
       search: "",
       sort: "newest",
+      categoryOrder: inspirationCategories.filter((item) => item !== "all"),
       items: [
         { id: "inspiration-1", text: "她不是回来找答案，而是回来确认自己是否还属于这里。", category: "剧情", createdAt: "21:05", pinned: true, favorite: true },
         { id: "inspiration-2", text: "对白：‘你走的时候像离家，回来却像潜入。’", category: "对白", createdAt: "20:48", pinned: false, favorite: false },
@@ -292,7 +293,8 @@ function createSeedState() {
     ui: {
       autosaveEnabled: true,
       replaceOpen: false,
-      sidebarCollapsed: false,
+      leftSidebarCollapsed: false,
+      rightSidebarCollapsed: false,
       sidebarSection: "notes",
       selectionVisible: false,
       selectionStart: 0,
@@ -306,9 +308,15 @@ function createSeedState() {
       libraryScrollTop: 0,
       libraryCreateOpen: false,
       libraryEntityMenu: null,
+      libraryEntityMenuPosition: null,
       librarySearch: "",
       librarySort: "updated-desc",
       libraryWorkViewId: "work-1",
+      inspirationComposeOpen: false,
+      inspirationComposeTags: ["待补充"],
+      inspirationEditingId: null,
+      inspirationCategoryManagerExpanded: false,
+      settingsThemeExpanded: false,
       modal: null,
     },
   };
@@ -369,12 +377,24 @@ function ensureStateIntegrity() {
   state.chapters = Array.isArray(state.chapters) ? state.chapters : [];
 
   state.ui ??= {};
+  state.inspirations ??= {};
+  state.inspirations.categoryOrder = Array.isArray(state.inspirations.categoryOrder)
+    ? state.inspirations.categoryOrder.map((item) => String(item).trim()).filter(Boolean)
+    : inspirationCategories.filter((item) => item !== "all");
+  state.ui.leftSidebarCollapsed ??= false;
+  state.ui.rightSidebarCollapsed ??= false;
   state.ui.libraryScrollTop ??= 0;
   state.ui.libraryCreateOpen ??= false;
   state.ui.libraryEntityMenu ??= null;
+  state.ui.libraryEntityMenuPosition ??= null;
   state.ui.librarySearch ??= "";
   state.ui.librarySort ??= "updated-desc";
   state.ui.libraryWorkViewId ??= null;
+  state.ui.inspirationComposeOpen ??= false;
+  state.ui.inspirationComposeTags ??= ["待补充"];
+  state.ui.inspirationEditingId ??= null;
+  state.ui.inspirationCategoryManagerExpanded ??= false;
+  state.ui.settingsThemeExpanded ??= false;
 
   const folderIds = new Set(state.folders.map((folder) => folder.id));
   state.folders = state.folders.map((folder) => ({
@@ -452,6 +472,8 @@ function ensureStateIntegrity() {
   if (state.activeFolderId != null && !getFolder(state.activeFolderId)) {
     state.activeFolderId = null;
   }
+
+  syncInspirationCategoryOrder();
 
   normalizeActiveSelection();
   persist();
@@ -579,6 +601,7 @@ function AppShell() {
     <div class="app-shell">
       ${FileManagerPage()}
       ${EditorPage()}
+      <div class="portal-layer" id="portal-layer"></div>
       <div class="modal-root hidden" id="modal-root"></div>
     </div>
   `;
@@ -627,13 +650,10 @@ function EditorPage() {
     <section class="editor-page" id="editor-page">
       ${TopBar()}
       <div class="editor-body">
-        <div class="editor-column">
-          ${DocumentEditor()}
-        </div>
         <aside class="chapter-sidebar surface" id="chapter-sidebar">
           <div class="sidebar-header">
             <strong>章节辅助</strong>
-            <button class="ghost-button compact-button" id="sidebar-toggle-button">收起</button>
+            <button class="ghost-button compact-button" id="left-sidebar-toggle-button">收起</button>
           </div>
           <div class="sidebar-section">
             <div class="sidebar-section-head">
@@ -644,14 +664,25 @@ function EditorPage() {
           </div>
           <div class="sidebar-section">
             <div class="sidebar-section-head">
+              <strong>章节大纲</strong>
+            </div>
+            <textarea id="chapter-outline-input" placeholder="记录本章大纲与推进节点"></textarea>
+          </div>
+          <div class="sidebar-section">
+            <div class="sidebar-section-head">
               <strong>书签</strong>
               <button class="ghost-button compact-button" id="add-bookmark-button">添加书签</button>
             </div>
             <div class="bookmark-list" id="bookmark-list"></div>
           </div>
         </aside>
+        <button class="edge-toggle edge-toggle-left hidden" id="left-sidebar-reopen-button" title="展开章节辅助">></button>
+        <div class="editor-column" id="editor-column">
+          ${DocumentEditor()}
+        </div>
+        <button class="edge-toggle edge-toggle-right hidden" id="right-sidebar-reopen-button" title="展开工作侧栏"><</button>
+        ${BottomWorkspaceTabs()}
       </div>
-      ${BottomWorkspaceTabs()}
     </section>
   `;
 }
@@ -705,7 +736,11 @@ function DocumentEditor() {
 
 function BottomWorkspaceTabs() {
   return `
-    <section class="bottom-workspace surface">
+    <aside class="workspace-sidebar surface" id="workspace-sidebar">
+      <div class="workspace-sidebar-head">
+        <strong>工作侧栏</strong>
+        <button class="ghost-button compact-button" id="right-sidebar-toggle-button">收起</button>
+      </div>
       <div class="workspace-panels">
         <section class="workspace-panel" data-panel="writing">${WritingPanel()}</section>
         <section class="workspace-panel hidden" data-panel="inspiration">${InspirationPanel()}</section>
@@ -716,7 +751,7 @@ function BottomWorkspaceTabs() {
         <button class="tab-chip" data-tab="inspiration">灵感记录</button>
         <button class="tab-chip" data-tab="settings">设置</button>
       </nav>
-    </section>
+    </aside>
   `;
 }
 
@@ -763,8 +798,14 @@ function WritingPanel() {
       <div class="tool-grid two-col">
         <button class="tool-card action-card" data-writing-action="open-notes">
           <strong>章节备注入口</strong>
-          <small>展开右侧备注面板</small>
+          <small>展开左侧备注面板</small>
         </button>
+        <button class="tool-card action-card" data-writing-action="open-outline">
+          <strong>章节大纲入口</strong>
+          <small>查看并编辑本章大纲</small>
+        </button>
+      </div>
+      <div class="tool-grid two-col">
         <button class="tool-card action-card" data-writing-action="open-bookmarks">
           <strong>书签入口</strong>
           <small>查看并管理书签</small>
@@ -778,12 +819,44 @@ function InspirationPanel() {
   return `
     <div class="inspiration-panel" id="inspiration-panel">
       <div class="inspiration-toolbar">
-        <select id="inspiration-category-filter">
-          ${inspirationCategories.map((item) => `<option value="${item}">${item === "all" ? "全部" : item}</option>`).join("")}
-        </select>
-        <input id="inspiration-search-input" type="search" placeholder="搜索灵感内容" />
-        <button class="ghost-button" id="inspiration-sort-button">排序：最新</button>
-        <button class="primary-button" id="new-inspiration-button">新建灵感</button>
+        <div class="inspiration-toolbar-row inspiration-toolbar-row-primary">
+          <select id="inspiration-category-filter"></select>
+          <button class="primary-button" id="new-inspiration-button">新建灵感</button>
+        </div>
+        <div class="inspiration-toolbar-row inspiration-toolbar-row-filter">
+          <input id="inspiration-search-input" type="search" placeholder="搜索灵感内容" />
+          <button class="ghost-button subtle-button" id="inspiration-sort-button">排序：最新</button>
+        </div>
+      </div>
+      <div class="inspiration-category-manager tool-card">
+        <button class="section-line accordion-trigger" id="inspiration-category-manager-button">
+          <strong>分类管理</strong>
+          <small id="inspiration-category-manager-hint">点击展开分类管理</small>
+        </button>
+        <div class="inspiration-category-manager-body hidden" id="inspiration-category-manager-body">
+          <div class="inspiration-category-create-row">
+            <input id="inspiration-category-create-input" type="text" placeholder="新建分类名称" />
+            <button class="ghost-button" id="create-inspiration-category-button">新建分类</button>
+          </div>
+          <div class="inspiration-category-list" id="inspiration-category-list"></div>
+        </div>
+      </div>
+      <div class="inspiration-compose hidden" id="inspiration-compose">
+        <div class="section-line">
+          <strong id="inspiration-compose-title">新建灵感</strong>
+          <small id="inspiration-compose-hint">填写内容和分类后保存到灵感列表。</small>
+        </div>
+        <textarea id="inspiration-compose-input" rows="4" placeholder="记录一条灵感内容"></textarea>
+        <div class="inspiration-compose-row">
+          <select id="inspiration-compose-category"></select>
+          <input id="inspiration-custom-category-input" type="text" placeholder="自定义分类" />
+          <button class="ghost-button" id="add-inspiration-category-button">添加分类</button>
+        </div>
+        <div class="inspiration-selected-tags" id="inspiration-selected-tags"></div>
+        <div class="inspiration-compose-row">
+          <button class="primary-button" id="save-inspiration-button">保存灵感</button>
+          <button class="ghost-button" id="cancel-inspiration-button">取消</button>
+        </div>
       </div>
       <div class="inspiration-chat-list" id="inspiration-chat-list"></div>
     </div>
@@ -817,11 +890,11 @@ function AccountCard() {
 function ThemeSelector() {
   return `
     <section class="tool-card">
-      <div class="section-line">
+      <button class="section-line accordion-trigger" id="theme-accordion-button">
         <strong>主题</strong>
-        <small>支持可扩展的开源主题列表结构，后续可动态加载。</small>
-      </div>
-      <div class="theme-list" id="theme-list"></div>
+        <small id="theme-accordion-hint">点击展开主题设置</small>
+      </button>
+      <div class="theme-list hidden" id="theme-list"></div>
     </section>
   `;
 }
@@ -872,10 +945,16 @@ function collectRefs() {
   refs.selectionToolbar = document.getElementById("selection-toolbar");
   refs.documentEditor = document.getElementById("document-editor");
   refs.chapterSidebar = document.getElementById("chapter-sidebar");
+  refs.editorColumn = document.getElementById("editor-column");
   refs.chapterNotesInput = document.getElementById("chapter-notes-input");
+  refs.chapterOutlineInput = document.getElementById("chapter-outline-input");
   refs.bookmarkList = document.getElementById("bookmark-list");
-  refs.sidebarToggleButton = document.getElementById("sidebar-toggle-button");
+  refs.leftSidebarToggleButton = document.getElementById("left-sidebar-toggle-button");
+  refs.leftSidebarReopenButton = document.getElementById("left-sidebar-reopen-button");
   refs.addBookmarkButton = document.getElementById("add-bookmark-button");
+  refs.workspaceSidebar = document.getElementById("workspace-sidebar");
+  refs.rightSidebarToggleButton = document.getElementById("right-sidebar-toggle-button");
+  refs.rightSidebarReopenButton = document.getElementById("right-sidebar-reopen-button");
   refs.workspacePanels = [...document.querySelectorAll(".workspace-panel")];
   refs.workspaceTabs = [...document.querySelectorAll("[data-tab]")];
   refs.wordGoalInput = document.getElementById("word-goal-input");
@@ -885,14 +964,33 @@ function collectRefs() {
   refs.inspirationCategoryFilter = document.getElementById("inspiration-category-filter");
   refs.inspirationSearchInput = document.getElementById("inspiration-search-input");
   refs.inspirationSortButton = document.getElementById("inspiration-sort-button");
+  refs.inspirationCategoryManagerButton = document.getElementById("inspiration-category-manager-button");
+  refs.inspirationCategoryManagerHint = document.getElementById("inspiration-category-manager-hint");
+  refs.inspirationCategoryManagerBody = document.getElementById("inspiration-category-manager-body");
+  refs.inspirationCategoryCreateInput = document.getElementById("inspiration-category-create-input");
+  refs.createInspirationCategoryButton = document.getElementById("create-inspiration-category-button");
+  refs.inspirationCategoryList = document.getElementById("inspiration-category-list");
+  refs.inspirationCompose = document.getElementById("inspiration-compose");
+  refs.inspirationComposeTitle = document.getElementById("inspiration-compose-title");
+  refs.inspirationComposeHint = document.getElementById("inspiration-compose-hint");
+  refs.inspirationComposeInput = document.getElementById("inspiration-compose-input");
+  refs.inspirationComposeCategory = document.getElementById("inspiration-compose-category");
+  refs.inspirationCustomCategoryInput = document.getElementById("inspiration-custom-category-input");
+  refs.addInspirationCategoryButton = document.getElementById("add-inspiration-category-button");
+  refs.inspirationSelectedTags = document.getElementById("inspiration-selected-tags");
+  refs.saveInspirationButton = document.getElementById("save-inspiration-button");
+  refs.cancelInspirationButton = document.getElementById("cancel-inspiration-button");
   refs.inspirationChatList = document.getElementById("inspiration-chat-list");
   refs.accountCard = document.getElementById("account-card");
+  refs.themeAccordionButton = document.getElementById("theme-accordion-button");
+  refs.themeAccordionHint = document.getElementById("theme-accordion-hint");
   refs.themeList = document.getElementById("theme-list");
   refs.fontFamilySelect = document.getElementById("font-family-select");
   refs.fontSizeRange = document.getElementById("font-size-range");
   refs.lineHeightRange = document.getElementById("line-height-range");
   refs.letterSpacingRange = document.getElementById("letter-spacing-range");
   refs.autosaveToggle = document.getElementById("autosave-toggle");
+  refs.portalLayer = document.getElementById("portal-layer");
   refs.modalRoot = document.getElementById("modal-root");
 }
 
@@ -939,8 +1037,12 @@ function bindEvents() {
   refs.documentEditor.addEventListener("mouseup", captureSelection);
   refs.documentEditor.addEventListener("keyup", captureSelection);
   refs.chapterNotesInput.addEventListener("input", handleNotesInput);
-  refs.sidebarToggleButton.addEventListener("click", toggleSidebar);
+  refs.chapterOutlineInput.addEventListener("input", handleOutlineInput);
+  refs.leftSidebarToggleButton.addEventListener("click", toggleLeftSidebar);
+  refs.leftSidebarReopenButton.addEventListener("click", toggleLeftSidebar);
   refs.addBookmarkButton.addEventListener("click", () => addBookmarkFromSelection());
+  refs.rightSidebarToggleButton.addEventListener("click", toggleRightSidebar);
+  refs.rightSidebarReopenButton.addEventListener("click", toggleRightSidebar);
   refs.wordGoalInput.addEventListener("input", handleWordGoalInput);
   refs.inspirationCategoryFilter.addEventListener("change", (event) => {
     state.inspirations.activeCategory = event.target.value;
@@ -953,6 +1055,17 @@ function bindEvents() {
     persist();
   });
   refs.inspirationSortButton.addEventListener("click", toggleInspirationSort);
+  refs.inspirationCategoryManagerButton.addEventListener("click", toggleInspirationCategoryManager);
+  refs.createInspirationCategoryButton.addEventListener("click", handleCreateInspirationCategory);
+  refs.inspirationCategoryCreateInput.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    handleCreateInspirationCategory();
+  });
+  refs.addInspirationCategoryButton.addEventListener("click", addSelectedInspirationCategory);
+  refs.saveInspirationButton.addEventListener("click", saveComposedInspiration);
+  refs.cancelInspirationButton.addEventListener("click", closeInspirationComposer);
+  refs.themeAccordionButton.addEventListener("click", toggleThemeAccordion);
   refs.fontFamilySelect.addEventListener("change", (event) => {
     state.font.currentId = event.target.value;
     applyTypography();
@@ -1006,16 +1119,7 @@ function bindEvents() {
 
 async function handleDelegatedClick(event) {
   if (event.target.id === "new-inspiration-button") {
-    state.inspirations.items.unshift({
-      id: uid("inspiration"),
-      text: "新灵感",
-      category: "待补充",
-      createdAt: timeNow(),
-      pinned: false,
-      favorite: false,
-    });
-    renderInspirationList();
-    persist();
+    openInspirationComposer();
     return;
   }
 
@@ -1060,7 +1164,13 @@ async function handleDelegatedClick(event) {
   const entityMenuTrigger = event.target.closest("[data-entity-menu-trigger]");
   if (entityMenuTrigger) {
     const nextKey = `${entityMenuTrigger.dataset.entityType}:${entityMenuTrigger.dataset.entityId}`;
-    state.ui.libraryEntityMenu = state.ui.libraryEntityMenu === nextKey ? null : nextKey;
+    if (state.ui.libraryEntityMenu === nextKey) {
+      state.ui.libraryEntityMenu = null;
+      state.ui.libraryEntityMenuPosition = null;
+    } else {
+      state.ui.libraryEntityMenu = nextKey;
+      state.ui.libraryEntityMenuPosition = getEntityMenuPosition(entityMenuTrigger);
+    }
     updateAll();
     persist();
     return;
@@ -1112,6 +1222,15 @@ async function handleDelegatedClick(event) {
     return;
   }
 
+  const inspirationCategoryAction = event.target.closest("[data-inspiration-category-action]");
+  if (inspirationCategoryAction) {
+    handleInspirationCategoryAction(
+      inspirationCategoryAction.dataset.inspirationCategoryAction,
+      inspirationCategoryAction.dataset.categoryName,
+    );
+    return;
+  }
+
   const selectionAction = event.target.closest("[data-selection-action]");
   if (selectionAction) {
     applySelectionAction(selectionAction.dataset.selectionAction);
@@ -1136,9 +1255,10 @@ async function handleDelegatedClick(event) {
 
   const sideOpen = event.target.closest("[data-open-side]");
   if (sideOpen) {
-    state.ui.sidebarCollapsed = false;
+    state.ui.leftSidebarCollapsed = false;
     state.ui.sidebarSection = sideOpen.dataset.openSide;
     updateSidebar();
+    persist();
     return;
   }
 
@@ -1148,12 +1268,14 @@ async function handleDelegatedClick(event) {
     return;
   }
 
-  if (!event.target.closest(".menu-wrap") && !event.target.closest(".entity-menu-wrap")) {
+  if (!event.target.closest(".menu-wrap") && !event.target.closest(".entity-menu-wrap") && !event.target.closest(".portal-menu")) {
     refs.moreMenu.classList.add("hidden");
     state.ui.libraryCreateOpen = false;
     state.ui.libraryEntityMenu = null;
+    state.ui.libraryEntityMenuPosition = null;
     updateLibraryHeader();
     renderLibraryPage();
+    renderPortalLayer();
     persist();
   }
 }
@@ -1170,6 +1292,7 @@ function updateAll() {
   renderInspirationList();
   applyTheme();
   applyTypography();
+  renderPortalLayer();
   updateModal();
 }
 
@@ -1247,7 +1370,6 @@ function renderFolderCard(folder) {
       </button>
       <div class="entity-menu-wrap">
         <button class="icon-button" data-entity-menu-trigger data-entity-type="folder" data-entity-id="${folder.id}">⋯</button>
-        ${renderEntityMenu("folder", folder.id)}
       </div>
     </article>
   `;
@@ -1267,7 +1389,6 @@ function renderWorkCard(work) {
         </button>
         <div class="entity-menu-wrap">
           <button class="icon-button" data-entity-menu-trigger data-entity-type="work" data-entity-id="${work.id}">⋯</button>
-          ${renderEntityMenu("work", work.id)}
         </div>
       </div>
       <div class="work-meta-row">
@@ -1333,8 +1454,14 @@ function renderEmptyLibraryState() {
   `;
 }
 
-function renderEntityMenu(type, id) {
-  const isVisible = state.ui.libraryEntityMenu === `${type}:${id}`;
+function renderPortalLayer() {
+  if (!refs.portalLayer) return;
+  refs.portalLayer.innerHTML = renderEntityMenuPortal();
+}
+
+function renderEntityMenuPortal() {
+  if (!state.ui.libraryEntityMenu || !state.ui.libraryEntityMenuPosition) return "";
+  const [type, id] = state.ui.libraryEntityMenu.split(":");
   const buttons =
     type === "folder"
       ? [
@@ -1349,17 +1476,29 @@ function renderEntityMenu(type, id) {
           `<button data-entity-action="delete" data-entity-type="work" data-entity-id="${id}">删除</button>`,
         ];
 
-  return `<div class="dropdown-menu ${isVisible ? "" : "hidden"}">${buttons.join("")}</div>`;
+  const { top, left } = state.ui.libraryEntityMenuPosition;
+  return `<div class="dropdown-menu portal-menu" style="top:${top}px;left:${left}px;">${buttons.join("")}</div>`;
+}
+
+function getEntityMenuPosition(trigger) {
+  const rect = trigger.getBoundingClientRect();
+  const menuWidth = 196;
+  const viewportPadding = 12;
+  const left = Math.min(Math.max(viewportPadding, rect.right - menuWidth), window.innerWidth - menuWidth - viewportPadding);
+  const top = Math.max(viewportPadding, Math.min(rect.bottom + 8, window.innerHeight - 220));
+  return { top, left };
 }
 
 function hydrateEditor() {
   const chapter = getCurrentChapter();
   refs.documentEditor.disabled = !chapter;
   refs.chapterNotesInput.disabled = !chapter;
+  refs.chapterOutlineInput.disabled = !chapter;
   refs.wordGoalInput.disabled = !chapter;
   if (!chapter) {
     refs.documentEditor.value = "";
     refs.chapterNotesInput.value = "";
+    refs.chapterOutlineInput.value = "";
     refs.wordGoalInput.value = "0";
     refs.documentEditor.placeholder = "请先从目录页选择章节或新建章节。";
     refs.findQueryInput.value = state.ui.findQuery;
@@ -1369,6 +1508,7 @@ function hydrateEditor() {
   refs.documentEditor.placeholder = "开始写作……";
   if (refs.documentEditor.value !== chapter.content) refs.documentEditor.value = chapter.content;
   refs.chapterNotesInput.value = chapter.notes;
+  refs.chapterOutlineInput.value = chapter.outline;
   refs.findQueryInput.value = state.ui.findQuery;
   refs.replaceQueryInput.value = state.ui.replaceQuery;
   refs.wordGoalInput.value = String(chapter.wordGoal);
@@ -1385,9 +1525,11 @@ function updateTopBar() {
 
 function updateSidebar() {
   const chapter = getCurrentChapter();
-  refs.chapterSidebar.classList.toggle("collapsed", state.ui.sidebarCollapsed);
-  refs.sidebarToggleButton.textContent = state.ui.sidebarCollapsed ? "展开" : "收起";
+  refs.chapterSidebar.classList.toggle("sidebar-collapsed", state.ui.leftSidebarCollapsed);
+  refs.leftSidebarReopenButton.classList.toggle("hidden", !state.ui.leftSidebarCollapsed);
+  refs.leftSidebarToggleButton.textContent = state.ui.leftSidebarCollapsed ? "展开" : "收起";
   refs.chapterNotesInput.parentElement.classList.toggle("muted-section", state.ui.sidebarSection !== "notes");
+  refs.chapterOutlineInput.parentElement.classList.toggle("muted-section", state.ui.sidebarSection !== "outline");
   refs.bookmarkList.parentElement.classList.toggle("muted-section", state.ui.sidebarSection !== "bookmarks");
   if (!chapter) {
     refs.bookmarkList.innerHTML = `<span class="empty-inline">请先打开章节</span>`;
@@ -1403,6 +1545,8 @@ function updateSidebar() {
 
 function updateWorkspace() {
   const chapter = getCurrentChapter();
+  refs.workspaceSidebar.classList.toggle("sidebar-collapsed", state.ui.rightSidebarCollapsed);
+  refs.rightSidebarReopenButton.classList.toggle("hidden", !state.ui.rightSidebarCollapsed);
   refs.workspaceTabs.forEach((button) => {
     button.classList.toggle("active", button.dataset.tab === state.activeTab);
   });
@@ -1414,6 +1558,7 @@ function updateWorkspace() {
   refs.resumeHint.textContent = `上次位置：${state.ui.selectionStart}`;
   refs.wordGoalProgress.textContent = chapter ? `当前 ${countWords(chapter.content)} / 目标 ${chapter.wordGoal}` : "请先选择章节";
   refs.focusTimerValue.textContent = formatDuration(getFocusSeconds());
+  refs.inspirationCompose.classList.toggle("hidden", !state.ui.inspirationComposeOpen);
 }
 
 function updateSettingsPanel() {
@@ -1441,6 +1586,8 @@ function updateSettingsPanel() {
     `;
   }
 
+  refs.themeAccordionHint.textContent = state.ui.settingsThemeExpanded ? "点击收起主题设置" : "点击展开主题设置";
+  refs.themeList.classList.toggle("hidden", !state.ui.settingsThemeExpanded);
   refs.themeList.innerHTML = state.theme.presets
     .map(
       (theme) => `
@@ -1470,9 +1617,47 @@ function updateSettingsPanel() {
 }
 
 function renderInspirationList() {
+  const categories = getAvailableInspirationCategories();
+  const editingItem = state.ui.inspirationEditingId
+    ? state.inspirations.items.find((entry) => entry.id === state.ui.inspirationEditingId) ?? null
+    : null;
+  refs.inspirationCategoryFilter.innerHTML = categories
+    .map((item) => `<option value="${item}">${item === "all" ? "全部分类" : escapeHtml(item)}</option>`)
+    .join("");
   refs.inspirationCategoryFilter.value = state.inspirations.activeCategory;
   refs.inspirationSearchInput.value = state.inspirations.search;
-  refs.inspirationSortButton.textContent = `排序：${state.inspirations.sort === "newest" ? "最新" : "最早"}`;
+  refs.inspirationCategoryManagerHint.textContent = state.ui.inspirationCategoryManagerExpanded ? "点击收起分类管理" : "点击展开分类管理";
+  refs.inspirationCategoryManagerBody.classList.toggle("hidden", !state.ui.inspirationCategoryManagerExpanded);
+  refs.inspirationComposeTitle.textContent = editingItem ? "编辑灵感" : "新建灵感";
+  refs.inspirationComposeHint.textContent = editingItem ? "修改后会直接更新当前灵感条目。" : "填写内容和分类后保存到灵感列表。";
+  refs.inspirationComposeCategory.innerHTML = categories
+    .filter((item) => item !== "all")
+    .map((item) => `<option value="${item}">${escapeHtml(item)}</option>`)
+    .join("");
+  refs.inspirationComposeCategory.value = refs.inspirationComposeCategory.value || state.ui.inspirationComposeTags[0] || "待补充";
+  refs.inspirationCategoryList.innerHTML = categories
+    .filter((item) => item !== "all")
+    .map((item, index, items) => `
+        <div class="inspiration-category-row">
+          <span class="tag">${escapeHtml(item)}</span>
+          <div class="inline-actions inspiration-category-actions">
+            <button class="ghost-button compact-button" data-inspiration-category-action="move-up" data-category-name="${escapeAttribute(item)}" ${index === 0 ? "disabled" : ""}>上移</button>
+            <button class="ghost-button compact-button" data-inspiration-category-action="move-down" data-category-name="${escapeAttribute(item)}" ${index === items.length - 1 ? "disabled" : ""}>下移</button>
+            <button class="ghost-button compact-button" data-inspiration-category-action="rename" data-category-name="${escapeAttribute(item)}">重命名</button>
+            <button class="ghost-button compact-button" data-inspiration-category-action="delete" data-category-name="${escapeAttribute(item)}">删除</button>
+          </div>
+        </div>`)
+    .join("");
+  refs.inspirationSelectedTags.innerHTML = state.ui.inspirationComposeTags
+    .map(
+      (tag) =>
+        `<button class="bookmark-pill" data-inspiration-action="remove-tag" data-id="${escapeAttribute(tag)}">${escapeHtml(tag)} ×</button>`,
+    )
+    .join("");
+  refs.inspirationSortButton.textContent = `排序：${
+    state.inspirations.sort === "newest" ? "最新" : state.inspirations.sort === "oldest" ? "最早" : "收藏优先"
+  }`;
+  refs.saveInspirationButton.textContent = editingItem ? "保存修改" : "保存灵感";
   const items = getVisibleInspirations();
   refs.inspirationChatList.innerHTML =
     items.length === 0
@@ -1482,7 +1667,7 @@ function renderInspirationList() {
             (item) => `
               <article class="inspiration-bubble ${item.pinned ? "pinned" : ""}">
                 <header>
-                  <span class="tag">${escapeHtml(item.category)}</span>
+                  <span class="inspiration-tag-row">${getInspirationItemCategories(item).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</span>
                   <time>${escapeHtml(item.createdAt)}</time>
                 </header>
                 <p>${escapeHtml(item.text)}</p>
@@ -1538,6 +1723,7 @@ async function handleLibraryAction(action) {
 
 async function handleEntityAction(action, type, id) {
   state.ui.libraryEntityMenu = null;
+  state.ui.libraryEntityMenuPosition = null;
 
   if (type === "folder") {
     if (action === "enter") openFolder(id);
@@ -2096,6 +2282,13 @@ function handleNotesInput(event) {
   persist();
 }
 
+function handleOutlineInput(event) {
+  const chapter = getCurrentChapter();
+  if (!chapter) return;
+  chapter.outline = event.target.value;
+  persist();
+}
+
 function handleWordGoalInput(event) {
   const chapter = getCurrentChapter();
   if (!chapter) return;
@@ -2116,14 +2309,22 @@ function handleWritingAction(action) {
   if (action === "next") jumpChapter(1);
   if (action === "resume") restoreSelection(state.ui.selectionStart, state.ui.selectionEnd);
   if (action === "open-notes") {
-    state.ui.sidebarCollapsed = false;
+    state.ui.leftSidebarCollapsed = false;
     state.ui.sidebarSection = "notes";
     updateSidebar();
+    persist();
+  }
+  if (action === "open-outline") {
+    state.ui.leftSidebarCollapsed = false;
+    state.ui.sidebarSection = "outline";
+    updateSidebar();
+    persist();
   }
   if (action === "open-bookmarks") {
-    state.ui.sidebarCollapsed = false;
+    state.ui.leftSidebarCollapsed = false;
     state.ui.sidebarSection = "bookmarks";
     updateSidebar();
+    persist();
   }
 }
 
@@ -2192,20 +2393,60 @@ async function handleMenuAction(action) {
 }
 
 function handleInspirationAction(action, id) {
+  if (action === "remove-tag") {
+    state.ui.inspirationComposeTags = state.ui.inspirationComposeTags.filter((tag) => tag !== id);
+    if (state.ui.inspirationComposeTags.length === 0) state.ui.inspirationComposeTags = ["待补充"];
+    renderInspirationList();
+    persist();
+    return;
+  }
   const item = state.inspirations.items.find((entry) => entry.id === id);
   if (!item) return;
   if (action === "favorite") item.favorite = !item.favorite;
   if (action === "pin") item.pinned = !item.pinned;
   if (action === "insert") insertAtCursor(item.text);
   if (action === "edit") {
-    const next = prompt("编辑灵感", item.text);
-    if (next) item.text = next;
+    openInspirationComposer(item.id);
+    return;
   }
   if (action === "delete") {
     state.inspirations.items = state.inspirations.items.filter((entry) => entry.id !== id);
+    if (state.ui.inspirationEditingId === id) closeInspirationComposer(false);
   }
   renderInspirationList();
   persist();
+}
+
+function handleInspirationCategoryAction(action, categoryName) {
+  if (!categoryName) return;
+
+  if (action === "rename") {
+    const next = prompt("重命名分类", categoryName)?.trim();
+    if (!next || next === categoryName) return;
+    if (hasDuplicateInspirationCategoryName(categoryName, next)) {
+      alert(`分类“${next}”已经存在，请换一个名字。`);
+      return;
+    }
+    renameInspirationCategory(categoryName, next);
+    renderInspirationList();
+    persist();
+    return;
+  }
+
+  if (action === "delete") {
+    const affectedCount = getInspirationCategoryUsageCount(categoryName);
+    if (!confirm(`确认删除分类“${categoryName}”？将影响 ${affectedCount} 条灵感，已有灵感会移除这个分类标签。`)) return;
+    deleteInspirationCategory(categoryName);
+    renderInspirationList();
+    persist();
+    return;
+  }
+
+  if (action === "move-up" || action === "move-down") {
+    moveInspirationCategory(categoryName, action === "move-up" ? -1 : 1);
+    renderInspirationList();
+    persist();
+  }
 }
 
 function handleAccountAction(action) {
@@ -2229,6 +2470,205 @@ function handleAccountAction(action) {
     state.account.syncStatus = "本地写作中";
   }
   updateSettingsPanel();
+  persist();
+}
+
+function toggleLeftSidebar() {
+  state.ui.leftSidebarCollapsed = !state.ui.leftSidebarCollapsed;
+  updateSidebar();
+  persist();
+}
+
+function toggleRightSidebar() {
+  state.ui.rightSidebarCollapsed = !state.ui.rightSidebarCollapsed;
+  updateWorkspace();
+  persist();
+}
+
+function toggleThemeAccordion() {
+  state.ui.settingsThemeExpanded = !state.ui.settingsThemeExpanded;
+  updateSettingsPanel();
+  persist();
+}
+
+function toggleInspirationCategoryManager() {
+  state.ui.inspirationCategoryManagerExpanded = !state.ui.inspirationCategoryManagerExpanded;
+  renderInspirationList();
+  persist();
+}
+
+function openInspirationComposer(editingId = null) {
+  const editingItem = editingId ? state.inspirations.items.find((entry) => entry.id === editingId) ?? null : null;
+  state.ui.inspirationComposeOpen = true;
+  state.ui.inspirationEditingId = editingItem?.id ?? null;
+  state.ui.inspirationComposeTags = editingItem
+    ? getInspirationItemCategories(editingItem)
+    : state.ui.inspirationComposeTags.length > 0
+      ? state.ui.inspirationComposeTags
+      : ["待补充"];
+  updateWorkspace();
+  renderInspirationList();
+  requestAnimationFrame(() => {
+    refs.inspirationComposeInput.value = editingItem?.text ?? "";
+    refs.inspirationComposeCategory.value = state.ui.inspirationComposeTags[0] || "待补充";
+    refs.inspirationCustomCategoryInput.value = "";
+    refs.inspirationComposeInput.focus();
+    refs.inspirationComposeInput.setSelectionRange(refs.inspirationComposeInput.value.length, refs.inspirationComposeInput.value.length);
+  });
+  persist();
+}
+
+function closeInspirationComposer(shouldPersist = true) {
+  state.ui.inspirationComposeOpen = false;
+  state.ui.inspirationEditingId = null;
+  refs.inspirationComposeInput.value = "";
+  refs.inspirationComposeCategory.value = "待补充";
+  refs.inspirationCustomCategoryInput.value = "";
+  state.ui.inspirationComposeTags = ["待补充"];
+  updateWorkspace();
+  renderInspirationList();
+  if (shouldPersist) persist();
+}
+
+function addSelectedInspirationCategory() {
+  const selected = refs.inspirationComposeCategory.value;
+  const custom = refs.inspirationCustomCategoryInput.value.trim();
+  const nextTags = new Set(state.ui.inspirationComposeTags);
+  if (selected) nextTags.add(selected);
+  if (custom) {
+    createInspirationCategory(custom);
+    nextTags.add(custom);
+  }
+  state.ui.inspirationComposeTags = [...nextTags];
+  ensureInspirationCategoriesInOrder(state.ui.inspirationComposeTags);
+  refs.inspirationCustomCategoryInput.value = "";
+  renderInspirationList();
+  persist();
+}
+
+function handleCreateInspirationCategory() {
+  const name = refs.inspirationCategoryCreateInput.value.trim();
+  if (!name) return;
+  if (!createInspirationCategory(name)) {
+    alert(`分类“${name}”已经存在，请换一个名字。`);
+    return;
+  }
+  refs.inspirationCategoryCreateInput.value = "";
+  state.ui.inspirationCategoryManagerExpanded = true;
+  renderInspirationList();
+  persist();
+}
+
+function createInspirationCategory(name) {
+  const normalizedName = String(name || "").trim();
+  if (!normalizedName) return false;
+  if (hasDuplicateInspirationCategoryName(null, normalizedName)) return false;
+  ensureInspirationCategoriesInOrder([normalizedName]);
+  syncInspirationCategoryOrder();
+  return true;
+}
+
+function renameInspirationCategory(from, to) {
+  state.inspirations.items.forEach((item) => {
+    const tags = getInspirationItemCategories(item).map((tag) => (tag === from ? to : tag));
+    item.categories = [...new Set(tags)];
+    item.category = item.categories[0];
+  });
+  state.ui.inspirationComposeTags = state.ui.inspirationComposeTags.map((tag) => (tag === from ? to : tag));
+  state.inspirations.categoryOrder = state.inspirations.categoryOrder.map((tag) => (tag === from ? to : tag));
+  state.inspirations.categoryOrder = [...new Set(state.inspirations.categoryOrder)];
+  if (state.inspirations.activeCategory === from) state.inspirations.activeCategory = to;
+  syncInspirationCategoryOrder();
+}
+
+function deleteInspirationCategory(categoryName) {
+  state.inspirations.items.forEach((item) => {
+    const tags = getInspirationItemCategories(item).filter((tag) => tag !== categoryName);
+    item.categories = tags.length > 0 ? tags : ["待补充"];
+    item.category = item.categories[0];
+  });
+  state.ui.inspirationComposeTags = state.ui.inspirationComposeTags.filter((tag) => tag !== categoryName);
+  if (state.ui.inspirationComposeTags.length === 0) state.ui.inspirationComposeTags = ["待补充"];
+  state.inspirations.categoryOrder = state.inspirations.categoryOrder.filter((tag) => tag !== categoryName);
+  if (state.inspirations.activeCategory === categoryName) state.inspirations.activeCategory = "all";
+  syncInspirationCategoryOrder();
+}
+
+function moveInspirationCategory(categoryName, direction) {
+  syncInspirationCategoryOrder();
+  const index = state.inspirations.categoryOrder.indexOf(categoryName);
+  if (index === -1) return;
+  const nextIndex = index + direction;
+  if (nextIndex < 0 || nextIndex >= state.inspirations.categoryOrder.length) return;
+  const [moved] = state.inspirations.categoryOrder.splice(index, 1);
+  state.inspirations.categoryOrder.splice(nextIndex, 0, moved);
+}
+
+function hasDuplicateInspirationCategoryName(currentName, nextName) {
+  const normalizedCurrent = normalizeInspirationCategoryName(currentName);
+  const normalizedNext = normalizeInspirationCategoryName(nextName);
+  return getAvailableInspirationCategories()
+    .filter((item) => item !== "all")
+    .some((item) => normalizeInspirationCategoryName(item) === normalizedNext && normalizeInspirationCategoryName(item) !== normalizedCurrent);
+}
+
+function getInspirationCategoryUsageCount(categoryName) {
+  return state.inspirations.items.filter((item) => getInspirationItemCategories(item).includes(categoryName)).length;
+}
+
+function normalizeInspirationCategoryName(name) {
+  return String(name || "").trim().toLowerCase();
+}
+
+function ensureInspirationCategoriesInOrder(categories) {
+  categories.forEach((category) => {
+    if (!state.inspirations.categoryOrder.includes(category)) {
+      state.inspirations.categoryOrder.push(category);
+    }
+  });
+}
+
+function syncInspirationCategoryOrder() {
+  const availableCategories = new Set();
+  inspirationCategories.filter((item) => item !== "all").forEach((item) => availableCategories.add(item));
+  state.inspirations.categoryOrder.forEach((item) => availableCategories.add(item));
+  state.inspirations.items.forEach((item) => {
+    getInspirationItemCategories(item).forEach((tag) => availableCategories.add(tag));
+  });
+  state.ui.inspirationComposeTags.forEach((tag) => availableCategories.add(tag));
+
+  const ordered = state.inspirations.categoryOrder.filter((item) => availableCategories.has(item));
+  for (const category of availableCategories) {
+    if (!ordered.includes(category)) ordered.push(category);
+  }
+  state.inspirations.categoryOrder = ordered;
+}
+
+function saveComposedInspiration() {
+  const text = refs.inspirationComposeInput.value.trim();
+  addSelectedInspirationCategory();
+  const categories = state.ui.inspirationComposeTags.length > 0 ? state.ui.inspirationComposeTags : ["待补充"];
+  if (!text) return;
+  const editingItem = state.ui.inspirationEditingId
+    ? state.inspirations.items.find((entry) => entry.id === state.ui.inspirationEditingId) ?? null
+    : null;
+  if (editingItem) {
+    editingItem.text = text;
+    editingItem.categories = categories;
+    editingItem.category = categories[0];
+  } else {
+    state.inspirations.items.unshift({
+      id: uid("inspiration"),
+      text,
+      categories,
+      category: categories[0],
+      createdAt: timeNow(),
+      pinned: false,
+      favorite: false,
+    });
+  }
+  closeInspirationComposer();
+  renderInspirationList();
   persist();
 }
 
@@ -2266,7 +2706,13 @@ function handleBeforeSelectionMutation() {
 }
 
 function insertAtCursor(text) {
-  refs.documentEditor.focus();
+  if (document.activeElement !== refs.documentEditor) {
+    refs.documentEditor.focus();
+    refs.documentEditor.selectionStart = state.ui.selectionStart;
+    refs.documentEditor.selectionEnd = state.ui.selectionEnd;
+  } else {
+    refs.documentEditor.focus();
+  }
   handleBeforeSelectionMutation();
   const start = refs.documentEditor.selectionStart ?? state.ui.selectionStart;
   const end = refs.documentEditor.selectionEnd ?? state.ui.selectionEnd;
@@ -2445,12 +2891,6 @@ function getFocusSeconds() {
   return Math.floor((state.ui.focusAccumulated + running) / 1000);
 }
 
-function toggleSidebar() {
-  state.ui.sidebarCollapsed = !state.ui.sidebarCollapsed;
-  updateSidebar();
-  persist();
-}
-
 function switchTab(tabId) {
   state.activeTab = tabId;
   updateWorkspace();
@@ -2459,23 +2899,49 @@ function switchTab(tabId) {
 }
 
 function toggleInspirationSort() {
-  state.inspirations.sort = state.inspirations.sort === "newest" ? "oldest" : "newest";
+  state.inspirations.sort =
+    state.inspirations.sort === "newest" ? "oldest" : state.inspirations.sort === "oldest" ? "favorite" : "newest";
   renderInspirationList();
   persist();
 }
 
 function getVisibleInspirations() {
   let items = [...state.inspirations.items];
-  if (state.inspirations.activeCategory !== "all") items = items.filter((item) => item.category === state.inspirations.activeCategory);
+  if (state.inspirations.activeCategory !== "all") {
+    items = items.filter((item) => getInspirationItemCategories(item).includes(state.inspirations.activeCategory));
+  }
   if (state.inspirations.search.trim()) {
     const keyword = state.inspirations.search.trim().toLowerCase();
-    items = items.filter((item) => item.text.toLowerCase().includes(keyword) || item.category.toLowerCase().includes(keyword));
+    items = items.filter((item) => {
+      const categoryText = getInspirationItemCategories(item).join(" ").toLowerCase();
+      return item.text.toLowerCase().includes(keyword) || categoryText.includes(keyword);
+    });
   }
   items.sort((a, b) => {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-    return state.inspirations.sort === "newest" ? b.createdAt.localeCompare(a.createdAt) : a.createdAt.localeCompare(b.createdAt);
+    if (state.inspirations.sort === "favorite" && a.favorite !== b.favorite) return a.favorite ? -1 : 1;
+    return state.inspirations.sort === "oldest" ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt);
   });
   return items;
+}
+
+function getInspirationItemCategories(item) {
+  if (Array.isArray(item.categories) && item.categories.length > 0) return item.categories;
+  if (item.category) return [item.category];
+  return ["待补充"];
+}
+
+function getAvailableInspirationCategories() {
+  syncInspirationCategoryOrder();
+  return ["all", ...state.inspirations.categoryOrder];
+}
+
+function parseInspirationCategories(input) {
+  const tags = String(input)
+    .split(/[，,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return tags.length > 0 ? [...new Set(tags)] : ["待补充"];
 }
 
 function exportCurrentChapter() {
