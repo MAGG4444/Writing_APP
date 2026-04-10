@@ -558,6 +558,9 @@ textarea {
 .chapter-switcher-shell {
   position: relative;
   min-width: 0;
+  display: inline-grid;
+  justify-self: start;
+  max-width: 100%;
 }
 
 .chapter-switcher-row {
@@ -565,14 +568,18 @@ textarea {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  width: max-content;
+  max-width: 100%;
 }
 
 .chapter-switcher-trigger {
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   display: flex;
   align-items: center;
   gap: 12px;
+  width: auto;
+  max-width: min(56vw, 680px);
   min-height: 42px;
   padding: 0 14px;
   border: 1px solid var(--line);
@@ -591,6 +598,7 @@ textarea {
 .chapter-switcher-label,
 .chapter-panel-text strong {
   min-width: 0;
+  flex: 0 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
