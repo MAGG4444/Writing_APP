@@ -113,6 +113,7 @@ const desktopApi = window.storyForgeDesktop ?? null;
 let autosaveTimer = null;
 let focusTimer = null;
 let suppressHistory = false;
+let draggedChapterId = null;
 
 init();
 
@@ -312,6 +313,11 @@ function createSeedState() {
       librarySearch: "",
       librarySort: "updated-desc",
       libraryWorkViewId: "work-1",
+      chapterPanelOpen: false,
+      chapterPanelFocusedId: null,
+      chapterCreateMenuPosition: null,
+      chapterItemMenu: null,
+      chapterItemMenuPosition: null,
       inspirationComposeOpen: false,
       inspirationComposeTags: ["待补充"],
       inspirationEditingId: null,
@@ -390,6 +396,11 @@ function ensureStateIntegrity() {
   state.ui.librarySearch ??= "";
   state.ui.librarySort ??= "updated-desc";
   state.ui.libraryWorkViewId ??= null;
+  state.ui.chapterPanelOpen ??= false;
+  state.ui.chapterPanelFocusedId ??= null;
+  state.ui.chapterCreateMenuPosition ??= null;
+  state.ui.chapterItemMenu ??= null;
+  state.ui.chapterItemMenuPosition ??= null;
   state.ui.inspirationComposeOpen ??= false;
   state.ui.inspirationComposeTags ??= ["待补充"];
   state.ui.inspirationEditingId ??= null;
@@ -693,7 +704,25 @@ function TopBar() {
       <button class="icon-button" id="back-button" title="返回文件管理页">←</button>
       <div class="top-bar-meta">
         <strong id="current-work-title"></strong>
-        <span id="current-chapter-title"></span>
+        <div class="chapter-switcher-shell">
+          <div class="chapter-switcher-row">
+            <button class="chapter-switcher-trigger" id="chapter-switcher-button" title="查看并切换章节">
+              <span class="chapter-switcher-label" id="current-chapter-title"></span>
+              <small id="current-chapter-meta"></small>
+            </button>
+            <button class="ghost-button compact-button" id="new-chapter-button" data-chapter-create-trigger title="新建章节">+ 新建章节</button>
+          </div>
+          <div class="chapter-panel hidden" id="chapter-panel">
+            <div class="chapter-panel-head">
+              <div>
+                <strong>全部章节</strong>
+                <small id="chapter-panel-summary"></small>
+              </div>
+              <button class="ghost-button compact-button" data-chapter-create-trigger>+ 新建章节</button>
+            </div>
+            <div class="chapter-panel-list" id="chapter-panel-list"></div>
+          </div>
+        </div>
       </div>
       <div class="top-bar-actions">
         <span class="status-pill" id="save-status-pill"></span>
@@ -705,6 +734,7 @@ function TopBar() {
             <button data-menu-action="move-chapter">移动章节</button>
             <button data-menu-action="delete-chapter">删除章节</button>
             <button data-menu-action="history">历史版本</button>
+            <button data-menu-action="shortcuts">？ 快捷键</button>
             <button data-menu-action="export">导出</button>
             <button data-menu-action="focus">专注模式</button>
             <button data-menu-action="night">夜间模式</button>
@@ -933,6 +963,12 @@ function collectRefs() {
   refs.backButton = document.getElementById("back-button");
   refs.currentWorkTitle = document.getElementById("current-work-title");
   refs.currentChapterTitle = document.getElementById("current-chapter-title");
+  refs.currentChapterMeta = document.getElementById("current-chapter-meta");
+  refs.chapterSwitcherButton = document.getElementById("chapter-switcher-button");
+  refs.newChapterButton = document.getElementById("new-chapter-button");
+  refs.chapterPanel = document.getElementById("chapter-panel");
+  refs.chapterPanelSummary = document.getElementById("chapter-panel-summary");
+  refs.chapterPanelList = document.getElementById("chapter-panel-list");
   refs.saveStatusPill = document.getElementById("save-status-pill");
   refs.wordCountButton = document.getElementById("word-count-button");
   refs.moreMenuButton = document.getElementById("more-menu-button");
@@ -1016,6 +1052,12 @@ function bindEvents() {
     persist();
   });
   refs.backButton.addEventListener("click", handleBackNavigation);
+  refs.chapterSwitcherButton.addEventListener("click", toggleChapterPanel);
+  refs.chapterPanelList.addEventListener("keydown", handleChapterPanelKeydown);
+  refs.chapterPanelList.addEventListener("dragstart", handleChapterDragStart);
+  refs.chapterPanelList.addEventListener("dragover", handleChapterDragOver);
+  refs.chapterPanelList.addEventListener("drop", handleChapterDrop);
+  refs.chapterPanelList.addEventListener("dragend", handleChapterDragEnd);
   refs.moreMenuButton.addEventListener("click", () => refs.moreMenu.classList.toggle("hidden"));
   refs.wordCountButton.addEventListener("click", () => switchTab("writing"));
   refs.findNextButton.addEventListener("click", findNext);
@@ -1198,6 +1240,30 @@ async function handleDelegatedClick(event) {
     return;
   }
 
+  const chapterCreateTrigger = event.target.closest("[data-chapter-create-trigger]");
+  if (chapterCreateTrigger) {
+    toggleChapterCreateMenu(chapterCreateTrigger);
+    return;
+  }
+
+  const chapterCreateAction = event.target.closest("[data-chapter-create-mode]");
+  if (chapterCreateAction) {
+    handleChapterCreateRequest(chapterCreateAction.dataset.chapterCreateMode);
+    return;
+  }
+
+  const chapterItemMenuTrigger = event.target.closest("[data-chapter-item-menu-trigger]");
+  if (chapterItemMenuTrigger) {
+    toggleChapterItemMenu(chapterItemMenuTrigger.dataset.chapterId, chapterItemMenuTrigger);
+    return;
+  }
+
+  const chapterItemAction = event.target.closest("[data-chapter-item-action]");
+  if (chapterItemAction) {
+    await handleChapterItemAction(chapterItemAction.dataset.chapterItemAction, chapterItemAction.dataset.chapterId);
+    return;
+  }
+
   const menuAction = event.target.closest("[data-menu-action]");
   if (menuAction) {
     await handleMenuAction(menuAction.dataset.menuAction);
@@ -1273,8 +1339,12 @@ async function handleDelegatedClick(event) {
     state.ui.libraryCreateOpen = false;
     state.ui.libraryEntityMenu = null;
     state.ui.libraryEntityMenuPosition = null;
+    if (!event.target.closest(".chapter-switcher-shell")) {
+      closeChapterOverlays();
+    }
     updateLibraryHeader();
     renderLibraryPage();
+    updateChapterPanel();
     renderPortalLayer();
     persist();
   }
@@ -1286,6 +1356,7 @@ function updateAll() {
   renderLibraryPage();
   hydrateEditor();
   updateTopBar();
+  updateChapterPanel();
   updateSidebar();
   updateWorkspace();
   updateSettingsPanel();
@@ -1456,7 +1527,7 @@ function renderEmptyLibraryState() {
 
 function renderPortalLayer() {
   if (!refs.portalLayer) return;
-  refs.portalLayer.innerHTML = renderEntityMenuPortal();
+  refs.portalLayer.innerHTML = [renderEntityMenuPortal(), renderChapterCreateMenuPortal(), renderChapterItemMenuPortal()].filter(Boolean).join("");
 }
 
 function renderEntityMenuPortal() {
@@ -1478,6 +1549,36 @@ function renderEntityMenuPortal() {
 
   const { top, left } = state.ui.libraryEntityMenuPosition;
   return `<div class="dropdown-menu portal-menu" style="top:${top}px;left:${left}px;">${buttons.join("")}</div>`;
+}
+
+function renderChapterCreateMenuPortal() {
+  if (!state.ui.chapterCreateMenuPosition) return "";
+  const { top, left } = state.ui.chapterCreateMenuPosition;
+  return `
+    <div class="dropdown-menu portal-menu" style="top:${top}px;left:${left}px;">
+      <button data-chapter-create-mode="end">在末尾新建</button>
+      <button data-chapter-create-mode="after-current">在当前章节后插入</button>
+      <button data-chapter-create-mode="before-current">在当前章节前插入</button>
+    </div>
+  `;
+}
+
+function renderChapterItemMenuPortal() {
+  if (!state.ui.chapterItemMenu || !state.ui.chapterItemMenuPosition) return "";
+  const { top, left } = state.ui.chapterItemMenuPosition;
+  const chapter = getChapter(state.ui.chapterItemMenu);
+  const work = chapter ? getWork(chapter.workId) : null;
+  if (!chapter || !work) return "";
+  const index = work.chapterIds.indexOf(chapter.id);
+  return `
+    <div class="dropdown-menu portal-menu" style="top:${top}px;left:${left}px;">
+      <button data-chapter-item-action="rename" data-chapter-id="${chapter.id}">重命名</button>
+      <button data-chapter-item-action="duplicate" data-chapter-id="${chapter.id}">复制</button>
+      <button data-chapter-item-action="move-up" data-chapter-id="${chapter.id}" ${index <= 0 ? "disabled" : ""}>上移</button>
+      <button data-chapter-item-action="move-down" data-chapter-id="${chapter.id}" ${index >= work.chapterIds.length - 1 ? "disabled" : ""}>下移</button>
+      <button data-chapter-item-action="delete" data-chapter-id="${chapter.id}">删除</button>
+    </div>
+  `;
 }
 
 function getEntityMenuPosition(trigger) {
@@ -1519,8 +1620,70 @@ function updateTopBar() {
   const chapter = getCurrentChapter();
   refs.currentWorkTitle.textContent = work?.title ?? "未选择作品";
   refs.currentChapterTitle.textContent = chapter?.title ?? "请先返回目录页选择章节";
+  refs.currentChapterMeta.textContent = chapter ? `${chapter.wordCount} 字 · ${formatRelativeTime(chapter.updatedAt)}` : "点击查看全部章节";
   refs.wordCountButton.textContent = `${countWords(chapter?.content ?? "")} 字`;
   refs.saveStatusPill.textContent = chapter ? `${chapter.saveStatus} · ${chapter.saveTime}` : "未打开章节";
+}
+
+function updateChapterPanel() {
+  const work = getCurrentWork();
+  const chapter = getCurrentChapter();
+  refs.chapterPanel.classList.toggle("hidden", !state.ui.chapterPanelOpen || !work);
+  if (!work) {
+    refs.chapterPanelSummary.textContent = "请先打开作品";
+    refs.chapterPanelList.innerHTML = `<div class="empty-inline">当前没有可管理的章节。</div>`;
+    return;
+  }
+
+  const chapters = getWorkChapters(work.id);
+  ensureFocusedChapter(work.id, chapters);
+  refs.chapterPanelSummary.textContent = `${getWorkChapters(work.id).length} 章 · 当前 ${chapter?.title ?? "未选择"}`;
+  refs.chapterPanelList.innerHTML =
+    chapters.length > 0
+      ? chapters.map((item, index) => renderEditorChapterPanelRow(work, item, index)).join("")
+      : `<div class="empty-inline">当前作品还没有章节。</div>`;
+
+  if (state.ui.chapterPanelOpen) {
+    requestAnimationFrame(() => {
+      const target =
+        refs.chapterPanelList.querySelector(".chapter-panel-entry.focused") ??
+        refs.chapterPanelList.querySelector(".chapter-panel-entry.active");
+      target?.scrollIntoView({ block: "nearest" });
+    });
+  }
+}
+
+function renderEditorChapterPanelRow(work, chapter, index) {
+  const isActive = chapter.id === state.activeChapterId;
+  const isFocused = chapter.id === state.ui.chapterPanelFocusedId;
+  return `
+    <div
+      class="chapter-panel-row"
+      draggable="true"
+      data-chapter-drag-row
+      data-chapter-id="${chapter.id}"
+      data-work-id="${work.id}"
+      tabindex="0"
+    >
+      <button
+        class="chapter-panel-entry ${isActive ? "active" : ""} ${isFocused ? "focused" : ""}"
+        data-work-id="${work.id}"
+        data-open-chapter="${chapter.id}"
+      >
+        <span class="chapter-panel-index" title="拖拽可排序">${getChapterOrderNumber(work.id, chapter.id)}</span>
+        <span class="chapter-panel-text">
+          <strong>${escapeHtml(chapter.title)}</strong>
+          <small>${chapter.wordCount} 字 · ${formatRelativeTime(chapter.updatedAt)}</small>
+        </span>
+      </button>
+      <button
+        class="icon-button chapter-panel-item-button"
+        data-chapter-item-menu-trigger
+        data-chapter-id="${chapter.id}"
+        title="章节操作"
+      >⋯</button>
+    </div>
+  `;
 }
 
 function updateSidebar() {
@@ -1775,6 +1938,47 @@ async function handleChapterAction(action, workId, chapterId) {
   }
 }
 
+async function handleChapterItemAction(action, chapterId) {
+  const chapter = getChapter(chapterId);
+  const work = chapter ? getWork(chapter.workId) : null;
+  if (!chapter || !work) return;
+
+  state.ui.chapterItemMenu = null;
+  state.ui.chapterItemMenuPosition = null;
+
+  if (action === "rename") {
+    openRenameModal("chapter", chapter.id);
+    renderPortalLayer();
+    return;
+  }
+
+  if (action === "duplicate") {
+    duplicateChapter(work.id, chapter.id);
+    await syncLibraryToDesktop();
+    updateAll();
+    return;
+  }
+
+  if (action === "move-up") {
+    moveChapterWithinWork(work.id, chapter.id, -1);
+    await syncLibraryToDesktop();
+    updateAll();
+    return;
+  }
+
+  if (action === "move-down") {
+    moveChapterWithinWork(work.id, chapter.id, 1);
+    await syncLibraryToDesktop();
+    updateAll();
+    return;
+  }
+
+  if (action === "delete") {
+    openDeleteChapterModal(work.id, chapter.id);
+    renderPortalLayer();
+  }
+}
+
 function openCreateFolderModal() {
   state.ui.modal = {
     type: "create-folder",
@@ -1823,15 +2027,25 @@ function openCreateWorkModal() {
   updateModal();
 }
 
-function openCreateChapterModal(workId) {
+function openCreateChapterModal(workId, options = {}) {
+  const work = getWork(workId);
+  const currentChapterId = options.referenceChapterId ?? state.activeChapterId;
+  const hasCurrent = Boolean(currentChapterId && work?.chapterIds.includes(currentChapterId));
+  const defaultMode = options.mode ?? (hasCurrent ? "after-current" : "end");
   state.ui.modal = {
     type: "create-chapter",
-    payload: { workId },
+    payload: { workId, referenceChapterId: currentChapterId },
     title: "新建章节",
     body: `
       <div class="modal-form">
         <label>章节标题</label>
-        <input id="modal-chapter-title" type="text" placeholder="输入章节标题" />
+        <input id="modal-chapter-title" type="text" placeholder="例如：第三章：夜航" value="${escapeAttribute(generateDefaultChapterTitle(workId))}" />
+        <label>插入位置</label>
+        <select id="modal-chapter-position">
+          <option value="end" ${defaultMode === "end" ? "selected" : ""}>在末尾新建</option>
+          <option value="after-current" ${defaultMode === "after-current" ? "selected" : ""} ${hasCurrent ? "" : "disabled"}>在当前章节后插入</option>
+          <option value="before-current" ${defaultMode === "before-current" ? "selected" : ""} ${hasCurrent ? "" : "disabled"}>在当前章节前插入</option>
+        </select>
       </div>
     `,
     actions: [
@@ -1955,16 +2169,19 @@ async function handleModalAction(action) {
 
   if (action === "submit-create-chapter") {
     const workId = state.ui.modal?.payload?.workId;
+    const referenceChapterId = state.ui.modal?.payload?.referenceChapterId ?? state.activeChapterId;
     const work = getWork(workId);
-    const title = refs.modalRoot.querySelector("#modal-chapter-title")?.value.trim();
-    if (!work || !title) return;
+    const title = refs.modalRoot.querySelector("#modal-chapter-title")?.value.trim() || generateDefaultChapterTitle(workId);
+    const insertMode = refs.modalRoot.querySelector("#modal-chapter-position")?.value || "end";
+    if (!work) return;
     const chapter = createChapterForWork(work.id, title);
-    work.chapterIds.push(chapter.id);
+    insertChapterIntoWork(work, chapter.id, insertMode, referenceChapterId);
     work.updatedAt = new Date().toISOString();
     work.lastOpenedChapterId = chapter.id;
     state.activeWorkId = work.id;
     state.activeChapterId = chapter.id;
     state.ui.libraryWorkViewId = work.id;
+    closeChapterOverlays();
     state.ui.modal = null;
     await syncLibraryToDesktop();
     updateAll();
@@ -2101,6 +2318,7 @@ function deleteChapter(workId, chapterId) {
   const work = getWork(workId);
   const chapter = getChapter(chapterId);
   if (!work || !chapter) return;
+  const chapterIndex = work.chapterIds.indexOf(chapter.id);
   work.chapterIds = work.chapterIds.filter((id) => id !== chapter.id);
   state.chapters = state.chapters.filter((item) => item.id !== chapter.id);
   if (work.lastOpenedChapterId === chapter.id) work.lastOpenedChapterId = work.chapterIds[0] ?? null;
@@ -2109,8 +2327,8 @@ function deleteChapter(workId, chapterId) {
     deleteWork(work.id);
   } else if (state.activeChapterId === chapter.id) {
     state.activeWorkId = work.id;
-    state.activeChapterId = work.chapterIds[0];
-    state.route = "library";
+    state.activeChapterId = work.chapterIds[Math.max(0, chapterIndex - 1)] ?? work.chapterIds[0];
+    state.route = "editor";
   }
 }
 
@@ -2201,6 +2419,8 @@ async function openChapter(workId, chapterId) {
   state.activeChapterId = chapterId;
   state.route = "editor";
   state.activeTab = "writing";
+  closeChapterMenus();
+  state.ui.chapterPanelOpen = false;
   const work = getWork(workId);
   if (work) {
     work.lastOpenedChapterId = chapterId;
@@ -2241,20 +2461,36 @@ function handleEditorInput() {
 
 function handleEditorKeydown(event) {
   const pairs = { "(": ")", "（": "）", "[": "]", "【": "】", "\"": "\"", "“": "”", "'": "'" };
+  const key = event.key.toLowerCase();
 
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f") {
+  if ((event.metaKey || event.ctrlKey) && event.shiftKey && key === "o") {
+    event.preventDefault();
+    openChapterPanelForKeyboard();
+    return;
+  }
+  if ((event.metaKey || event.ctrlKey) && key === "f") {
     event.preventDefault();
     state.ui.replaceOpen = true;
     updateWorkspace();
     refs.findQueryInput.focus();
     return;
   }
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !event.shiftKey) {
+  if (event.altKey && !event.metaKey && !event.ctrlKey && !event.shiftKey && event.key === "ArrowUp") {
+    event.preventDefault();
+    jumpChapter(-1);
+    return;
+  }
+  if (event.altKey && !event.metaKey && !event.ctrlKey && !event.shiftKey && event.key === "ArrowDown") {
+    event.preventDefault();
+    jumpChapter(1);
+    return;
+  }
+  if ((event.metaKey || event.ctrlKey) && key === "z" && !event.shiftKey) {
     event.preventDefault();
     undoEditor();
     return;
   }
-  if ((event.metaKey || event.ctrlKey) && (event.key.toLowerCase() === "y" || (event.key.toLowerCase() === "z" && event.shiftKey))) {
+  if ((event.metaKey || event.ctrlKey) && (key === "y" || (key === "z" && event.shiftKey))) {
     event.preventDefault();
     redoEditor();
     return;
@@ -2340,15 +2576,9 @@ async function handleMenuAction(action) {
   }
 
   if (action === "move-chapter") {
-    const currentIndex = work.chapterIds.findIndex((id) => id === chapter.id);
-    const nextIndex = Number(prompt(`移动到章节序号（1 - ${work.chapterIds.length}）`, String(currentIndex + 1))) - 1;
-    if (Number.isInteger(nextIndex) && nextIndex >= 0 && nextIndex < work.chapterIds.length) {
-      work.chapterIds.splice(currentIndex, 1);
-      work.chapterIds.splice(nextIndex, 0, chapter.id);
-      work.updatedAt = new Date().toISOString();
-      await syncLibraryToDesktop();
-      updateAll();
-    }
+    state.ui.chapterPanelOpen = true;
+    updateChapterPanel();
+    persist();
     return;
   }
 
@@ -2367,6 +2597,27 @@ async function handleMenuAction(action) {
           ? chapter.versions.map((version) => `<div class="history-row"><strong>${escapeHtml(version.label)}</strong><span>${escapeHtml(version.time)}</span></div>`).join("")
           : `<div class="empty-inline">暂无历史版本</div>`
       }</div>`,
+      actions: [{ id: "close-modal", label: "关闭", primary: true }],
+    };
+    updateModal();
+    return;
+  }
+
+  if (action === "shortcuts") {
+    state.ui.modal = {
+      type: "shortcuts",
+      title: "快捷键说明",
+      message: "以下快捷键可在编辑页和章节面板中使用。",
+      body: `
+        <div class="history-list">
+          <div class="history-row"><strong>Ctrl / Cmd + Shift + O</strong><span>打开章节面板并聚焦搜索</span></div>
+          <div class="history-row"><strong>↑ / ↓</strong><span>在章节面板中移动焦点</span></div>
+          <div class="history-row"><strong>Enter</strong><span>在章节面板中切换到当前焦点章节</span></div>
+          <div class="history-row"><strong>Esc</strong><span>关闭章节面板并返回正文</span></div>
+          <div class="history-row"><strong>Alt + ↑ / ↓</strong><span>在编辑器中快速切换上一章 / 下一章</span></div>
+          <div class="history-row"><strong>拖拽章节行</strong><span>在章节面板中调整章节顺序</span></div>
+        </div>
+      `,
       actions: [{ id: "close-modal", label: "关闭", primary: true }],
     };
     updateModal();
@@ -2898,6 +3149,72 @@ function switchTab(tabId) {
   persist();
 }
 
+function toggleChapterPanel() {
+  if (!getCurrentWork()) return;
+  state.ui.chapterPanelOpen = !state.ui.chapterPanelOpen;
+  if (state.ui.chapterPanelOpen) {
+    state.ui.chapterPanelFocusedId = state.activeChapterId;
+  }
+  closeChapterMenus();
+  updateChapterPanel();
+  renderPortalLayer();
+  persist();
+}
+
+function toggleChapterCreateMenu(trigger) {
+  if (!getCurrentWork()) return;
+  const nextPosition = getPopupPosition(trigger, 196);
+  const samePosition =
+    state.ui.chapterCreateMenuPosition &&
+    Math.abs(state.ui.chapterCreateMenuPosition.top - nextPosition.top) < 1 &&
+    Math.abs(state.ui.chapterCreateMenuPosition.left - nextPosition.left) < 1;
+  state.ui.chapterCreateMenuPosition = samePosition ? null : nextPosition;
+  state.ui.chapterItemMenu = null;
+  state.ui.chapterItemMenuPosition = null;
+  renderPortalLayer();
+  persist();
+}
+
+function handleChapterCreateRequest(mode) {
+  const work = getCurrentWork();
+  const chapter = getCurrentChapter();
+  if (!work) return;
+  state.ui.chapterPanelOpen = true;
+  state.ui.chapterCreateMenuPosition = null;
+  openCreateChapterModal(work.id, {
+    mode,
+    referenceChapterId: chapter?.id ?? work.chapterIds[0] ?? null,
+  });
+  renderPortalLayer();
+  persist();
+}
+
+function toggleChapterItemMenu(chapterId, trigger) {
+  const nextKey = String(chapterId);
+  if (state.ui.chapterItemMenu === nextKey) {
+    state.ui.chapterItemMenu = null;
+    state.ui.chapterItemMenuPosition = null;
+  } else {
+    state.ui.chapterItemMenu = nextKey;
+    state.ui.chapterItemMenuPosition = getPopupPosition(trigger, 180);
+  }
+  state.ui.chapterCreateMenuPosition = null;
+  renderPortalLayer();
+  persist();
+}
+
+function closeChapterMenus() {
+  state.ui.chapterCreateMenuPosition = null;
+  state.ui.chapterItemMenu = null;
+  state.ui.chapterItemMenuPosition = null;
+}
+
+function closeChapterOverlays() {
+  state.ui.chapterPanelOpen = false;
+  state.ui.chapterPanelFocusedId = null;
+  closeChapterMenus();
+}
+
 function toggleInspirationSort() {
   state.inspirations.sort =
     state.inspirations.sort === "newest" ? "oldest" : state.inspirations.sort === "oldest" ? "favorite" : "newest";
@@ -2923,6 +3240,216 @@ function getVisibleInspirations() {
     return state.inspirations.sort === "oldest" ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt);
   });
   return items;
+}
+
+function openChapterPanelForKeyboard() {
+  const work = getCurrentWork();
+  if (!work) return;
+  state.ui.chapterPanelOpen = true;
+  state.ui.chapterPanelFocusedId = state.activeChapterId ?? work.chapterIds[0] ?? null;
+  closeChapterMenus();
+  updateChapterPanel();
+  renderPortalLayer();
+  requestAnimationFrame(() => refs.chapterPanelList.focus());
+  persist();
+}
+
+function handleChapterPanelKeydown(event) {
+  if (!state.ui.chapterPanelOpen) return;
+  const work = getCurrentWork();
+  if (!work) return;
+  const chapters = getWorkChapters(work.id);
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeChapterOverlays();
+    updateChapterPanel();
+    renderPortalLayer();
+    refs.documentEditor.focus();
+    persist();
+    return;
+  }
+  if (chapters.length === 0) return;
+  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    event.preventDefault();
+    moveChapterPanelFocus(work.id, event.key === "ArrowDown" ? 1 : -1, chapters);
+    return;
+  }
+  if (event.key === "Enter") {
+    event.preventDefault();
+    const targetId = state.ui.chapterPanelFocusedId ?? chapters[0]?.id;
+    if (targetId) void openChapter(work.id, targetId);
+  }
+}
+
+function moveChapterPanelFocus(workId, direction, chapters = getWorkChapters(workId)) {
+  if (chapters.length === 0) return;
+  const currentId = state.ui.chapterPanelFocusedId && chapters.some((chapter) => chapter.id === state.ui.chapterPanelFocusedId)
+    ? state.ui.chapterPanelFocusedId
+    : state.activeChapterId;
+  const currentIndex = Math.max(0, chapters.findIndex((chapter) => chapter.id === currentId));
+  const nextIndex = Math.max(0, Math.min(chapters.length - 1, currentIndex + direction));
+  state.ui.chapterPanelFocusedId = chapters[nextIndex].id;
+  updateChapterPanel();
+  persist();
+}
+
+function ensureFocusedChapter(workId, chapters = getWorkChapters(workId)) {
+  if (chapters.length === 0) {
+    state.ui.chapterPanelFocusedId = null;
+    return;
+  }
+  if (state.ui.chapterPanelFocusedId && chapters.some((chapter) => chapter.id === state.ui.chapterPanelFocusedId)) return;
+  state.ui.chapterPanelFocusedId = chapters.find((chapter) => chapter.id === state.activeChapterId)?.id ?? chapters[0].id;
+}
+
+function getChapterOrderNumber(workId, chapterId) {
+  const work = getWork(workId);
+  if (!work) return "-";
+  const index = work.chapterIds.indexOf(chapterId);
+  return index >= 0 ? index + 1 : "-";
+}
+
+function insertChapterIntoWork(work, chapterId, mode = "end", referenceChapterId = state.activeChapterId) {
+  const index = getChapterInsertIndex(work, mode, referenceChapterId);
+  work.chapterIds.splice(index, 0, chapterId);
+}
+
+function getChapterInsertIndex(work, mode, referenceChapterId) {
+  if (!work) return 0;
+  const currentIndex = work.chapterIds.indexOf(referenceChapterId);
+  if (mode === "before-current" && currentIndex >= 0) return currentIndex;
+  if (mode === "after-current" && currentIndex >= 0) return currentIndex + 1;
+  return work.chapterIds.length;
+}
+
+function moveChapterWithinWork(workId, chapterId, direction) {
+  const work = getWork(workId);
+  if (!work) return false;
+  const index = work.chapterIds.indexOf(chapterId);
+  const nextIndex = index + direction;
+  if (index < 0 || nextIndex < 0 || nextIndex >= work.chapterIds.length) return false;
+  const [moved] = work.chapterIds.splice(index, 1);
+  work.chapterIds.splice(nextIndex, 0, moved);
+  work.updatedAt = new Date().toISOString();
+  if (state.activeWorkId === work.id && state.activeChapterId === chapterId) {
+    work.lastOpenedChapterId = chapterId;
+  }
+  return true;
+}
+
+function moveChapterToIndex(workId, chapterId, targetIndex) {
+  const work = getWork(workId);
+  if (!work) return false;
+  const currentIndex = work.chapterIds.indexOf(chapterId);
+  if (currentIndex < 0) return false;
+  const boundedIndex = Math.max(0, Math.min(work.chapterIds.length - 1, targetIndex));
+  if (currentIndex === boundedIndex) return false;
+  const [moved] = work.chapterIds.splice(currentIndex, 1);
+  work.chapterIds.splice(boundedIndex, 0, moved);
+  work.updatedAt = new Date().toISOString();
+  if (state.activeWorkId === work.id && state.activeChapterId === chapterId) {
+    work.lastOpenedChapterId = chapterId;
+  }
+  return true;
+}
+
+function duplicateChapter(workId, sourceChapterId) {
+  const work = getWork(workId);
+  const source = getChapter(sourceChapterId);
+  if (!work || !source) return null;
+  const chapter = createChapterForWork(work.id, `${source.title}（副本）`, {
+    chapterTitle: `${source.title}（副本）`,
+    content: source.content,
+    notes: source.notes,
+    outline: source.outline,
+  });
+  chapter.savedContent = source.savedContent;
+  chapter.bookmarks = [...source.bookmarks];
+  chapter.wordGoal = source.wordGoal;
+  chapter.wordCount = countWords(chapter.content);
+  insertChapterIntoWork(work, chapter.id, "after-current", source.id);
+  work.updatedAt = new Date().toISOString();
+  work.lastOpenedChapterId = chapter.id;
+  state.activeWorkId = work.id;
+  state.activeChapterId = chapter.id;
+  state.route = "editor";
+  return chapter;
+}
+
+function generateDefaultChapterTitle(workId) {
+  const count = getWork(workId)?.chapterIds.length ?? 0;
+  return `第 ${count + 1} 章`;
+}
+
+function getPopupPosition(trigger, menuWidth = 196) {
+  const rect = trigger.getBoundingClientRect();
+  const viewportPadding = 12;
+  const left = Math.min(Math.max(viewportPadding, rect.right - menuWidth), window.innerWidth - menuWidth - viewportPadding);
+  const top = Math.max(viewportPadding, Math.min(rect.bottom + 8, window.innerHeight - 260));
+  return { top, left };
+}
+
+function handleChapterDragStart(event) {
+  const row = event.target.closest("[data-chapter-drag-row]");
+  if (!row) return;
+  draggedChapterId = row.dataset.chapterId;
+  refs.chapterPanelList.classList.add("drag-active");
+  row.classList.add("dragging");
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", draggedChapterId);
+  }
+}
+
+function handleChapterDragOver(event) {
+  const row = event.target.closest("[data-chapter-drag-row]");
+  if (!draggedChapterId || !row || row.dataset.chapterId === draggedChapterId) return;
+  event.preventDefault();
+  const rect = row.getBoundingClientRect();
+  const position = event.clientY - rect.top < rect.height / 2 ? "before" : "after";
+  refs.chapterPanelList.querySelectorAll("[data-drop-position]").forEach((item) => item.removeAttribute("data-drop-position"));
+  row.dataset.dropPosition = position;
+}
+
+async function handleChapterDrop(event) {
+  const row = event.target.closest("[data-chapter-drag-row]");
+  const work = getCurrentWork();
+  if (!draggedChapterId || !row || !work) return;
+  event.preventDefault();
+  const targetChapterId = row.dataset.chapterId;
+  const rect = row.getBoundingClientRect();
+  const placeAfter = event.clientY - rect.top >= rect.height / 2;
+  clearChapterDragIndicators();
+  if (targetChapterId === draggedChapterId) {
+    draggedChapterId = null;
+    return;
+  }
+  const sourceIndex = work.chapterIds.indexOf(draggedChapterId);
+  const targetIndex = work.chapterIds.indexOf(targetChapterId);
+  if (sourceIndex < 0 || targetIndex < 0) {
+    draggedChapterId = null;
+    return;
+  }
+  let nextIndex = placeAfter ? targetIndex + 1 : targetIndex;
+  if (sourceIndex < nextIndex) nextIndex -= 1;
+  const moved = moveChapterToIndex(work.id, draggedChapterId, nextIndex);
+  draggedChapterId = null;
+  if (!moved) return;
+  state.ui.chapterPanelFocusedId = state.activeChapterId;
+  updateAll();
+  await syncLibraryToDesktop();
+  updateAll();
+}
+
+function handleChapterDragEnd() {
+  draggedChapterId = null;
+  clearChapterDragIndicators();
+}
+
+function clearChapterDragIndicators() {
+  refs.chapterPanelList.classList.remove("drag-active");
+  refs.chapterPanelList.querySelectorAll(".dragging").forEach((item) => item.classList.remove("dragging"));
+  refs.chapterPanelList.querySelectorAll("[data-drop-position]").forEach((item) => item.removeAttribute("data-drop-position"));
 }
 
 function getInspirationItemCategories(item) {
