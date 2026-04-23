@@ -3,8 +3,10 @@ const { app, BrowserWindow, Menu, dialog, ipcMain } = require("electron");
 const fs = require("node:fs/promises");
 
 const isMac = process.platform === "darwin";
-const LIBRARY_DIRNAME = "story-forge-library-v2";
+const LIBRARY_DIRNAME = "jian-ji-library-v2";
 const LIBRARY_STATE_FILE = "library-state.json";
+const WORKS_DIRNAME = "works";
+const WORK_INSPIRATIONS_FILE = "inspirations.json";
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -13,7 +15,7 @@ function createWindow() {
     minWidth: 1160,
     minHeight: 760,
     backgroundColor: "#f4efe7",
-    title: "Story Forge",
+    title: "简纪",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -90,9 +92,22 @@ function getLibraryStatePath() {
   return path.join(getLibraryRoot(), LIBRARY_STATE_FILE);
 }
 
+function getWorksRoot() {
+  return path.join(getLibraryRoot(), WORKS_DIRNAME);
+}
+
+function getWorkDirectory(workId) {
+  return path.join(getWorksRoot(), String(workId));
+}
+
+function getWorkInspirationsPath(workId) {
+  return path.join(getWorkDirectory(workId), WORK_INSPIRATIONS_FILE);
+}
+
 async function ensureLibraryRoot() {
   const root = getLibraryRoot();
   await fs.mkdir(root, { recursive: true });
+  await fs.mkdir(getWorksRoot(), { recursive: true });
   return root;
 }
 
@@ -156,6 +171,70 @@ function countWords(text) {
   return cjkCount + latinCount;
 }
 
+function normalizeInspirationItem(item, fallbackWorkId = null) {
+  const workId = String(item?.workId || fallbackWorkId || "").trim();
+  const content = String(item?.content ?? item?.text ?? "").trim();
+  if (!workId || !content) return null;
+  const categories = Array.isArray(item?.categories)
+    ? item.categories.map((tag) => String(tag).trim()).filter(Boolean)
+    : item?.category
+      ? [String(item.category).trim()]
+      : ["待补充"];
+  const primaryCategory = categories[0] || "待补充";
+  const createdAt = normalizeIsoDate(item?.createdAt);
+  return {
+    id: String(item?.id || `inspiration-${Date.now()}`),
+    workId,
+    chapterId: item?.chapterId == null ? null : String(item.chapterId),
+    content,
+    categories,
+    category: primaryCategory,
+    isFavorite: Boolean(item?.isFavorite ?? item?.favorite),
+    isPinned: Boolean(item?.isPinned ?? item?.pinned),
+    createdAt,
+    updatedAt: normalizeIsoDate(item?.updatedAt, createdAt),
+  };
+}
+
+function normalizeIsoDate(value, fallback = new Date().toISOString()) {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed.toISOString();
+}
+
+function normalizeInspirations(inspirations, works, activeWorkId = null) {
+  const normalized = {
+    categoryOrder: Array.isArray(inspirations?.categoryOrder)
+      ? inspirations.categoryOrder.map((item) => String(item).trim()).filter(Boolean)
+      : [],
+    itemsByWork: {},
+  };
+  const workIds = new Set((works || []).map((work) => work.id));
+  const fallbackWorkId = activeWorkId || works?.[0]?.id || null;
+  const sourceByWork =
+    inspirations && typeof inspirations.itemsByWork === "object" && inspirations.itemsByWork
+      ? inspirations.itemsByWork
+      : {};
+
+  if (Array.isArray(inspirations?.items)) {
+    inspirations.items.forEach((item) => {
+      const next = normalizeInspirationItem(item, fallbackWorkId);
+      if (!next || !workIds.has(next.workId)) return;
+      if (!normalized.itemsByWork[next.workId]) normalized.itemsByWork[next.workId] = [];
+      normalized.itemsByWork[next.workId].push(next);
+    });
+  }
+
+  Object.entries(sourceByWork).forEach(([workId, items]) => {
+    if (!Array.isArray(items) || !workIds.has(workId)) return;
+    normalized.itemsByWork[workId] = items
+      .map((item) => normalizeInspirationItem(item, workId))
+      .filter(Boolean)
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  });
+
+  return normalized;
+}
+
 function migrateLegacyWorks(legacyWorks) {
   const folders = [];
   const works = [];
@@ -193,7 +272,11 @@ function migrateLegacyWorks(legacyWorks) {
 
 function normalizeLibraryState(payload) {
   if (Array.isArray(payload)) {
-    return migrateLegacyWorks(payload);
+    const legacy = migrateLegacyWorks(payload);
+    return {
+      ...legacy,
+      inspirations: { categoryOrder: [], itemsByWork: {} },
+    };
   }
 
   const state = payload && typeof payload === "object" ? payload : {};
@@ -213,31 +296,86 @@ function normalizeLibraryState(payload) {
 
   const workIds = new Set(works.map((work) => work.id));
   const filteredChapters = chapters.filter((chapter) => workIds.has(chapter.workId));
-  return { folders, works, chapters: filteredChapters };
+  const inspirations = normalizeInspirations(state.inspirations, works, state.activeWorkId);
+  return { folders, works, chapters: filteredChapters, inspirations };
 }
 
 async function saveLibrary(libraryPayload) {
   await ensureLibraryRoot();
   const library = normalizeLibraryState(libraryPayload);
-  await fs.writeFile(getLibraryStatePath(), JSON.stringify(library, null, 2), "utf8");
+  await fs.writeFile(
+    getLibraryStatePath(),
+    JSON.stringify(
+      {
+        folders: library.folders,
+        works: library.works,
+        chapters: library.chapters,
+        inspirations: { categoryOrder: library.inspirations.categoryOrder },
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+
+  const activeWorkIds = new Set(library.works.map((work) => work.id));
+  await Promise.all(
+    library.works.map(async (work) => {
+      await fs.mkdir(getWorkDirectory(work.id), { recursive: true });
+      await fs.writeFile(
+        getWorkInspirationsPath(work.id),
+        JSON.stringify(library.inspirations.itemsByWork[work.id] ?? [], null, 2),
+        "utf8",
+      );
+    }),
+  );
+
+  const workDirs = await fs.readdir(getWorksRoot(), { withFileTypes: true });
+  await Promise.all(
+    workDirs
+      .filter((entry) => entry.isDirectory() && !activeWorkIds.has(entry.name))
+      .map((entry) => fs.rm(getWorkDirectory(entry.name), { recursive: true, force: true })),
+  );
 }
 
 async function loadLibrary() {
   await ensureLibraryRoot();
   try {
     const raw = await fs.readFile(getLibraryStatePath(), "utf8");
-    return normalizeLibraryState(JSON.parse(raw));
+    const library = normalizeLibraryState(JSON.parse(raw));
+    await Promise.all(
+      library.works.map(async (work) => {
+        try {
+          const content = await fs.readFile(getWorkInspirationsPath(work.id), "utf8");
+          const items = JSON.parse(content);
+          library.inspirations.itemsByWork[work.id] = Array.isArray(items)
+            ? items.map((item) => normalizeInspirationItem(item, work.id)).filter(Boolean)
+            : [];
+        } catch (error) {
+          if (error.code !== "ENOENT") throw error;
+          library.inspirations.itemsByWork[work.id] = [];
+        }
+      }),
+    );
+    return library;
   } catch (error) {
-    if (error.code === "ENOENT") return { folders: [], works: [], chapters: [] };
+    if (error.code === "ENOENT") {
+      return {
+        folders: [],
+        works: [],
+        chapters: [],
+        inspirations: { categoryOrder: [], itemsByWork: {} },
+      };
+    }
     throw error;
   }
 }
 
 ipcMain.handle("project:save", async (_event, payload) => {
   const result = await dialog.showSaveDialog({
-    title: "Export Story Forge Project",
+    title: "导出简纪项目",
     defaultPath: payload.defaultName,
-    filters: [{ name: "Story Forge Project", extensions: ["json"] }],
+    filters: [{ name: "简纪项目", extensions: ["json"] }],
   });
 
   if (result.canceled || !result.filePath) return result;
@@ -247,9 +385,9 @@ ipcMain.handle("project:save", async (_event, payload) => {
 
 ipcMain.handle("project:open", async () => {
   const result = await dialog.showOpenDialog({
-    title: "Import Story Forge Project",
+    title: "导入简纪项目",
     properties: ["openFile"],
-    filters: [{ name: "Story Forge Project", extensions: ["json"] }],
+    filters: [{ name: "简纪项目", extensions: ["json"] }],
   });
 
   if (result.canceled || !result.filePaths[0]) return result;
@@ -285,14 +423,24 @@ ipcMain.handle("text:save", async (_event, payload) => {
 
 ipcMain.handle("library:bootstrap", async (_event, seedLibrary) => {
   const library = await loadLibrary();
-  if (library.folders.length > 0 || library.works.length > 0 || library.chapters.length > 0) {
+  if (
+    library.folders.length > 0 ||
+    library.works.length > 0 ||
+    library.chapters.length > 0 ||
+    Object.keys(library.inspirations?.itemsByWork ?? {}).length > 0
+  ) {
     return library;
   }
   if (seedLibrary && typeof seedLibrary === "object") {
     await saveLibrary(seedLibrary);
     return loadLibrary();
   }
-  return { folders: [], works: [], chapters: [] };
+  return {
+    folders: [],
+    works: [],
+    chapters: [],
+    inspirations: { categoryOrder: [], itemsByWork: {} },
+  };
 });
 
 ipcMain.handle("library:sync", async (_event, library) => {

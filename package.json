@@ -1,7 +1,7 @@
 {
-  "name": "story-forge",
-  "productName": "Story Forge",
-  "version": "1.0.0",
+  "name": "jian-ji",
+  "productName": "简纪",
+  "version": "1.0.4",
   "description": "A local desktop writing studio for authors.",
   "main": "main.js",
   "author": "MAGG4444",

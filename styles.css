@@ -79,16 +79,168 @@
 }
 
 @font-face {
-  font-family: "LXGW WenKai";
-  src: local("LXGW WenKai"), local("霞鹜文楷");
+  font-family: "Open Sans";
+  src: url("./assets/fonts/OpenSans-Regular.ttf") format("truetype");
   font-style: normal;
   font-weight: 400;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "JetBrains Mono";
-  src: local("JetBrains Mono");
+  font-family: "Montserrat";
+  src: url("./assets/fonts/Montserrat-Regular.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Cantarell";
+  src: url("./assets/fonts/Cantarell-Regular.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Adwaita Sans";
+  src: url("./assets/fonts/AdwaitaSans-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Source Code Pro";
+  src: url("./assets/fonts/SourceCodePro-Regular.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Adwaita Mono";
+  src: url("./assets/fonts/AdwaitaMono-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Liberation Mono";
+  src: url("./assets/fonts/LiberationMono-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans Mono";
+  src: url("./assets/fonts/NotoSansMono-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans Mono CJK SC";
+  src: url("./assets/fonts/NotoSansMonoCJKsc-Regular.ttc") format("truetype-collection");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ma Shan Zheng";
+  src: url("./assets/fonts/MaShanZheng-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Long Cang";
+  src: url("./assets/fonts/LongCang-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Liu Jian Mao Cao";
+  src: url("./assets/fonts/LiuJianMaoCao-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ZCOOL KuaiLe";
+  src: url("./assets/fonts/ZCOOLKuaiLe-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ZCOOL QingKe HuangYou";
+  src: url("./assets/fonts/ZCOOLQingKeHuangYou-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ZCOOL XiaoWei";
+  src: url("./assets/fonts/ZCOOLXiaoWei-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Zhi Mang Xing";
+  src: url("./assets/fonts/ZhiMangXing-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Caladea";
+  src: url("./assets/fonts/Caladea-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Carlito";
+  src: url("./assets/fonts/Carlito-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "STIX Two Text";
+  src: url("./assets/fonts/STIXTwoText-Regular.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Liberation Serif";
+  src: url("./assets/fonts/LiberationSerif-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Liberation Sans";
+  src: url("./assets/fonts/LiberationSans-Regular.ttf") format("truetype");
   font-style: normal;
   font-weight: 400;
   font-display: swap;

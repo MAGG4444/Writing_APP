@@ -1,6 +1,6 @@
 {
-  "appId": "com.magg4444.storyforge",
-  "productName": "Story Forge",
+  "appId": "com.magg4444.jianji",
+  "productName": "简纪",
   "directories": {
     "buildResources": "assets",
     "app": ".app-build",

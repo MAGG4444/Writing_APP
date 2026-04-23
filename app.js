@@ -1,4 +1,4 @@
-const STORAGE_KEY = "story-forge-workbench-v3";
+const STORAGE_KEY = "jian-ji-workbench-v3";
 
 const themePresets = [
   {
@@ -71,14 +71,247 @@ const themePresets = [
       accentSoft: "rgba(110, 165, 255, 0.18)",
     },
   },
+  {
+    id: "mistBlue",
+    name: "雾蓝",
+    palette: {
+      bg: "#eaf1f7",
+      panel: "rgba(252, 254, 255, 0.9)",
+      panelStrong: "#ffffff",
+      text: "#1d2d3a",
+      muted: "#637789",
+      line: "rgba(29, 45, 58, 0.12)",
+      accent: "#3f78b5",
+      accentSoft: "rgba(63, 120, 181, 0.14)",
+    },
+  },
+  {
+    id: "pine",
+    name: "松影",
+    palette: {
+      bg: "#e9f0eb",
+      panel: "rgba(250, 253, 250, 0.9)",
+      panelStrong: "#ffffff",
+      text: "#21332a",
+      muted: "#687b71",
+      line: "rgba(33, 51, 42, 0.12)",
+      accent: "#2f7a58",
+      accentSoft: "rgba(47, 122, 88, 0.14)",
+    },
+  },
+  {
+    id: "roseDust",
+    name: "玫瑰尘",
+    palette: {
+      bg: "#f6ecec",
+      panel: "rgba(255, 250, 250, 0.92)",
+      panelStrong: "#fffefe",
+      text: "#382326",
+      muted: "#8b6e74",
+      line: "rgba(56, 35, 38, 0.12)",
+      accent: "#c06b7b",
+      accentSoft: "rgba(192, 107, 123, 0.14)",
+    },
+  },
+  {
+    id: "lavenderPaper",
+    name: "薰衣纸",
+    palette: {
+      bg: "#f0edf7",
+      panel: "rgba(252, 250, 255, 0.92)",
+      panelStrong: "#ffffff",
+      text: "#2d2540",
+      muted: "#786f92",
+      line: "rgba(45, 37, 64, 0.12)",
+      accent: "#7b69b8",
+      accentSoft: "rgba(123, 105, 184, 0.14)",
+    },
+  },
+  {
+    id: "amber",
+    name: "琥珀",
+    palette: {
+      bg: "#f7efe2",
+      panel: "rgba(255, 250, 243, 0.92)",
+      panelStrong: "#fffdf8",
+      text: "#352718",
+      muted: "#8c7258",
+      line: "rgba(53, 39, 24, 0.12)",
+      accent: "#c9862f",
+      accentSoft: "rgba(201, 134, 47, 0.15)",
+    },
+  },
+  {
+    id: "riverStone",
+    name: "河石",
+    palette: {
+      bg: "#eef1f2",
+      panel: "rgba(251, 252, 252, 0.92)",
+      panelStrong: "#ffffff",
+      text: "#283136",
+      muted: "#708188",
+      line: "rgba(40, 49, 54, 0.12)",
+      accent: "#4d7a86",
+      accentSoft: "rgba(77, 122, 134, 0.14)",
+    },
+  },
+  {
+    id: "mint",
+    name: "薄荷",
+    palette: {
+      bg: "#e9f5ef",
+      panel: "rgba(249, 254, 251, 0.92)",
+      panelStrong: "#ffffff",
+      text: "#20342d",
+      muted: "#628175",
+      line: "rgba(32, 52, 45, 0.12)",
+      accent: "#36a37d",
+      accentSoft: "rgba(54, 163, 125, 0.14)",
+    },
+  },
+  {
+    id: "nightSea",
+    name: "夜海",
+    palette: {
+      bg: "#121b24",
+      panel: "rgba(21, 31, 43, 0.94)",
+      panelStrong: "#1a2734",
+      text: "#edf4fb",
+      muted: "#8da0b3",
+      line: "rgba(255, 255, 255, 0.1)",
+      accent: "#53a8d7",
+      accentSoft: "rgba(83, 168, 215, 0.18)",
+    },
+  },
+  {
+    id: "graphite",
+    name: "石墨",
+    palette: {
+      bg: "#18191d",
+      panel: "rgba(30, 32, 37, 0.94)",
+      panelStrong: "#24262c",
+      text: "#f2f3f5",
+      muted: "#a0a4ab",
+      line: "rgba(255, 255, 255, 0.1)",
+      accent: "#7c8aa5",
+      accentSoft: "rgba(124, 138, 165, 0.18)",
+    },
+  },
+  {
+    id: "plumNight",
+    name: "梅夜",
+    palette: {
+      bg: "#1b1620",
+      panel: "rgba(34, 28, 42, 0.95)",
+      panelStrong: "#2b2434",
+      text: "#f4eff7",
+      muted: "#aa9bb4",
+      line: "rgba(255, 255, 255, 0.1)",
+      accent: "#b27ad6",
+      accentSoft: "rgba(178, 122, 214, 0.18)",
+    },
+  },
+  {
+    id: "forestNight",
+    name: "林夜",
+    palette: {
+      bg: "#131b18",
+      panel: "rgba(24, 34, 31, 0.95)",
+      panelStrong: "#1e2925",
+      text: "#eef5f1",
+      muted: "#95a99d",
+      line: "rgba(255, 255, 255, 0.1)",
+      accent: "#5db287",
+      accentSoft: "rgba(93, 178, 135, 0.18)",
+    },
+  },
+  {
+    id: "sunset",
+    name: "晚霞",
+    palette: {
+      bg: "#f8ece6",
+      panel: "rgba(255, 250, 247, 0.92)",
+      panelStrong: "#fffdfb",
+      text: "#3a241d",
+      muted: "#946f62",
+      line: "rgba(58, 36, 29, 0.12)",
+      accent: "#d65f47",
+      accentSoft: "rgba(214, 95, 71, 0.14)",
+    },
+  },
+  {
+    id: "sandstone",
+    name: "砂岩",
+    palette: {
+      bg: "#f1ece3",
+      panel: "rgba(252, 249, 243, 0.92)",
+      panelStrong: "#fffdfa",
+      text: "#332a21",
+      muted: "#837568",
+      line: "rgba(51, 42, 33, 0.12)",
+      accent: "#a77a4c",
+      accentSoft: "rgba(167, 122, 76, 0.14)",
+    },
+  },
+  {
+    id: "oceanGlass",
+    name: "海玻璃",
+    palette: {
+      bg: "#e7f4f4",
+      panel: "rgba(248, 254, 254, 0.92)",
+      panelStrong: "#ffffff",
+      text: "#1f3233",
+      muted: "#668082",
+      line: "rgba(31, 50, 51, 0.12)",
+      accent: "#2f9ea3",
+      accentSoft: "rgba(47, 158, 163, 0.14)",
+    },
+  },
+  {
+    id: "aurora",
+    name: "极光",
+    palette: {
+      bg: "#eaf3f0",
+      panel: "rgba(248, 254, 251, 0.92)",
+      panelStrong: "#ffffff",
+      text: "#20302f",
+      muted: "#5f7a77",
+      line: "rgba(32, 48, 47, 0.12)",
+      accent: "#4d9db8",
+      accentSoft: "rgba(77, 157, 184, 0.14)",
+    },
+  },
 ];
 
 const fontChoices = [
-  { id: "system", name: "系统默认", family: '"Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif' },
-  { id: "serif", name: "思源宋体", family: '"Noto Serif SC", serif' },
-  { id: "sans", name: "思源黑体", family: '"Noto Sans SC", sans-serif' },
-  { id: "wenkai", name: '"霞鹜文楷"', family: '"LXGW WenKai", "Noto Serif SC", serif' },
-  { id: "jetbrains", name: "JetBrains Mono", family: '"JetBrains Mono", "Source Sans 3", monospace' },
+  { id: "notoSansSC", name: "思源黑体 SC", family: '"Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif' },
+  { id: "notoSerifSC", name: "思源宋体 SC", family: '"Noto Serif SC", "Songti SC", serif' },
+  { id: "notoSansMonoCJKsc", name: "思源等宽 SC", family: '"Noto Sans Mono CJK SC", "Noto Sans Mono", monospace' },
+  { id: "maShanZheng", name: "马善政", family: '"Ma Shan Zheng", "Noto Serif SC", cursive' },
+  { id: "longCang", name: "龙藏体", family: '"Long Cang", "Noto Serif SC", cursive' },
+  { id: "liuJianMaoCao", name: "刘建毛草", family: '"Liu Jian Mao Cao", "Noto Serif SC", cursive' },
+  { id: "zcoolKuaiLe", name: "站酷快乐体", family: '"ZCOOL KuaiLe", "Noto Sans SC", cursive' },
+  { id: "zcoolQingKeHuangYou", name: "站酷庆科黄油体", family: '"ZCOOL QingKe HuangYou", "Noto Sans SC", sans-serif' },
+  { id: "zcoolXiaoWei", name: "站酷小薇", family: '"ZCOOL XiaoWei", "Noto Serif SC", serif' },
+  { id: "zhiMangXing", name: "知芒行书", family: '"Zhi Mang Xing", "Noto Serif SC", cursive' },
+  { id: "sourceSans3", name: "Source Sans 3", family: '"Source Sans 3", "Noto Sans SC", sans-serif' },
+  { id: "merriweather", name: "Merriweather", family: '"Merriweather", "Noto Serif SC", serif' },
+  { id: "sourceSansSerif", name: "Source Sans 3 + 宋体", family: '"Source Sans 3", "Noto Serif SC", serif' },
+  { id: "notoSansMerriweather", name: "思源黑体 + Merriweather", family: '"Noto Sans SC", "Merriweather", sans-serif' },
+  { id: "merriweatherSans", name: "Merriweather + Source Sans 3", family: '"Merriweather", "Source Sans 3", serif' },
+  { id: "openSans", name: "Open Sans", family: '"Open Sans", "Noto Sans SC", sans-serif' },
+  { id: "montserrat", name: "Montserrat", family: '"Montserrat", "Noto Sans SC", sans-serif' },
+  { id: "cantarell", name: "Cantarell", family: '"Cantarell", "Noto Sans SC", sans-serif' },
+  { id: "adwaitaSans", name: "Adwaita Sans", family: '"Adwaita Sans", "Noto Sans SC", sans-serif' },
+  { id: "sourceCodePro", name: "Source Code Pro", family: '"Source Code Pro", "Noto Sans Mono CJK SC", monospace' },
+  { id: "adwaitaMono", name: "Adwaita Mono", family: '"Adwaita Mono", "Noto Sans Mono CJK SC", monospace' },
+  { id: "liberationMono", name: "Liberation Mono", family: '"Liberation Mono", "Noto Sans Mono CJK SC", monospace' },
+  { id: "notoSansMono", name: "Noto Sans Mono", family: '"Noto Sans Mono", "Noto Sans Mono CJK SC", monospace' },
+  { id: "caladea", name: "Caladea", family: '"Caladea", "Noto Serif SC", serif' },
+  { id: "carlito", name: "Carlito", family: '"Carlito", "Noto Sans SC", sans-serif' },
+  { id: "stixTwoText", name: "STIX Two Text", family: '"STIX Two Text", "Noto Serif SC", serif' },
+  { id: "liberationSerif", name: "Liberation Serif", family: '"Liberation Serif", "Noto Serif SC", serif' },
+  { id: "liberationSans", name: "Liberation Sans", family: '"Liberation Sans", "Noto Sans SC", sans-serif' },
 ];
 
 const inspirationCategories = ["all", "人物", "剧情", "对白", "设定", "场景", "待补充"];
@@ -267,11 +500,45 @@ function createSeedState() {
       search: "",
       sort: "newest",
       categoryOrder: inspirationCategories.filter((item) => item !== "all"),
-      items: [
-        { id: "inspiration-1", text: "她不是回来找答案，而是回来确认自己是否还属于这里。", category: "剧情", createdAt: "21:05", pinned: true, favorite: true },
-        { id: "inspiration-2", text: "对白：‘你走的时候像离家，回来却像潜入。’", category: "对白", createdAt: "20:48", pinned: false, favorite: false },
-        { id: "inspiration-3", text: "人物关系：林序与港务长是旧识，但彼此都知道一半真相。", category: "人物", createdAt: "20:30", pinned: false, favorite: true },
-      ],
+      itemsByWork: {
+        "work-1": [
+          {
+            id: "inspiration-1",
+            workId: "work-1",
+            chapterId: "chapter-1",
+            content: "她不是回来找答案，而是回来确认自己是否还属于这里。",
+            category: "剧情",
+            isFavorite: true,
+            isPinned: true,
+            createdAt: "2026-04-07T21:05:00.000Z",
+            updatedAt: "2026-04-07T21:05:00.000Z",
+          },
+          {
+            id: "inspiration-2",
+            workId: "work-1",
+            chapterId: "chapter-2",
+            content: "对白：‘你走的时候像离家，回来却像潜入。’",
+            category: "对白",
+            isFavorite: false,
+            isPinned: false,
+            createdAt: "2026-04-07T20:48:00.000Z",
+            updatedAt: "2026-04-07T20:48:00.000Z",
+          },
+        ],
+        "work-2": [
+          {
+            id: "inspiration-3",
+            workId: "work-2",
+            chapterId: "chapter-3",
+            content: "人物关系：林序与港务长是旧识，但彼此都知道一半真相。",
+            category: "人物",
+            isFavorite: true,
+            isPinned: false,
+            createdAt: "2026-04-07T20:30:00.000Z",
+            updatedAt: "2026-04-07T20:30:00.000Z",
+          },
+        ],
+      },
     },
     account: {
       loggedIn: false,
@@ -286,7 +553,7 @@ function createSeedState() {
     },
     font: {
       families: fontChoices,
-      currentId: "system",
+      currentId: "notoSansSC",
       size: 18,
       lineHeight: 1.9,
       letterSpacing: 0,
@@ -387,6 +654,9 @@ function ensureStateIntegrity() {
   state.inspirations.categoryOrder = Array.isArray(state.inspirations.categoryOrder)
     ? state.inspirations.categoryOrder.map((item) => String(item).trim()).filter(Boolean)
     : inspirationCategories.filter((item) => item !== "all");
+  state.inspirations.activeCategory = String(state.inspirations.activeCategory || "all");
+  state.inspirations.search = String(state.inspirations.search || "");
+  state.inspirations.sort = ["newest", "oldest", "favorite"].includes(state.inspirations.sort) ? state.inspirations.sort : "newest";
   state.ui.leftSidebarCollapsed ??= false;
   state.ui.rightSidebarCollapsed ??= false;
   state.ui.libraryScrollTop ??= 0;
@@ -406,6 +676,16 @@ function ensureStateIntegrity() {
   state.ui.inspirationEditingId ??= null;
   state.ui.inspirationCategoryManagerExpanded ??= false;
   state.ui.settingsThemeExpanded ??= false;
+  state.theme ??= {};
+  state.theme.presets = themePresets;
+  state.theme.currentId = themePresets.some((theme) => theme.id === state.theme.currentId) ? state.theme.currentId : "cream";
+  state.theme.nightMode = Boolean(state.theme.nightMode);
+  state.font ??= {};
+  state.font.families = fontChoices;
+  state.font.currentId = fontChoices.some((font) => font.id === state.font.currentId) ? state.font.currentId : "notoSansSC";
+  state.font.size = Number(state.font.size) || 18;
+  state.font.lineHeight = Number(state.font.lineHeight) || 1.9;
+  state.font.letterSpacing = Number(state.font.letterSpacing) || 0;
 
   const folderIds = new Set(state.folders.map((folder) => folder.id));
   state.folders = state.folders.map((folder) => ({
@@ -480,6 +760,8 @@ function ensureStateIntegrity() {
     return work;
   });
 
+  normalizeInspirationState();
+
   if (state.activeFolderId != null && !getFolder(state.activeFolderId)) {
     state.activeFolderId = null;
   }
@@ -488,6 +770,82 @@ function ensureStateIntegrity() {
 
   normalizeActiveSelection();
   persist();
+}
+
+function normalizeInspirationState() {
+  const fallbackWorkId = state.activeWorkId ?? state.works[0]?.id ?? null;
+  const source =
+    state.inspirations && typeof state.inspirations.itemsByWork === "object" && state.inspirations.itemsByWork
+      ? state.inspirations.itemsByWork
+      : {};
+  const normalizedByWork = {};
+
+  if (Array.isArray(state.inspirations.items)) {
+    state.inspirations.items.forEach((item) => {
+      const normalized = normalizeInspirationItem(item, fallbackWorkId);
+      if (!normalized) return;
+      if (!normalizedByWork[normalized.workId]) normalizedByWork[normalized.workId] = [];
+      normalizedByWork[normalized.workId].push(normalized);
+    });
+  }
+
+  Object.entries(source).forEach(([workId, items]) => {
+    if (!Array.isArray(items)) return;
+    items.forEach((item) => {
+      const normalized = normalizeInspirationItem(item, workId || fallbackWorkId);
+      if (!normalized) return;
+      if (!normalizedByWork[normalized.workId]) normalizedByWork[normalized.workId] = [];
+      normalizedByWork[normalized.workId].push(normalized);
+    });
+  });
+
+  const validWorkIds = new Set(state.works.map((work) => work.id));
+  Object.keys(normalizedByWork).forEach((workId) => {
+    if (!validWorkIds.has(workId)) {
+      delete normalizedByWork[workId];
+      return;
+    }
+    const deduped = new Map();
+    normalizedByWork[workId].forEach((item) => deduped.set(item.id, item));
+    normalizedByWork[workId] = [...deduped.values()].sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  });
+
+  state.inspirations.itemsByWork = normalizedByWork;
+  delete state.inspirations.items;
+  if (state.inspirations.activeCategory !== "all" && !getAvailableInspirationCategories().includes(state.inspirations.activeCategory)) {
+    state.inspirations.activeCategory = "all";
+  }
+}
+
+function normalizeInspirationItem(item, fallbackWorkId = null) {
+  const workId = String(item?.workId || fallbackWorkId || "").trim();
+  if (!workId) return null;
+  const content = String(item?.content ?? item?.text ?? "").trim();
+  if (!content) return null;
+  const categories = Array.isArray(item?.categories)
+    ? item.categories.map((tag) => String(tag).trim()).filter(Boolean)
+    : item?.category
+      ? [String(item.category).trim()]
+      : ["待补充"];
+  const primaryCategory = categories[0] || "待补充";
+  const createdAt = normalizeIsoDate(item?.createdAt);
+  return {
+    id: String(item?.id || uid("inspiration")),
+    workId,
+    chapterId: item?.chapterId == null ? null : String(item.chapterId),
+    content,
+    categories,
+    category: primaryCategory,
+    isFavorite: Boolean(item?.isFavorite ?? item?.favorite),
+    isPinned: Boolean(item?.isPinned ?? item?.pinned),
+    createdAt,
+    updatedAt: normalizeIsoDate(item?.updatedAt, createdAt),
+  };
+}
+
+function normalizeIsoDate(value, fallback = new Date().toISOString()) {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed.toISOString();
 }
 
 function migrateLegacyNestedWorks() {
@@ -580,6 +938,10 @@ function getLibraryStatePayload() {
     folders: state.folders,
     works: state.works,
     chapters: state.chapters,
+    inspirations: {
+      categoryOrder: state.inspirations.categoryOrder,
+      itemsByWork: state.inspirations.itemsByWork,
+    },
   };
 }
 
@@ -588,13 +950,21 @@ function applyLibraryState(library) {
   if (Array.isArray(library.folders)) state.folders = library.folders;
   if (Array.isArray(library.works)) state.works = library.works;
   if (Array.isArray(library.chapters)) state.chapters = library.chapters;
+  if (library.inspirations && typeof library.inspirations === "object") {
+    state.inspirations = {
+      ...state.inspirations,
+      ...library.inspirations,
+    };
+  }
 }
 
 function normalizeActiveSelection(preferredWorkId = state.activeWorkId, preferredChapterId = state.activeChapterId) {
+  const previousWorkId = state.activeWorkId;
   const preferredWork = getWork(preferredWorkId);
   const preferredChapter = preferredWork ? getChapter(preferredChapterId) : null;
 
   if (preferredWork && preferredChapter && preferredChapter.workId === preferredWork.id) {
+    handleInspirationWorkChange(preferredWork.id, previousWorkId);
     state.activeWorkId = preferredWork.id;
     state.activeChapterId = preferredChapter.id;
     return;
@@ -602,6 +972,7 @@ function normalizeActiveSelection(preferredWorkId = state.activeWorkId, preferre
 
   const firstWork = state.works[0] ?? null;
   const firstChapterId = firstWork?.chapterIds[0] ?? null;
+  handleInspirationWorkChange(firstWork?.id ?? null, previousWorkId);
   state.activeWorkId = firstWork?.id ?? null;
   state.activeChapterId = firstChapterId;
   if (!firstWork) state.route = "library";
@@ -938,6 +1309,7 @@ function FontSelector() {
       </div>
       <label>开源字体</label>
       <select id="font-family-select"></select>
+      <small>已离线内置 10 组简体中文字体，并保留其他开源英文字体预设。</small>
       <label>字号</label>
       <input id="font-size-range" type="range" min="14" max="28" />
       <label>行高</label>
@@ -1780,9 +2152,10 @@ function updateSettingsPanel() {
 }
 
 function renderInspirationList() {
+  const work = getCurrentWork();
   const categories = getAvailableInspirationCategories();
   const editingItem = state.ui.inspirationEditingId
-    ? state.inspirations.items.find((entry) => entry.id === state.ui.inspirationEditingId) ?? null
+    ? getInspirationById(work?.id, state.ui.inspirationEditingId) ?? null
     : null;
   refs.inspirationCategoryFilter.innerHTML = categories
     .map((item) => `<option value="${item}">${item === "all" ? "全部分类" : escapeHtml(item)}</option>`)
@@ -1823,20 +2196,22 @@ function renderInspirationList() {
   refs.saveInspirationButton.textContent = editingItem ? "保存修改" : "保存灵感";
   const items = getVisibleInspirations();
   refs.inspirationChatList.innerHTML =
-    items.length === 0
+    !work
+      ? `<div class="empty-state">请先打开一个作品，再查看该作品的灵感。</div>`
+      : items.length === 0
       ? `<div class="empty-state">没有符合条件的灵感。</div>`
       : items
           .map(
             (item) => `
-              <article class="inspiration-bubble ${item.pinned ? "pinned" : ""}">
+              <article class="inspiration-bubble ${item.isPinned ? "pinned" : ""}">
                 <header>
                   <span class="inspiration-tag-row">${getInspirationItemCategories(item).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</span>
-                  <time>${escapeHtml(item.createdAt)}</time>
+                  <time>${escapeHtml(formatInspirationTime(item.updatedAt || item.createdAt))}</time>
                 </header>
-                <p>${escapeHtml(item.text)}</p>
+                <p>${escapeHtml(item.content)}</p>
                 <footer>
-                  <button data-inspiration-action="favorite" data-id="${item.id}">${item.favorite ? "取消收藏" : "收藏"}</button>
-                  <button data-inspiration-action="pin" data-id="${item.id}">${item.pinned ? "取消置顶" : "置顶"}</button>
+                  <button data-inspiration-action="favorite" data-id="${item.id}">${item.isFavorite ? "取消收藏" : "收藏"}</button>
+                  <button data-inspiration-action="pin" data-id="${item.id}">${item.isPinned ? "取消置顶" : "置顶"}</button>
                   <button data-inspiration-action="insert" data-id="${item.id}">插入正文</button>
                   <button data-inspiration-action="edit" data-id="${item.id}">编辑</button>
                   <button data-inspiration-action="delete" data-id="${item.id}">删除</button>
@@ -2275,6 +2650,9 @@ function createWorkWithInitialChapter({ title, description, folderId, templateId
     createdAt: now,
     lastOpenedChapterId: chapter.id,
   });
+  state.inspirations.itemsByWork ??= {};
+  state.inspirations.itemsByWork[workId] = [];
+  resetInspirationViewState();
   state.ui.libraryWorkViewId = workId;
   state.activeWorkId = workId;
   state.activeChapterId = chapter.id;
@@ -2310,6 +2688,7 @@ function deleteWork(workId) {
   if (!work) return;
   state.chapters = state.chapters.filter((chapter) => chapter.workId !== work.id);
   state.works = state.works.filter((item) => item.id !== work.id);
+  if (state.inspirations.itemsByWork) delete state.inspirations.itemsByWork[work.id];
   if (state.ui.libraryWorkViewId === work.id) state.ui.libraryWorkViewId = null;
   if (state.activeWorkId === work.id) normalizeActiveSelection();
 }
@@ -2339,6 +2718,9 @@ function deleteFolderAndContents(folderId) {
   const workIds = state.works.filter((work) => descendantIds.includes(work.folderId)).map((work) => work.id);
   state.chapters = state.chapters.filter((chapter) => !workIds.includes(chapter.workId));
   state.works = state.works.filter((work) => !workIds.includes(work.id));
+  workIds.forEach((workId) => {
+    if (state.inspirations.itemsByWork) delete state.inspirations.itemsByWork[workId];
+  });
   state.folders = state.folders.filter((item) => !descendantIds.includes(item.id));
   if (descendantIds.includes(state.activeFolderId)) state.activeFolderId = folder.parentId;
   if (workIds.includes(state.ui.libraryWorkViewId)) state.ui.libraryWorkViewId = null;
@@ -2415,6 +2797,7 @@ async function openChapter(workId, chapterId) {
   const previous = getCurrentChapter();
   if (previous && previous.dirty && state.ui.autosaveEnabled) await saveCurrentChapter();
   state.ui.libraryScrollTop = refs.libraryContent?.scrollTop ?? state.ui.libraryScrollTop;
+  handleInspirationWorkChange(workId, state.activeWorkId);
   state.activeWorkId = workId;
   state.activeChapterId = chapterId;
   state.route = "editor";
@@ -2651,18 +3034,25 @@ function handleInspirationAction(action, id) {
     persist();
     return;
   }
-  const item = state.inspirations.items.find((entry) => entry.id === id);
+  const work = getCurrentWork();
+  if (!work) return;
+  const item = getInspirationById(work.id, id);
   if (!item) return;
-  if (action === "favorite") item.favorite = !item.favorite;
-  if (action === "pin") item.pinned = !item.pinned;
-  if (action === "insert") insertAtCursor(item.text);
+  if (action === "favorite") item.isFavorite = !item.isFavorite;
+  if (action === "pin") item.isPinned = !item.isPinned;
+  if (action === "insert") insertAtCursor(item.content);
   if (action === "edit") {
     openInspirationComposer(item.id);
     return;
   }
   if (action === "delete") {
-    state.inspirations.items = state.inspirations.items.filter((entry) => entry.id !== id);
+    setInspirationsForWork(
+      work.id,
+      getInspirationsForWork(work.id).filter((entry) => entry.id !== id),
+    );
     if (state.ui.inspirationEditingId === id) closeInspirationComposer(false);
+  } else {
+    item.updatedAt = new Date().toISOString();
   }
   renderInspirationList();
   persist();
@@ -2749,7 +3139,8 @@ function toggleInspirationCategoryManager() {
 }
 
 function openInspirationComposer(editingId = null) {
-  const editingItem = editingId ? state.inspirations.items.find((entry) => entry.id === editingId) ?? null : null;
+  const work = getCurrentWork();
+  const editingItem = editingId && work ? getInspirationById(work.id, editingId) ?? null : null;
   state.ui.inspirationComposeOpen = true;
   state.ui.inspirationEditingId = editingItem?.id ?? null;
   state.ui.inspirationComposeTags = editingItem
@@ -2760,7 +3151,7 @@ function openInspirationComposer(editingId = null) {
   updateWorkspace();
   renderInspirationList();
   requestAnimationFrame(() => {
-    refs.inspirationComposeInput.value = editingItem?.text ?? "";
+    refs.inspirationComposeInput.value = editingItem?.content ?? "";
     refs.inspirationComposeCategory.value = state.ui.inspirationComposeTags[0] || "待补充";
     refs.inspirationCustomCategoryInput.value = "";
     refs.inspirationComposeInput.focus();
@@ -2820,10 +3211,11 @@ function createInspirationCategory(name) {
 }
 
 function renameInspirationCategory(from, to) {
-  state.inspirations.items.forEach((item) => {
+  getAllInspirations().forEach((item) => {
     const tags = getInspirationItemCategories(item).map((tag) => (tag === from ? to : tag));
     item.categories = [...new Set(tags)];
     item.category = item.categories[0];
+    item.updatedAt = new Date().toISOString();
   });
   state.ui.inspirationComposeTags = state.ui.inspirationComposeTags.map((tag) => (tag === from ? to : tag));
   state.inspirations.categoryOrder = state.inspirations.categoryOrder.map((tag) => (tag === from ? to : tag));
@@ -2833,10 +3225,11 @@ function renameInspirationCategory(from, to) {
 }
 
 function deleteInspirationCategory(categoryName) {
-  state.inspirations.items.forEach((item) => {
+  getAllInspirations().forEach((item) => {
     const tags = getInspirationItemCategories(item).filter((tag) => tag !== categoryName);
     item.categories = tags.length > 0 ? tags : ["待补充"];
     item.category = item.categories[0];
+    item.updatedAt = new Date().toISOString();
   });
   state.ui.inspirationComposeTags = state.ui.inspirationComposeTags.filter((tag) => tag !== categoryName);
   if (state.ui.inspirationComposeTags.length === 0) state.ui.inspirationComposeTags = ["待补充"];
@@ -2864,7 +3257,7 @@ function hasDuplicateInspirationCategoryName(currentName, nextName) {
 }
 
 function getInspirationCategoryUsageCount(categoryName) {
-  return state.inspirations.items.filter((item) => getInspirationItemCategories(item).includes(categoryName)).length;
+  return getInspirationsForWork(state.activeWorkId).filter((item) => getInspirationItemCategories(item).includes(categoryName)).length;
 }
 
 function normalizeInspirationCategoryName(name) {
@@ -2883,7 +3276,7 @@ function syncInspirationCategoryOrder() {
   const availableCategories = new Set();
   inspirationCategories.filter((item) => item !== "all").forEach((item) => availableCategories.add(item));
   state.inspirations.categoryOrder.forEach((item) => availableCategories.add(item));
-  state.inspirations.items.forEach((item) => {
+  getAllInspirations().forEach((item) => {
     getInspirationItemCategories(item).forEach((tag) => availableCategories.add(tag));
   });
   state.ui.inspirationComposeTags.forEach((tag) => availableCategories.add(tag));
@@ -2896,26 +3289,31 @@ function syncInspirationCategoryOrder() {
 }
 
 function saveComposedInspiration() {
+  const work = getCurrentWork();
+  if (!work) return;
   const text = refs.inspirationComposeInput.value.trim();
   addSelectedInspirationCategory();
   const categories = state.ui.inspirationComposeTags.length > 0 ? state.ui.inspirationComposeTags : ["待补充"];
   if (!text) return;
+  const now = new Date().toISOString();
   const editingItem = state.ui.inspirationEditingId
-    ? state.inspirations.items.find((entry) => entry.id === state.ui.inspirationEditingId) ?? null
+    ? getInspirationById(work.id, state.ui.inspirationEditingId) ?? null
     : null;
   if (editingItem) {
-    editingItem.text = text;
+    editingItem.content = text;
     editingItem.categories = categories;
     editingItem.category = categories[0];
+    editingItem.updatedAt = now;
   } else {
-    state.inspirations.items.unshift({
-      id: uid("inspiration"),
-      text,
+    createInspiration(work.id, {
+      chapterId: state.activeChapterId ?? null,
+      content: text,
       categories,
       category: categories[0],
-      createdAt: timeNow(),
-      pinned: false,
-      favorite: false,
+      isPinned: false,
+      isFavorite: false,
+      createdAt: now,
+      updatedAt: now,
     });
   }
   closeInspirationComposer();
@@ -3223,7 +3621,7 @@ function toggleInspirationSort() {
 }
 
 function getVisibleInspirations() {
-  let items = [...state.inspirations.items];
+  let items = [...getInspirationsForWork(state.activeWorkId)];
   if (state.inspirations.activeCategory !== "all") {
     items = items.filter((item) => getInspirationItemCategories(item).includes(state.inspirations.activeCategory));
   }
@@ -3231,12 +3629,12 @@ function getVisibleInspirations() {
     const keyword = state.inspirations.search.trim().toLowerCase();
     items = items.filter((item) => {
       const categoryText = getInspirationItemCategories(item).join(" ").toLowerCase();
-      return item.text.toLowerCase().includes(keyword) || categoryText.includes(keyword);
+      return item.content.toLowerCase().includes(keyword) || categoryText.includes(keyword);
     });
   }
   items.sort((a, b) => {
-    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-    if (state.inspirations.sort === "favorite" && a.favorite !== b.favorite) return a.favorite ? -1 : 1;
+    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+    if (state.inspirations.sort === "favorite" && a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
     return state.inspirations.sort === "oldest" ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt);
   });
   return items;
@@ -3458,6 +3856,60 @@ function getInspirationItemCategories(item) {
   return ["待补充"];
 }
 
+function getInspirationsForWork(workId) {
+  if (!workId) return [];
+  return Array.isArray(state.inspirations.itemsByWork?.[workId]) ? state.inspirations.itemsByWork[workId] : [];
+}
+
+function setInspirationsForWork(workId, items) {
+  if (!workId) return;
+  state.inspirations.itemsByWork ??= {};
+  state.inspirations.itemsByWork[workId] = items;
+}
+
+function getInspirationById(workId, inspirationId) {
+  return getInspirationsForWork(workId).find((item) => item.id === inspirationId) ?? null;
+}
+
+function getAllInspirations() {
+  return Object.values(state.inspirations.itemsByWork ?? {}).flatMap((items) => (Array.isArray(items) ? items : []));
+}
+
+function createInspiration(workId, data) {
+  const item = normalizeInspirationItem(
+    {
+      id: data.id ?? uid("inspiration"),
+      workId,
+      chapterId: data.chapterId ?? null,
+      content: data.content,
+      category: data.category,
+      categories: data.categories,
+      isFavorite: data.isFavorite,
+      isPinned: data.isPinned,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    },
+    workId,
+  );
+  if (!item) return null;
+  setInspirationsForWork(workId, [item, ...getInspirationsForWork(workId)]);
+  return item;
+}
+
+function resetInspirationViewState() {
+  state.inspirations.activeCategory = "all";
+  state.inspirations.search = "";
+  state.inspirations.sort = "newest";
+  state.ui.inspirationComposeOpen = false;
+  state.ui.inspirationEditingId = null;
+  state.ui.inspirationComposeTags = ["待补充"];
+}
+
+function handleInspirationWorkChange(nextWorkId, previousWorkId = state.activeWorkId) {
+  if (!nextWorkId || nextWorkId === previousWorkId) return;
+  resetInspirationViewState();
+}
+
 function getAvailableInspirationCategories() {
   syncInspirationCategoryOrder();
   return ["all", ...state.inspirations.categoryOrder];
@@ -3469,6 +3921,12 @@ function parseInspirationCategories(input) {
     .map((item) => item.trim())
     .filter(Boolean);
   return tags.length > 0 ? [...new Set(tags)] : ["待补充"];
+}
+
+function formatInspirationTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "刚刚";
+  return `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function exportCurrentChapter() {
@@ -3490,7 +3948,7 @@ function exportCurrentChapter() {
 
 async function exportProjectFile() {
   const payload = {
-    defaultName: `story-forge-project-${new Date().toISOString().slice(0, 10)}.json`,
+    defaultName: `简纪项目-${new Date().toISOString().slice(0, 10)}.json`,
     content: JSON.stringify(getLibraryStatePayload(), null, 2),
   };
   if (desktopApi?.saveProjectFile) {
@@ -3521,7 +3979,7 @@ async function importProjectFile() {
     state.ui.modal = {
       type: "import-error",
       title: "导入失败",
-      message: "项目文件格式无法识别，请确认它是有效的 Story Forge 导出文件。",
+      message: "项目文件格式无法识别，请确认它是有效的简纪导出文件。",
       actions: [{ id: "close-modal", label: "关闭", primary: true }],
     };
     updateModal();
