@@ -495,22 +495,177 @@ textarea {
 
 .library-content {
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 14px;
 }
 
 .library-list {
   display: grid;
-  gap: 16px;
   align-content: start;
-  overflow: visible;
+  min-height: 0;
+  overflow: auto;
 }
 
-.library-section {
+.library-sidebar,
+.library-browser {
   display: grid;
   gap: 14px;
   padding: 18px;
-  border-radius: 22px;
-  overflow: visible;
+  border-radius: 18px;
+  min-height: 0;
+}
+
+.library-sidebar {
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.library-sidebar-head,
+.library-browser-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.library-sidebar-head strong,
+.library-browser-head strong {
+  font-size: 16px;
+}
+
+.library-browser-head small {
+  color: var(--muted);
+}
+
+.library-tree {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+}
+
+.folder-tree-row {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: center;
+  gap: 2px;
+  padding-left: calc(var(--depth) * 16px);
+  border-radius: 8px;
+}
+
+.folder-tree-row.active {
+  background: color-mix(in srgb, var(--accent-soft) 62%, transparent);
+}
+
+.folder-tree-toggle,
+.folder-tree-entry {
+  min-height: 34px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.folder-tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 18px;
+  border-radius: 8px;
+}
+
+.folder-tree-toggle:disabled {
+  opacity: 0.35;
+}
+
+.folder-tree-entry {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  border-radius: 8px;
+}
+
+.folder-tree-entry span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.library-tree-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.library-item-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.library-item-grid > .empty-state {
+  grid-column: 1 / -1;
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  gap: 14px;
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
+
+.library-item-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
+}
+
+.library-item-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.library-item-icon {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.library-item-text {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.library-item-text strong,
+.library-item-text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.library-item-text strong {
+  font-size: 15px;
+}
+
+.library-item-text small {
+  color: var(--muted);
+  line-height: 1.4;
 }
 
 .library-section-head {
@@ -1776,6 +1931,9 @@ body.is-resizing-outline {
 .chip:hover,
 .theme-card:hover,
 .bookmark-pill:hover,
+.folder-tree-toggle:hover,
+.folder-tree-entry:hover,
+.library-item-card:hover,
 .inspiration-bubble footer button:hover,
 .dropdown-menu button:hover {
   transform: translateY(-1px);
@@ -1806,6 +1964,19 @@ body.is-resizing-outline {
 
   .library-toolbar {
     grid-template-columns: 1fr;
+  }
+
+  .library-content {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+
+  .library-sidebar {
+    max-height: 240px;
+  }
+
+  .library-list {
+    overflow: visible;
   }
 
   .workspace-sidebar {

@@ -318,6 +318,8 @@ const inspirationCategories = ["all", "人物", "剧情", "对白", "设定", "�
 const punctuationChoices = ["，", "。", "？", "！", "“”", "（）", "——", "……"];
 const phraseChoices = ["转场提示", "冲突升级", "伏笔回收", "环境描写", "情绪推进"];
 const supportedLanguages = ["zh", "en"];
+const LIBRARY_FOLDER_ICON = getRuntimeAssetUrl("fold_image.png");
+const LIBRARY_WORK_ICON = getRuntimeAssetUrl("file_image.png");
 const translations = {
   zh: {
     "language.label": "系统语言",
@@ -340,19 +342,23 @@ const translations = {
     "library.searchLabel": " · 搜索“{query}”",
     "library.noFolders": "当前目录下还没有文件夹。",
     "library.works": "作品",
-    "library.worksSummary": "{count} 个作品，可直接进入写作或展开章节管理。",
+    "library.worksSummary": "{count} 个作品，可直接进入写作。",
     "library.subfolderCount": "{folders} 个子文件夹 · {works} 个作品",
+    "library.itemCount": "{count} 个项目",
+    "library.folderTree": "文件夹",
+    "library.currentFolder": "当前目录",
+    "library.folderType": "文件夹",
+    "library.workType": "作品",
     "library.noDescription": "暂无简介",
     "library.chapterCount": "{count} 章",
     "library.wordCount": "{count} 字",
     "library.location": "所在：{name}",
     "library.root": "根目录",
     "library.continue": "继续写作",
-    "library.manageChapters": "章节管理",
     "library.rename": "重命名",
     "library.delete": "删除",
-    "library.emptyTitle": "当前目录还是空的",
-    "library.emptyCopy": "还没有作品，点击右上角“新建”开始创作。",
+    "library.emptyTitle": "当前文件夹为空",
+    "library.emptyCopy": "可以新建文件夹或新建作品。",
     "library.allWorks": "全部作品",
     "chapter.new": "新建章节",
     "chapter.all": "全部章节",
@@ -459,19 +465,23 @@ const translations = {
     "library.searchLabel": " · Search \"{query}\"",
     "library.noFolders": "No folders in this location yet.",
     "library.works": "Works",
-    "library.worksSummary": "{count} works. Open one to write or manage chapters.",
+    "library.worksSummary": "{count} works. Open one to write.",
     "library.subfolderCount": "{folders} subfolders · {works} works",
+    "library.itemCount": "{count} items",
+    "library.folderTree": "Folders",
+    "library.currentFolder": "Current Folder",
+    "library.folderType": "Folder",
+    "library.workType": "Work",
     "library.noDescription": "No description",
     "library.chapterCount": "{count} chapters",
     "library.wordCount": "{count} words",
     "library.location": "In: {name}",
     "library.root": "Root",
     "library.continue": "Continue Writing",
-    "library.manageChapters": "Manage Chapters",
     "library.rename": "Rename",
     "library.delete": "Delete",
     "library.emptyTitle": "This folder is empty",
-    "library.emptyCopy": "No works yet. Use \"New\" in the top right to start.",
+    "library.emptyCopy": "Create a folder or work to start.",
     "library.allWorks": "All Works",
     "chapter.new": "New Chapter",
     "chapter.all": "All Chapters",
@@ -626,6 +636,10 @@ function getLanguage() {
   return supportedLanguages.includes(state?.ui?.language) ? state.ui.language : "zh";
 }
 
+function getRuntimeAssetUrl(fileName) {
+  return new URL(fileName, document.baseURI).toString();
+}
+
 function t(key, values = {}) {
   const dictionary = translations[getLanguage()] ?? translations.zh;
   const template = dictionary[key] ?? translations.zh[key] ?? key;
@@ -662,7 +676,7 @@ function createSeedState() {
 
   return {
     route: "library",
-    activeFolderId: "folder-serial",
+    activeFolderId: null,
     activeTab: "writing",
     activeWorkId: "work-1",
     activeChapterId: "chapter-1",
@@ -870,6 +884,7 @@ function createSeedState() {
       librarySearch: "",
       librarySort: "updated-desc",
       libraryWorkViewId: "work-1",
+      libraryExpandedFolders: [],
       language: "zh",
       chapterPanelOpen: false,
       chapterPanelFocusedId: null,
@@ -964,6 +979,9 @@ function ensureStateIntegrity() {
   state.ui.librarySearch ??= "";
   state.ui.librarySort ??= "updated-desc";
   state.ui.libraryWorkViewId ??= null;
+  state.ui.libraryExpandedFolders = Array.isArray(state.ui.libraryExpandedFolders)
+    ? state.ui.libraryExpandedFolders.map((id) => String(id))
+    : [];
   state.ui.language = supportedLanguages.includes(state.ui.language) ? state.ui.language : "zh";
   state.ui.chapterPanelOpen ??= false;
   state.ui.chapterPanelFocusedId ??= null;
@@ -1331,6 +1349,12 @@ function FileManagerPage() {
         </div>
       </header>
       <div class="library-content" id="library-content">
+        <aside class="library-sidebar surface">
+          <div class="library-sidebar-head">
+            <strong>${t("library.folderTree")}</strong>
+          </div>
+          <div class="library-tree" id="library-tree"></div>
+        </aside>
         <div class="library-list" id="library-list"></div>
       </div>
     </section>
@@ -1677,6 +1701,7 @@ function collectRefs() {
   refs.librarySearchInput = document.getElementById("library-search-input");
   refs.librarySortSelect = document.getElementById("library-sort-select");
   refs.libraryContent = document.getElementById("library-content");
+  refs.libraryTree = document.getElementById("library-tree");
   refs.libraryList = document.getElementById("library-list");
   refs.editorPage = document.getElementById("editor-page");
   refs.backButton = document.getElementById("back-button");
@@ -1780,8 +1805,8 @@ function bindEvents() {
     renderLibraryPage();
     persist();
   });
-  refs.libraryContent.addEventListener("scroll", () => {
-    state.ui.libraryScrollTop = refs.libraryContent.scrollTop;
+  refs.libraryList.addEventListener("scroll", () => {
+    state.ui.libraryScrollTop = refs.libraryList.scrollTop;
     persist();
   });
   refs.backButton.addEventListener("click", handleBackNavigation);
@@ -1922,6 +1947,12 @@ async function handleDelegatedClick(event) {
     return;
   }
 
+  const folderToggle = event.target.closest("[data-folder-toggle]");
+  if (folderToggle) {
+    toggleFolderExpanded(folderToggle.dataset.folderToggle);
+    return;
+  }
+
   const folderOpen = event.target.closest("[data-open-folder]");
   if (folderOpen) {
     openFolder(folderOpen.dataset.openFolder);
@@ -1931,14 +1962,6 @@ async function handleDelegatedClick(event) {
   const workOpen = event.target.closest("[data-open-work]");
   if (workOpen) {
     await openWorkDefault(workOpen.dataset.openWork);
-    return;
-  }
-
-  const workManage = event.target.closest("[data-manage-work]");
-  if (workManage) {
-    state.ui.libraryWorkViewId = workManage.dataset.manageWork;
-    updateAll();
-    persist();
     return;
   }
 
@@ -1976,18 +1999,6 @@ async function handleDelegatedClick(event) {
       entityAction.dataset.entityType,
       entityAction.dataset.entityId,
     );
-    return;
-  }
-
-  const workAction = event.target.closest("[data-work-action]");
-  if (workAction) {
-    await handleWorkAction(workAction.dataset.workAction, workAction.dataset.workId);
-    return;
-  }
-
-  const chapterAction = event.target.closest("[data-chapter-action]");
-  if (chapterAction) {
-    await handleChapterAction(chapterAction.dataset.chapterAction, chapterAction.dataset.workId, chapterAction.dataset.chapterId);
     return;
   }
 
@@ -2130,7 +2141,7 @@ function updateRoute() {
     });
   } else {
     requestAnimationFrame(() => {
-      refs.libraryContent.scrollTop = state.ui.libraryScrollTop ?? 0;
+      refs.libraryList.scrollTop = state.ui.libraryScrollTop ?? 0;
     });
   }
 }
@@ -2150,48 +2161,83 @@ function updateLibraryHeader() {
 }
 
 function renderLibraryPage() {
+  ensureActiveFolderTreeVisible();
   const folders = getVisibleFoldersInFolder(state.activeFolderId);
   const works = getVisibleWorksInFolder(state.activeFolderId);
   const currentFolder = getFolder(state.activeFolderId);
-  const detailWork = getVisibleWorkDetail();
-  const searchLabel = state.ui.librarySearch.trim() ? t("library.searchLabel", { query: escapeHtml(state.ui.librarySearch.trim()) }) : "";
+  const contents = [
+    ...folders.map((folder) => ({ type: "folder", item: folder })),
+    ...works.map((work) => ({ type: "work", item: work })),
+  ];
+  const searchLabel = state.ui.librarySearch.trim()
+    ? t("library.searchLabel", { query: escapeHtml(state.ui.librarySearch.trim()) })
+    : "";
 
+  refs.libraryTree.innerHTML = renderFolderTree();
   refs.libraryList.innerHTML = `
-    ${detailWork ? renderWorkDetailPanel(detailWork) : ""}
-    <section class="library-section surface">
-      <div class="library-section-head">
+    <section class="library-browser surface">
+      <div class="library-browser-head">
         <div>
-          <strong>${t("library.folders")}</strong>
-          <small>${currentFolder ? t("library.folderChildren", { name: escapeHtml(currentFolder.name) }) : t("library.rootFolders")}${searchLabel}</small>
+          <strong>${currentFolder ? escapeHtml(currentFolder.name) : t("library.allWorks")}</strong>
+          <small>${t("library.itemCount", { count: contents.length })}${searchLabel}</small>
         </div>
       </div>
-      <div class="folder-grid">
-        ${folders.length > 0 ? folders.map(renderFolderCard).join("") : `<div class="empty-state compact-empty">${t("library.noFolders")}</div>`}
-      </div>
-    </section>
-    <section class="library-section surface">
-      <div class="library-section-head">
-        <div>
-          <strong>${t("library.works")}</strong>
-          <small>${t("library.worksSummary", { count: works.length })}</small>
-        </div>
-      </div>
-      <div class="work-column">
-        ${works.length > 0 ? works.map(renderWorkCard).join("") : renderEmptyLibraryState()}
+      <div class="library-item-grid">
+        ${contents.length > 0 ? contents.map(({ type, item }) => renderLibraryItem(type, item)).join("") : renderEmptyLibraryState()}
       </div>
     </section>
   `;
 }
 
-function renderFolderCard(folder) {
+function renderFolderTree(parentId = null, depth = 0) {
+  const folders = sortFolders(getFoldersInFolder(parentId));
+  const rootActive = state.activeFolderId == null;
+  const root = depth === 0
+    ? `
+      <div class="folder-tree-row root ${rootActive ? "active" : ""}" style="--depth:0">
+        <button class="folder-tree-toggle" data-folder-toggle="root" ${folders.length === 0 ? "disabled" : ""}>${folders.length > 0 ? (isFolderExpanded("root") ? "⌄" : "›") : ""}</button>
+        <button class="folder-tree-entry" data-folder-nav="">
+          ${renderLibraryIcon("folder", "library-tree-icon")}
+          <span>${t("library.allWorks")}</span>
+        </button>
+      </div>
+      ${isFolderExpanded("root") ? renderFolderTree(null, 1) : ""}
+    `
+    : "";
+  if (depth === 0) return root;
+
+  return folders
+    .map((folder) => {
+      const children = getFoldersInFolder(folder.id);
+      const expanded = isFolderExpanded(folder.id);
+      const active = state.activeFolderId === folder.id;
+      return `
+        <div class="folder-tree-row ${active ? "active" : ""}" style="--depth:${depth}">
+          <button class="folder-tree-toggle" data-folder-toggle="${folder.id}" ${children.length === 0 ? "disabled" : ""}>${children.length > 0 ? (expanded ? "⌄" : "›") : ""}</button>
+          <button class="folder-tree-entry" data-folder-nav="${folder.id}">
+            ${renderLibraryIcon("folder", "library-tree-icon")}
+            <span>${escapeHtml(folder.name)}</span>
+          </button>
+        </div>
+        ${expanded ? renderFolderTree(folder.id, depth + 1) : ""}
+      `;
+    })
+    .join("");
+}
+
+function renderLibraryItem(type, item) {
+  return type === "folder" ? renderFolderItem(item) : renderWorkItem(item);
+}
+
+function renderFolderItem(folder) {
   return `
-    <article class="folder-card">
-      <button class="folder-main" data-open-folder="${folder.id}">
-        <div>
+    <article class="library-item-card">
+      <button class="library-item-main" data-open-folder="${folder.id}">
+        ${renderLibraryIcon("folder", "library-item-icon")}
+        <span class="library-item-text">
           <strong>${escapeHtml(folder.name)}</strong>
           <small>${t("library.subfolderCount", { folders: getFoldersInFolder(folder.id).length, works: getWorksInFolder(folder.id).length })}</small>
-        </div>
-        <span class="folder-arrow">›</span>
+        </span>
       </button>
       <div class="entity-menu-wrap">
         <button class="icon-button" data-entity-menu-trigger data-entity-type="folder" data-entity-id="${folder.id}">⋯</button>
@@ -2200,72 +2246,27 @@ function renderFolderCard(folder) {
   `;
 }
 
-function renderWorkCard(work) {
-  const chapters = getWorkChapters(work.id).slice(0, 3);
-  const totalWords = getWorkWordCount(work.id);
-  const folder = getFolder(work.folderId);
-
+function renderWorkItem(work) {
   return `
-    <article class="work-card surface">
-      <div class="work-card-head">
-        <button class="work-main-entry" data-open-work="${work.id}">
+    <article class="library-item-card">
+      <button class="library-item-main" data-open-work="${work.id}">
+        ${renderLibraryIcon("work", "library-item-icon")}
+        <span class="library-item-text">
           <strong>${escapeHtml(work.title)}</strong>
-          <p>${escapeHtml(work.description || t("library.noDescription"))}</p>
-        </button>
-        <div class="entity-menu-wrap">
-          <button class="icon-button" data-entity-menu-trigger data-entity-type="work" data-entity-id="${work.id}">⋯</button>
-        </div>
-      </div>
-      <div class="work-meta-row">
-        <span class="tag">${t("library.chapterCount", { count: work.chapterIds.length })}</span>
-        <span class="meta-chip">${t("library.wordCount", { count: totalWords })}</span>
-        <span class="meta-chip">${formatRelativeTime(work.updatedAt)}</span>
-        ${folder ? `<span class="meta-chip">${t("library.location", { name: escapeHtml(folder.name) })}</span>` : `<span class="meta-chip">${t("library.root")}</span>`}
-      </div>
-      <div class="chapter-list">
-        ${chapters.map((chapter) => renderChapterRow(work, chapter)).join("")}
-      </div>
-      <div class="work-card-footer">
-        <button class="ghost-button compact-button" data-open-work="${work.id}">${t("library.continue")}</button>
-        <button class="ghost-button compact-button" data-manage-work="${work.id}">${t("library.manageChapters")}</button>
+          <small>${t("library.chapterCount", { count: work.chapterIds.length })} · ${formatRelativeTime(work.updatedAt)}</small>
+        </span>
+      </button>
+      <div class="entity-menu-wrap">
+        <button class="icon-button" data-entity-menu-trigger data-entity-type="work" data-entity-id="${work.id}">⋯</button>
       </div>
     </article>
   `;
 }
 
-function renderChapterRow(work, chapter) {
-  return `
-    <div class="chapter-item">
-      <button class="chapter-row ${chapter.id === state.activeChapterId && work.id === state.activeWorkId ? "active" : ""}" data-work-id="${work.id}" data-open-chapter="${chapter.id}">
-        <span>${escapeHtml(chapter.title)}</span>
-        <small>${t("library.wordCount", { count: chapter.wordCount })}</small>
-      </button>
-      <div class="inline-actions">
-        <button class="ghost-button compact-button" data-chapter-action="rename-chapter" data-work-id="${work.id}" data-chapter-id="${chapter.id}">${t("library.rename")}</button>
-        <button class="ghost-button compact-button" data-chapter-action="delete-chapter" data-work-id="${work.id}" data-chapter-id="${chapter.id}">${t("library.delete")}</button>
-      </div>
-    </div>
-  `;
-}
-
-function renderWorkDetailPanel(work) {
-  return `
-    <section class="library-section surface">
-      <div class="library-section-head">
-        <div>
-          <strong>${t("library.manageChapters")}</strong>
-          <small>${escapeHtml(work.title)} · ${getLanguage() === "en" ? "Updated" : "最近更新"} ${formatRelativeTime(work.updatedAt)}</small>
-        </div>
-        <div class="inline-actions">
-          <button class="ghost-button compact-button" data-work-action="new-chapter" data-work-id="${work.id}">${t("chapter.new")}</button>
-          <button class="ghost-button compact-button" data-work-action="close-detail" data-work-id="${work.id}">${t("editor.collapse")}</button>
-        </div>
-      </div>
-      <div class="chapter-list">
-        ${getWorkChapters(work.id).map((chapter) => renderChapterRow(work, chapter)).join("")}
-      </div>
-    </section>
-  `;
+function renderLibraryIcon(type, className) {
+  const src = type === "folder" ? LIBRARY_FOLDER_ICON : LIBRARY_WORK_ICON;
+  const alt = type === "folder" ? t("library.folderType") : t("library.workType");
+  return `<img class="${className}" src="${src}" alt="${escapeAttribute(alt)}" loading="lazy" />`;
 }
 
 function renderEmptyLibraryState() {
@@ -2274,6 +2275,10 @@ function renderEmptyLibraryState() {
       <div>
         <strong>${t("library.emptyTitle")}</strong>
         <p>${t("library.emptyCopy")}</p>
+      </div>
+      <div class="inline-actions">
+        <button class="ghost-button compact-button" data-library-action="open-create-folder">${t("library.createFolder")}</button>
+        <button class="primary-button compact-button" data-library-action="open-create-work">${t("library.createWork")}</button>
       </div>
     </div>
   `;
@@ -2296,7 +2301,6 @@ function renderEntityMenuPortal() {
         ]
       : [
           `<button data-entity-action="open" data-entity-type="work" data-entity-id="${id}">${getLanguage() === "en" ? "Open Editor" : "进入编辑页"}</button>`,
-          `<button data-entity-action="detail" data-entity-type="work" data-entity-id="${id}">${t("library.manageChapters")}</button>`,
           `<button data-entity-action="rename" data-entity-type="work" data-entity-id="${id}">${t("library.rename")}</button>`,
           `<button data-entity-action="delete" data-entity-type="work" data-entity-id="${id}">${t("library.delete")}</button>`,
         ];
@@ -2818,44 +2822,8 @@ async function handleEntityAction(action, type, id) {
 
   if (type === "work") {
     if (action === "open") await openWorkDefault(id);
-    if (action === "detail") {
-      state.ui.libraryWorkViewId = id;
-      updateAll();
-      persist();
-    }
     if (action === "rename") openRenameModal("work", id);
     if (action === "delete") openDeleteWorkModal(id);
-  }
-}
-
-async function handleWorkAction(action, workId) {
-  const work = getWork(workId);
-  if (!work) return;
-
-  if (action === "new-chapter") {
-    openCreateChapterModal(work.id);
-    return;
-  }
-
-  if (action === "close-detail") {
-    state.ui.libraryWorkViewId = null;
-    updateAll();
-    persist();
-  }
-}
-
-async function handleChapterAction(action, workId, chapterId) {
-  const work = getWork(workId);
-  const chapter = getChapter(chapterId);
-  if (!work || !chapter) return;
-
-  if (action === "rename-chapter") {
-    openRenameModal("chapter", chapter.id);
-    return;
-  }
-
-  if (action === "delete-chapter") {
-    openDeleteChapterModal(work.id, chapter.id);
   }
 }
 
@@ -2932,12 +2900,6 @@ function openCreateWorkModal() {
         <textarea id="modal-work-description" rows="4" placeholder="${escapeAttribute(getLanguage() === "en" ? "Briefly describe this work" : "简要说明作品方向")}"></textarea>
         <label>${getLanguage() === "en" ? "Folder" : "所属文件夹"}</label>
         <select id="modal-work-folder">${renderFolderOptions(state.activeFolderId, true)}</select>
-        <label>${getLanguage() === "en" ? "Default Chapter Template" : "默认章节模板"}</label>
-        <select id="modal-work-template">
-          <option value="blank">${getLanguage() === "en" ? "Blank Chapter" : "空白章节"}</option>
-          <option value="intro">${getLanguage() === "en" ? "Opening Template" : "开场模板"}</option>
-          <option value="outline">${getLanguage() === "en" ? "Outline Template" : "大纲模板"}</option>
-        </select>
       </div>
     `,
     actions: [
@@ -3333,11 +3295,43 @@ function handleFolderUp() {
 
 function openFolder(folderId) {
   state.activeFolderId = folderId ?? null;
-  state.ui.libraryWorkViewId = getWorksInFolder(state.activeFolderId)[0]?.id ?? null;
+  state.ui.libraryWorkViewId = null;
   state.ui.libraryEntityMenu = null;
   state.ui.libraryScrollTop = 0;
+  ensureActiveFolderTreeVisible();
   updateAll();
   persist();
+}
+
+function isFolderExpanded(folderId) {
+  if (folderId === "root") return !state.ui.libraryExpandedFolders.includes("root-collapsed");
+  return state.ui.libraryExpandedFolders.includes(String(folderId));
+}
+
+function toggleFolderExpanded(folderId) {
+  const id = String(folderId);
+  const expanded = isFolderExpanded(id);
+  if (id === "root") {
+    state.ui.libraryExpandedFolders = expanded
+      ? [...state.ui.libraryExpandedFolders.filter((item) => item !== "root-collapsed"), "root-collapsed"]
+      : state.ui.libraryExpandedFolders.filter((item) => item !== "root-collapsed");
+  } else {
+    state.ui.libraryExpandedFolders = expanded
+      ? state.ui.libraryExpandedFolders.filter((item) => item !== id)
+      : [...state.ui.libraryExpandedFolders, id];
+  }
+  renderLibraryPage();
+  persist();
+}
+
+function ensureActiveFolderTreeVisible() {
+  const activePath = getFolderPath(state.activeFolderId).map((item) => item.id).filter(Boolean);
+  if (activePath.length > 0) {
+    state.ui.libraryExpandedFolders = state.ui.libraryExpandedFolders.filter((item) => item !== "root-collapsed");
+  }
+  activePath.slice(0, -1).forEach((id) => {
+    if (!state.ui.libraryExpandedFolders.includes(id)) state.ui.libraryExpandedFolders.push(id);
+  });
 }
 
 async function openWorkDefault(workId) {
@@ -3351,7 +3345,7 @@ async function openWorkDefault(workId) {
 async function openChapter(workId, chapterId) {
   const previous = getCurrentChapter();
   if (previous && hasUnsavedChanges() && state.ui.autosaveEnabled) await saveCurrentChapter();
-  state.ui.libraryScrollTop = refs.libraryContent?.scrollTop ?? state.ui.libraryScrollTop;
+  state.ui.libraryScrollTop = refs.libraryList?.scrollTop ?? state.ui.libraryScrollTop;
   handleInspirationWorkChange(workId, state.activeWorkId);
   state.activeWorkId = workId;
   state.activeChapterId = chapterId;

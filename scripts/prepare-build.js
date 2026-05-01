@@ -6,6 +6,7 @@ const buildDir = path.join(rootDir, ".app-build");
 const buildAssetsDir = path.join(buildDir, "assets");
 
 const runtimeFiles = ["app.js", "index.html", "main.js", "preload.js", "styles.css"];
+const runtimeImages = ["fold_image.png", "file_image.png"];
 
 async function main() {
   await fs.rm(buildDir, { recursive: true, force: true });
@@ -13,6 +14,10 @@ async function main() {
   await fs.mkdir(buildAssetsDir, { recursive: true });
 
   for (const file of runtimeFiles) {
+    await fs.copyFile(path.join(rootDir, file), path.join(buildDir, file));
+  }
+
+  for (const file of runtimeImages) {
     await fs.copyFile(path.join(rootDir, file), path.join(buildDir, file));
   }
 
