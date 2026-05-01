@@ -1,7 +1,7 @@
 {
   "name": "jian-ji",
   "productName": "简纪",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A local desktop writing studio for authors.",
   "main": "main.js",
   "author": "MAGG4444",
@@ -14,7 +14,7 @@
     "dist": "npm run prepare:build && electron-builder --config electron-builder.json"
   },
   "devDependencies": {
-    "electron": "^37.2.0",
+    "electron": "^41.4.0",
     "electron-builder": "^26.0.12"
   }
 }

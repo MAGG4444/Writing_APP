@@ -73,10 +73,10 @@ Build artifacts are written to `dist/`.
 
 On Linux, the generated outputs include:
 
-- `Story Forge-1.0.4.AppImage`
-- `Story Forge-1.0.4.tar.gz`
+- `简纪-1.0.6.AppImage`
+- `简纪-1.0.6.tar.gz`
 
-The old lowercase tarball naming (`story-forge-1.0.4.tar.gz`) is no longer part of the intended release output and can be removed if it appears from older builds.
+The old lowercase tarball naming (`story-forge-1.0.6.tar.gz`) is no longer part of the intended release output and can be removed if it appears from older builds.
 
 Windows and macOS targets are also configured in `package.json`, but those are best built on their native platforms or CI runners for reliable release packaging.
 
@@ -88,13 +88,13 @@ Make it executable:
 
 ```bash
 cd dist
-chmod +x "Story Forge-1.0.4.AppImage"
+chmod +x "简纪-1.0.6.AppImage"
 ```
 
 Run it directly:
 
 ```bash
-./"Story Forge-1.0.4.AppImage"
+./"简纪-1.0.6.AppImage"
 ```
 
 If your Fedora environment is missing AppImage runtime support, install FUSE libraries first:
@@ -107,14 +107,14 @@ If you want to keep it like a normal desktop app, a simple approach is:
 
 ```bash
 mkdir -p ~/Applications
-cp "dist/Story Forge-1.0.4.AppImage" ~/Applications/
-chmod +x ~/Applications/"Story Forge-1.0.4.AppImage"
+cp "dist/简纪-1.0.6.AppImage" ~/Applications/
+chmod +x ~/Applications/"简纪-1.0.6.AppImage"
 ```
 
 Then run it from:
 
 ```bash
-~/Applications/"Story Forge-1.0.4.AppImage"
+~/Applications/"简纪-1.0.6.AppImage"
 ```
 
 ## Browser Fallback
