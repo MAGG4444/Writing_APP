@@ -343,10 +343,12 @@ const DEFAULT_CHAPTER_TEMPLATE = {
 const state = loadState();
 const refs = {};
 const desktopApi = window.storyForgeDesktop ?? null;
+let appVersion = "";
 let autosaveTimer = null;
 let focusTimer = null;
 let suppressHistory = false;
 let draggedChapterId = null;
+let outlineResizeState = null;
 
 init();
 
@@ -356,8 +358,21 @@ async function init() {
   document.getElementById("app").innerHTML = AppShell();
   collectRefs();
   bindEvents();
+  await loadAppVersion();
   hydrateEditor();
   updateAll();
+}
+
+async function loadAppVersion() {
+  if (!desktopApi?.getAppVersion) return;
+  try {
+    appVersion = await desktopApi.getAppVersion();
+    if (refs.appVersion) refs.appVersion.textContent = appVersion ? `版本 ${appVersion}` : "";
+  } catch (error) {
+    console.error(error);
+    appVersion = "";
+    if (refs.appVersion) refs.appVersion.textContent = "";
+  }
 }
 
 function loadState() {
@@ -382,6 +397,12 @@ function createSeedState() {
     activeTab: "writing",
     activeWorkId: "work-1",
     activeChapterId: "chapter-1",
+    outlinePanelOpen: false,
+    outlinePanelHeight: 0.2,
+    currentChapterOutline: "1. 回港\n2. 旅馆旧灯\n3. 第一句手稿回归",
+    outlineDirty: false,
+    outlineLastSavedAt: "2026-04-08T01:20:00.000Z",
+    outlineSaveStatus: "已保存",
     folders: [
       { id: "folder-serial", name: "长篇连载", parentId: null, createdAt },
       { id: "folder-short", name: "短篇练习", parentId: null, createdAt },
@@ -614,6 +635,7 @@ function createSeedChapter({
     title,
     content,
     savedContent: content,
+    savedOutline: outline,
     notes,
     bookmarks,
     wordGoal,
@@ -651,6 +673,12 @@ function ensureStateIntegrity() {
 
   state.ui ??= {};
   state.inspirations ??= {};
+  state.outlinePanelOpen = Boolean(state.outlinePanelOpen);
+  state.outlinePanelHeight = clampOutlinePanelRatio(Number(state.outlinePanelHeight) || 0.2);
+  state.currentChapterOutline = String(state.currentChapterOutline || "");
+  state.outlineDirty = Boolean(state.outlineDirty);
+  state.outlineLastSavedAt = state.outlineLastSavedAt ? normalizeIsoDate(state.outlineLastSavedAt) : null;
+  state.outlineSaveStatus = String(state.outlineSaveStatus || "已保存");
   state.inspirations.categoryOrder = Array.isArray(state.inspirations.categoryOrder)
     ? state.inspirations.categoryOrder.map((item) => String(item).trim()).filter(Boolean)
     : inspirationCategories.filter((item) => item !== "all");
@@ -676,6 +704,7 @@ function ensureStateIntegrity() {
   state.ui.inspirationEditingId ??= null;
   state.ui.inspirationCategoryManagerExpanded ??= false;
   state.ui.settingsThemeExpanded ??= false;
+  state.ui.focusTarget = ["document", "outline"].includes(state.ui.focusTarget) ? state.ui.focusTarget : "document";
   state.theme ??= {};
   state.theme.presets = themePresets;
   state.theme.currentId = themePresets.some((theme) => theme.id === state.theme.currentId) ? state.theme.currentId : "cream";
@@ -720,6 +749,7 @@ function ensureStateIntegrity() {
         title: String(chapter.title || "未命名章节"),
         content,
         savedContent: String(chapter.savedContent ?? content),
+        savedOutline: String(chapter.savedOutline ?? chapter.outline ?? ""),
         notes: String(chapter.notes || ""),
         bookmarks: Array.isArray(chapter.bookmarks) ? chapter.bookmarks.map((item) => String(item)) : [],
         wordGoal: Number(chapter.wordGoal) || 2000,
@@ -769,6 +799,7 @@ function ensureStateIntegrity() {
   syncInspirationCategoryOrder();
 
   normalizeActiveSelection();
+  syncOutlineStateWithCurrentChapter();
   persist();
 }
 
@@ -884,6 +915,7 @@ function migrateLegacyWorksToFlat(legacyWorks) {
         title: String(legacyChapter.title || "未命名章节"),
         content,
         savedContent: String(legacyChapter.savedContent ?? content),
+        savedOutline: String(legacyChapter.savedOutline ?? legacyChapter.outline ?? ""),
         notes: String(legacyChapter.notes || ""),
         bookmarks: Array.isArray(legacyChapter.bookmarks) ? legacyChapter.bookmarks : [],
         wordGoal: Number(legacyChapter.wordGoal) || 2000,
@@ -1047,8 +1079,9 @@ function EditorPage() {
           <div class="sidebar-section">
             <div class="sidebar-section-head">
               <strong>章节大纲</strong>
+              <button class="ghost-button compact-button" id="outline-expand-button">拓展</button>
             </div>
-            <textarea id="chapter-outline-input" placeholder="记录本章大纲与推进节点"></textarea>
+            <textarea id="chapter-outline-input" class="chapter-outline-input" placeholder="记录本章大纲与推进节点"></textarea>
           </div>
           <div class="sidebar-section">
             <div class="sidebar-section-head">
@@ -1075,6 +1108,7 @@ function TopBar() {
       <button class="icon-button" id="back-button" title="返回文件管理页">←</button>
       <div class="top-bar-meta">
         <strong id="current-work-title"></strong>
+        <small class="app-version" id="app-version">${appVersion ? `版本 ${escapeHtml(appVersion)}` : ""}</small>
         <div class="chapter-switcher-shell">
           <div class="chapter-switcher-row">
             <button class="chapter-switcher-trigger" id="chapter-switcher-button" title="查看并切换章节">
@@ -1118,7 +1152,7 @@ function TopBar() {
 
 function DocumentEditor() {
   return `
-    <section class="editor-main surface">
+    <section class="editor-main surface" id="editor-main">
       <div class="find-replace-bar hidden" id="find-replace-bar">
         <input id="find-query-input" type="text" placeholder="查找" />
         <input id="replace-query-input" type="text" placeholder="替换为" />
@@ -1130,7 +1164,41 @@ function DocumentEditor() {
         <button class="ghost-button compact-button" data-selection-action="divider">插入分隔</button>
         <button class="ghost-button compact-button" data-selection-action="bookmark">设为书签</button>
       </div>
-      <textarea id="document-editor" class="document-editor" spellcheck="false" placeholder="开始写作……"></textarea>
+      <div class="editor-stack" id="editor-stack">
+        <div class="editor-primary-pane" id="editor-primary-pane">
+          <div class="editor-pane-shell">
+            <div class="editor-pane-head">
+              <div>
+                <strong>正文编辑器</strong>
+                <small id="document-editor-status">正文内容实时跟随当前章节切换。</small>
+              </div>
+            </div>
+            <div class="editor-pane-body">
+              <textarea id="document-editor" class="document-editor" spellcheck="false" placeholder="开始写作……"></textarea>
+            </div>
+          </div>
+        </div>
+        <section class="outline-panel hidden" id="outline-panel">
+          <button class="outline-panel-resize-handle" id="outline-panel-resize-handle" title="拖动调整大纲高度" aria-label="拖动调整大纲高度">
+            <span class="outline-panel-size-indicator" id="outline-panel-size-indicator">20%</span>
+          </button>
+          <div class="outline-panel-shell editor-pane-shell">
+            <div class="outline-panel-head editor-pane-head">
+              <div>
+                <strong>章节大纲</strong>
+                <small id="outline-panel-status">已保存</small>
+              </div>
+              <div class="outline-panel-actions">
+                <button class="ghost-button compact-button" id="outline-panel-save-button">保存</button>
+                <button class="icon-button outline-panel-close-button" id="outline-panel-close-button" title="关闭大纲面板" aria-label="关闭大纲面板">×</button>
+              </div>
+            </div>
+            <div class="editor-pane-body">
+              <textarea id="outline-panel-editor" class="outline-panel-editor" spellcheck="false" placeholder="在这里展开编辑本章大纲……"></textarea>
+            </div>
+          </div>
+        </section>
+      </div>
     </section>
   `;
 }
@@ -1334,6 +1402,7 @@ function collectRefs() {
   refs.editorPage = document.getElementById("editor-page");
   refs.backButton = document.getElementById("back-button");
   refs.currentWorkTitle = document.getElementById("current-work-title");
+  refs.appVersion = document.getElementById("app-version");
   refs.currentChapterTitle = document.getElementById("current-chapter-title");
   refs.currentChapterMeta = document.getElementById("current-chapter-meta");
   refs.chapterSwitcherButton = document.getElementById("chapter-switcher-button");
@@ -1351,11 +1420,23 @@ function collectRefs() {
   refs.findNextButton = document.getElementById("find-next-button");
   refs.replaceButton = document.getElementById("replace-button");
   refs.selectionToolbar = document.getElementById("selection-toolbar");
+  refs.editorMain = document.getElementById("editor-main");
+  refs.editorStack = document.getElementById("editor-stack");
+  refs.editorPrimaryPane = document.getElementById("editor-primary-pane");
+  refs.documentEditorStatus = document.getElementById("document-editor-status");
   refs.documentEditor = document.getElementById("document-editor");
   refs.chapterSidebar = document.getElementById("chapter-sidebar");
   refs.editorColumn = document.getElementById("editor-column");
   refs.chapterNotesInput = document.getElementById("chapter-notes-input");
   refs.chapterOutlineInput = document.getElementById("chapter-outline-input");
+  refs.outlineExpandButton = document.getElementById("outline-expand-button");
+  refs.outlinePanel = document.getElementById("outline-panel");
+  refs.outlinePanelStatus = document.getElementById("outline-panel-status");
+  refs.outlinePanelSizeIndicator = document.getElementById("outline-panel-size-indicator");
+  refs.outlinePanelEditor = document.getElementById("outline-panel-editor");
+  refs.outlinePanelSaveButton = document.getElementById("outline-panel-save-button");
+  refs.outlinePanelCloseButton = document.getElementById("outline-panel-close-button");
+  refs.outlinePanelResizeHandle = document.getElementById("outline-panel-resize-handle");
   refs.bookmarkList = document.getElementById("bookmark-list");
   refs.leftSidebarToggleButton = document.getElementById("left-sidebar-toggle-button");
   refs.leftSidebarReopenButton = document.getElementById("left-sidebar-reopen-button");
@@ -1452,6 +1533,17 @@ function bindEvents() {
   refs.documentEditor.addEventListener("keyup", captureSelection);
   refs.chapterNotesInput.addEventListener("input", handleNotesInput);
   refs.chapterOutlineInput.addEventListener("input", handleOutlineInput);
+  refs.chapterOutlineInput.addEventListener("focus", handleOutlineFocus);
+  refs.chapterOutlineInput.addEventListener("blur", handleOutlineBlur);
+  refs.chapterOutlineInput.addEventListener("keydown", handleOutlineKeydown);
+  refs.outlineExpandButton.addEventListener("click", () => openOutlinePanel({ focus: true }));
+  refs.outlinePanelEditor.addEventListener("input", handleOutlinePanelInput);
+  refs.outlinePanelEditor.addEventListener("keydown", handleOutlineKeydown);
+  refs.outlinePanelEditor.addEventListener("focus", handleOutlineFocus);
+  refs.outlinePanelEditor.addEventListener("blur", handleOutlineBlur);
+  refs.outlinePanelSaveButton.addEventListener("click", () => void saveCurrentOutline());
+  refs.outlinePanelCloseButton.addEventListener("click", () => void closeOutlinePanel());
+  refs.outlinePanelResizeHandle.addEventListener("mousedown", beginOutlineResize);
   refs.leftSidebarToggleButton.addEventListener("click", toggleLeftSidebar);
   refs.leftSidebarReopenButton.addEventListener("click", toggleLeftSidebar);
   refs.addBookmarkButton.addEventListener("click", () => addBookmarkFromSelection());
@@ -1506,7 +1598,7 @@ function bindEvents() {
   });
   refs.autosaveToggle.addEventListener("change", (event) => {
     state.ui.autosaveEnabled = event.target.checked;
-    if (event.target.checked && getCurrentChapter()?.dirty) void saveCurrentChapter();
+    if (event.target.checked && hasUnsavedChanges()) void saveCurrentChapter();
     updateSettingsPanel();
     persist();
   });
@@ -1529,6 +1621,10 @@ function bindEvents() {
   if (desktopApi?.onMenuAction) {
     desktopApi.onMenuAction((action) => handleDesktopMenuAction(action));
   }
+
+  window.addEventListener("mousemove", handleOutlineResizeMove);
+  window.addEventListener("mouseup", endOutlineResize);
+  window.addEventListener("resize", syncOutlinePanelLayout);
 }
 
 async function handleDelegatedClick(event) {
@@ -1745,7 +1841,10 @@ function updateRoute() {
   refs.editorPage.classList.toggle("hidden", !onEditor);
   refs.editorPage.classList.toggle("focus-mode", state.ui.focusMode);
   if (onEditor) {
-    requestAnimationFrame(() => refs.documentEditor.focus());
+    requestAnimationFrame(() => {
+      const shouldFocusOutline = state.outlinePanelOpen && state.ui.focusTarget === "outline";
+      (shouldFocusOutline ? refs.outlinePanelEditor : refs.documentEditor)?.focus();
+    });
   } else {
     requestAnimationFrame(() => {
       refs.libraryContent.scrollTop = state.ui.libraryScrollTop ?? 0;
@@ -1967,21 +2066,26 @@ function hydrateEditor() {
   refs.documentEditor.disabled = !chapter;
   refs.chapterNotesInput.disabled = !chapter;
   refs.chapterOutlineInput.disabled = !chapter;
+  refs.outlinePanelEditor.disabled = !chapter;
   refs.wordGoalInput.disabled = !chapter;
   if (!chapter) {
     refs.documentEditor.value = "";
     refs.chapterNotesInput.value = "";
     refs.chapterOutlineInput.value = "";
+    refs.outlinePanelEditor.value = "";
     refs.wordGoalInput.value = "0";
     refs.documentEditor.placeholder = "请先从目录页选择章节或新建章节。";
     refs.findQueryInput.value = state.ui.findQuery;
     refs.replaceQueryInput.value = state.ui.replaceQuery;
+    state.currentChapterOutline = "";
     return;
   }
+  syncOutlineStateWithCurrentChapter();
   refs.documentEditor.placeholder = "开始写作……";
   if (refs.documentEditor.value !== chapter.content) refs.documentEditor.value = chapter.content;
   refs.chapterNotesInput.value = chapter.notes;
-  refs.chapterOutlineInput.value = chapter.outline;
+  refs.chapterOutlineInput.value = state.currentChapterOutline;
+  refs.outlinePanelEditor.value = state.currentChapterOutline;
   refs.findQueryInput.value = state.ui.findQuery;
   refs.replaceQueryInput.value = state.ui.replaceQuery;
   refs.wordGoalInput.value = String(chapter.wordGoal);
@@ -1994,7 +2098,7 @@ function updateTopBar() {
   refs.currentChapterTitle.textContent = chapter?.title ?? "请先返回目录页选择章节";
   refs.currentChapterMeta.textContent = chapter ? `${chapter.wordCount} 字 · ${formatRelativeTime(chapter.updatedAt)}` : "点击查看全部章节";
   refs.wordCountButton.textContent = `${countWords(chapter?.content ?? "")} 字`;
-  refs.saveStatusPill.textContent = chapter ? `${chapter.saveStatus} · ${chapter.saveTime}` : "未打开章节";
+  refs.saveStatusPill.textContent = getSaveStatusText(chapter);
 }
 
 function updateChapterPanel() {
@@ -2094,6 +2198,138 @@ function updateWorkspace() {
   refs.wordGoalProgress.textContent = chapter ? `当前 ${countWords(chapter.content)} / 目标 ${chapter.wordGoal}` : "请先选择章节";
   refs.focusTimerValue.textContent = formatDuration(getFocusSeconds());
   refs.inspirationCompose.classList.toggle("hidden", !state.ui.inspirationComposeOpen);
+  refs.outlinePanel.classList.toggle("hidden", !state.outlinePanelOpen || !chapter);
+  refs.outlineExpandButton.disabled = !chapter;
+  refs.outlinePanelStatus.textContent = getOutlineStatusText();
+  refs.documentEditorStatus.textContent = chapter
+    ? `正文 ${chapter.saveStatus} · ${chapter.saveTime}`
+    : "正文内容实时跟随当前章节切换。";
+  syncOutlinePanelLayout();
+}
+
+function syncOutlineStateWithCurrentChapter() {
+  const chapter = getCurrentChapter();
+  if (!chapter) {
+    state.currentChapterOutline = "";
+    state.outlineDirty = false;
+    state.outlineSaveStatus = "已保存";
+    state.outlineLastSavedAt = null;
+    return;
+  }
+  state.currentChapterOutline = chapter.outline;
+  state.outlineDirty = chapter.outline !== chapter.savedOutline;
+  state.outlineSaveStatus = state.outlineDirty ? (state.ui.autosaveEnabled ? "保存中" : "未保存") : "已保存";
+  state.outlineLastSavedAt = state.outlineDirty ? state.outlineLastSavedAt : normalizeIsoDate(chapter.updatedAt);
+}
+
+function syncOutlineEditors(source = null) {
+  const value = state.currentChapterOutline;
+  if (source !== "sidebar" && refs.chapterOutlineInput.value !== value) refs.chapterOutlineInput.value = value;
+  if (source !== "panel" && refs.outlinePanelEditor.value !== value) refs.outlinePanelEditor.value = value;
+}
+
+function getOutlineStatusText() {
+  if (!getCurrentChapter()) return "未打开章节";
+  if (state.outlineDirty) return `${state.outlineSaveStatus} · 刚刚修改`;
+  const savedAt = formatOutlineSavedAt(state.outlineLastSavedAt);
+  return savedAt ? `已保存 · ${savedAt}` : "已保存";
+}
+
+function getSaveStatusText(chapter) {
+  if (!chapter) return "未打开章节";
+  if (chapter.dirty && state.outlineDirty) return `正文/大纲待保存 · 刚刚修改`;
+  if (state.outlineDirty) return `大纲${state.ui.autosaveEnabled ? "保存中" : "未保存"} · 刚刚修改`;
+  return `${chapter.saveStatus} · ${chapter.saveTime}`;
+}
+
+function formatOutlineSavedAt(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function hasUnsavedChanges() {
+  const chapter = getCurrentChapter();
+  return Boolean(chapter?.dirty || state.outlineDirty);
+}
+
+function openOutlinePanel({ focus = false } = {}) {
+  if (!getCurrentChapter()) return;
+  state.ui.leftSidebarCollapsed = false;
+  state.ui.sidebarSection = "outline";
+  state.outlinePanelOpen = true;
+  state.ui.focusTarget = focus ? "outline" : state.ui.focusTarget;
+  updateSidebar();
+  updateWorkspace();
+  persist();
+  if (focus) {
+    requestAnimationFrame(() => refs.outlinePanelEditor.focus());
+  }
+}
+
+async function closeOutlinePanel() {
+  if (state.outlineDirty) await saveCurrentOutline();
+  state.outlinePanelOpen = false;
+  state.ui.focusTarget = "document";
+  updateWorkspace();
+  persist();
+  requestAnimationFrame(() => refs.documentEditor.focus());
+}
+
+function syncOutlinePanelLayout() {
+  if (!refs.editorMain) return;
+  const height = getOutlinePanelHeightPx();
+  const containerHeight = refs.editorMain?.clientHeight ?? 0;
+  const ratio = containerHeight ? Math.round((height / containerHeight) * 100) : 20;
+  refs.editorMain.style.setProperty("--outline-panel-height", `${height}px`);
+  refs.outlinePanelSizeIndicator.textContent = `${ratio}%`;
+}
+
+function getOutlinePanelHeightPx() {
+  const containerHeight = refs.editorMain?.clientHeight ?? 0;
+  if (!containerHeight) return 160;
+  const minHeight = 120;
+  const maxHeight = Math.max(minHeight, containerHeight * 0.6);
+  const preferred = containerHeight * clampOutlinePanelRatio(state.outlinePanelHeight);
+  return Math.round(Math.max(minHeight, Math.min(maxHeight, preferred)));
+}
+
+function beginOutlineResize(event) {
+  if (!state.outlinePanelOpen || !refs.editorMain) return;
+  event.preventDefault();
+  const panelHeight = getOutlinePanelHeightPx();
+  outlineResizeState = {
+    startY: event.clientY,
+    startHeight: panelHeight,
+    containerHeight: refs.editorMain.clientHeight,
+  };
+  document.body.classList.add("is-resizing-outline");
+  refs.editorMain.classList.add("outline-resizing");
+}
+
+function handleOutlineResizeMove(event) {
+  if (!outlineResizeState || !refs.editorMain) return;
+  const deltaY = outlineResizeState.startY - event.clientY;
+  const nextHeight = outlineResizeState.startHeight + deltaY;
+  const minHeight = 120;
+  const maxHeight = Math.max(minHeight, outlineResizeState.containerHeight * 0.6);
+  const boundedHeight = Math.max(minHeight, Math.min(maxHeight, nextHeight));
+  state.outlinePanelHeight = clampOutlinePanelRatio(boundedHeight / Math.max(outlineResizeState.containerHeight, 1));
+  syncOutlinePanelLayout();
+}
+
+function endOutlineResize() {
+  if (!outlineResizeState) return;
+  outlineResizeState = null;
+  document.body.classList.remove("is-resizing-outline");
+  refs.editorMain.classList.remove("outline-resizing");
+  persist();
+}
+
+function clampOutlinePanelRatio(value) {
+  if (!Number.isFinite(value)) return 0.2;
+  return Math.min(0.6, Math.max(0.05, value));
 }
 
 function updateSettingsPanel() {
@@ -2624,9 +2860,13 @@ async function handleModalAction(action) {
     const chapter = getCurrentChapter();
     if (!chapter) return;
     chapter.content = chapter.savedContent;
+    chapter.outline = chapter.savedOutline;
     chapter.dirty = false;
     chapter.saveStatus = "已保存";
     chapter.saveTime = "回退到上次保存";
+    state.currentChapterOutline = chapter.outline;
+    state.outlineDirty = false;
+    state.outlineSaveStatus = "已保存";
     hydrateEditor();
     state.route = "library";
     state.ui.modal = null;
@@ -2670,6 +2910,7 @@ function createChapterForWork(workId, title, template = DEFAULT_CHAPTER_TEMPLATE
     bookmarks: [],
     wordGoal: 2000,
     outline: template.outline ?? "",
+    savedOutline: template.outline ?? "",
     wordCount: countWords(template.content ?? ""),
     updatedAt: now,
     createdAt: now,
@@ -2747,7 +2988,7 @@ async function handleBackNavigation() {
     updateRoute();
     return;
   }
-  if (!chapter.dirty) {
+  if (!hasUnsavedChanges()) {
     state.route = "library";
     updateRoute();
     return;
@@ -2795,11 +3036,14 @@ async function openWorkDefault(workId) {
 
 async function openChapter(workId, chapterId) {
   const previous = getCurrentChapter();
-  if (previous && previous.dirty && state.ui.autosaveEnabled) await saveCurrentChapter();
+  if (previous && hasUnsavedChanges() && state.ui.autosaveEnabled) await saveCurrentChapter();
   state.ui.libraryScrollTop = refs.libraryContent?.scrollTop ?? state.ui.libraryScrollTop;
   handleInspirationWorkChange(workId, state.activeWorkId);
   state.activeWorkId = workId;
   state.activeChapterId = chapterId;
+  state.outlineDirty = false;
+  state.outlineSaveStatus = "已保存";
+  state.outlineLastSavedAt = null;
   state.route = "editor";
   state.activeTab = "writing";
   closeChapterMenus();
@@ -2846,6 +3090,11 @@ function handleEditorKeydown(event) {
   const pairs = { "(": ")", "（": "）", "[": "]", "【": "】", "\"": "\"", "“": "”", "'": "'" };
   const key = event.key.toLowerCase();
 
+  if ((event.metaKey || event.ctrlKey) && !event.shiftKey && key === "s") {
+    event.preventDefault();
+    void saveCurrentChapter({ scope: "body" });
+    return;
+  }
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && key === "o") {
     event.preventDefault();
     openChapterPanelForKeyboard();
@@ -2886,6 +3135,7 @@ function handleEditorKeydown(event) {
 
 function handleEditorFocus() {
   state.ui.lastFocused = true;
+  state.ui.focusTarget = "document";
   startFocusTimer();
 }
 
@@ -2902,10 +3152,49 @@ function handleNotesInput(event) {
 }
 
 function handleOutlineInput(event) {
+  handleOutlineChange(event.target.value, "sidebar");
+}
+
+function handleOutlinePanelInput(event) {
+  handleOutlineChange(event.target.value, "panel");
+}
+
+function handleOutlineFocus() {
+  state.ui.focusTarget = "outline";
+  state.ui.lastFocused = true;
+  startFocusTimer();
+}
+
+function handleOutlineBlur() {
+  state.ui.lastFocused = false;
+  stopFocusTimer();
+}
+
+function handleOutlineKeydown(event) {
+  if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "s") {
+    event.preventDefault();
+    void saveCurrentOutline();
+  }
+}
+
+function handleOutlineChange(value, source) {
   const chapter = getCurrentChapter();
+  const work = getCurrentWork();
   if (!chapter) return;
-  chapter.outline = event.target.value;
+  chapter.outline = value;
+  state.currentChapterOutline = value;
+  state.outlineDirty = chapter.outline !== chapter.savedOutline;
+  state.outlineSaveStatus = state.outlineDirty ? (state.ui.autosaveEnabled ? "保存中" : "未保存") : "已保存";
+  chapter.updatedAt = new Date().toISOString();
+  if (work) {
+    work.updatedAt = chapter.updatedAt;
+    work.lastOpenedChapterId = chapter.id;
+  }
+  syncOutlineEditors(source);
+  updateTopBar();
+  updateWorkspace();
   persist();
+  queueAutosave();
 }
 
 function handleWordGoalInput(event) {
@@ -2937,7 +3226,7 @@ function handleWritingAction(action) {
     state.ui.leftSidebarCollapsed = false;
     state.ui.sidebarSection = "outline";
     updateSidebar();
-    persist();
+    openOutlinePanel({ focus: true });
   }
   if (action === "open-bookmarks") {
     state.ui.leftSidebarCollapsed = false;
@@ -3486,34 +3775,54 @@ function replaceCurrent() {
 
 function queueAutosave() {
   clearTimeout(autosaveTimer);
-  if (!state.ui.autosaveEnabled) return;
+  if (!state.ui.autosaveEnabled || !hasUnsavedChanges()) return;
   autosaveTimer = setTimeout(() => {
     void saveCurrentChapter();
   }, 700);
 }
 
-async function saveCurrentChapter() {
+async function saveCurrentChapter(options = {}) {
   clearTimeout(autosaveTimer);
   const chapter = getCurrentChapter();
   const work = getCurrentWork();
   if (!chapter || !work) return;
-  if (!chapter.dirty && chapter.saveStatus === "已保存") return;
-  chapter.savedContent = chapter.content;
-  chapter.wordCount = countWords(chapter.content);
-  chapter.updatedAt = new Date().toISOString();
-  chapter.dirty = false;
-  chapter.saveStatus = "已保存";
-  chapter.saveTime = timeNow();
+  const scope = options.scope ?? "all";
+  const saveBody = scope === "all" || scope === "body";
+  const saveOutline = scope === "all" || scope === "outline";
+  const bodyDirty = chapter.dirty;
+  const outlineDirty = state.outlineDirty;
+  if ((!saveBody || !bodyDirty) && (!saveOutline || !outlineDirty)) return;
+  const savedAt = new Date().toISOString();
+
+  if (saveBody && bodyDirty) {
+    chapter.savedContent = chapter.content;
+    chapter.wordCount = countWords(chapter.content);
+    chapter.dirty = false;
+    chapter.saveStatus = "已保存";
+    chapter.saveTime = timeNow();
+  }
+  if (saveOutline && outlineDirty) {
+    chapter.savedOutline = chapter.outline;
+    state.outlineDirty = false;
+    state.outlineLastSavedAt = savedAt;
+    state.outlineSaveStatus = "已保存";
+  }
+  chapter.updatedAt = savedAt;
   work.updatedAt = chapter.updatedAt;
   work.lastOpenedChapterId = chapter.id;
-  if (!chapter.versions[0] || chapter.versions[0].content !== chapter.content) {
+  if (saveBody && bodyDirty && (!chapter.versions[0] || chapter.versions[0].content !== chapter.content)) {
     chapter.versions.unshift({ id: uid("version"), label: "自动保存版本", time: `今天 ${timeNow()}`, content: chapter.content });
     chapter.versions = chapter.versions.slice(0, 20);
   }
   state.account.syncStatus = state.account.loggedIn ? "已连接云端，同步正常" : "本地写作中";
   await syncLibraryToDesktop();
   updateTopBar();
+  updateWorkspace();
   persist();
+}
+
+async function saveCurrentOutline() {
+  await saveCurrentChapter({ scope: "outline" });
 }
 
 function startFocusTimer() {
@@ -3762,6 +4071,7 @@ function duplicateChapter(workId, sourceChapterId) {
     outline: source.outline,
   });
   chapter.savedContent = source.savedContent;
+  chapter.savedOutline = source.savedOutline ?? source.outline;
   chapter.bookmarks = [...source.bookmarks];
   chapter.wordGoal = source.wordGoal;
   chapter.wordCount = countWords(chapter.content);

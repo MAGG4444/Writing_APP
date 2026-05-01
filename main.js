@@ -9,13 +9,14 @@ const WORKS_DIRNAME = "works";
 const WORK_INSPIRATIONS_FILE = "inspirations.json";
 
 function createWindow() {
+  const version = app.getVersion();
   const window = new BrowserWindow({
     width: 1520,
     height: 980,
     minWidth: 1160,
     minHeight: 760,
     backgroundColor: "#f4efe7",
-    title: "简纪",
+    title: `简纪 ${version}`,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -141,6 +142,7 @@ function normalizeChapter(chapter) {
     title: String(chapter.title || "未命名章节"),
     content,
     savedContent: String(chapter.savedContent ?? content),
+    savedOutline: String(chapter.savedOutline ?? chapter.outline ?? ""),
     notes: String(chapter.notes || ""),
     bookmarks: Array.isArray(chapter.bookmarks) ? chapter.bookmarks.map((item) => String(item)) : [],
     wordGoal: Number(chapter.wordGoal) || 2000,
@@ -420,6 +422,8 @@ ipcMain.handle("text:save", async (_event, payload) => {
   await fs.writeFile(result.filePath, payload.content, "utf8");
   return result;
 });
+
+ipcMain.handle("app:getVersion", () => app.getVersion());
 
 ipcMain.handle("library:bootstrap", async (_event, seedLibrary) => {
   const library = await loadLibrary();
