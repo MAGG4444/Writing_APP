@@ -317,6 +317,247 @@ const fontChoices = [
 const inspirationCategories = ["all", "人物", "剧情", "对白", "设定", "场景", "待补充"];
 const punctuationChoices = ["，", "。", "？", "！", "“”", "（）", "——", "……"];
 const phraseChoices = ["转场提示", "冲突升级", "伏笔回收", "环境描写", "情绪推进"];
+const supportedLanguages = ["zh", "en"];
+const translations = {
+  zh: {
+    "language.label": "系统语言",
+    "language.zh": "中文",
+    "language.en": "English",
+    "library.kicker": "文件管理页",
+    "library.title": "作品目录",
+    "library.description": "支持文件夹与作品两层管理，进入后可继续按章节写作。",
+    "library.up": "返回上一级",
+    "library.create": "新建",
+    "library.createFolder": "新建文件夹",
+    "library.createWork": "新建作品",
+    "library.searchPlaceholder": "搜索当前目录下的文件夹或作品",
+    "library.sort.updated": "最近编辑优先",
+    "library.sort.title": "名称 A-Z",
+    "library.sort.created": "最新创建优先",
+    "library.folders": "文件夹",
+    "library.folderChildren": "{name} 内的子文件夹",
+    "library.rootFolders": "根目录中的文件夹",
+    "library.searchLabel": " · 搜索“{query}”",
+    "library.noFolders": "当前目录下还没有文件夹。",
+    "library.works": "作品",
+    "library.worksSummary": "{count} 个作品，可直接进入写作或展开章节管理。",
+    "library.subfolderCount": "{folders} 个子文件夹 · {works} 个作品",
+    "library.noDescription": "暂无简介",
+    "library.chapterCount": "{count} 章",
+    "library.wordCount": "{count} 字",
+    "library.location": "所在：{name}",
+    "library.root": "根目录",
+    "library.continue": "继续写作",
+    "library.manageChapters": "章节管理",
+    "library.rename": "重命名",
+    "library.delete": "删除",
+    "library.emptyTitle": "当前目录还是空的",
+    "library.emptyCopy": "还没有作品，点击右上角“新建”开始创作。",
+    "library.allWorks": "全部作品",
+    "chapter.new": "新建章节",
+    "chapter.all": "全部章节",
+    "chapter.currentSummary": "{count} 章 · 当前 {title}",
+    "chapter.noneSelected": "未选择",
+    "chapter.noManageable": "当前没有可管理的章节。",
+    "chapter.noChapters": "当前作品还没有章节。",
+    "chapter.actionsTitle": "章节操作",
+    "editor.backTitle": "返回文件管理页",
+    "editor.noWork": "未选择作品",
+    "editor.selectChapter": "请先返回目录页选择章节",
+    "editor.chapterMeta": "{count} 字 · {time}",
+    "editor.switchHint": "点击查看全部章节",
+    "editor.newChapterTitle": "新建章节",
+    "editor.sidebarTitle": "章节辅助",
+    "editor.collapse": "收起",
+    "editor.expand": "展开",
+    "editor.notes": "章节备注",
+    "editor.locate": "定位",
+    "editor.notesPlaceholder": "记录当前章节备注",
+    "editor.outline": "章节大纲",
+    "editor.outlineExpand": "拓展",
+    "editor.outlinePlaceholder": "记录本章大纲与推进节点",
+    "editor.bookmarks": "书签",
+    "editor.addBookmark": "添加书签",
+    "editor.openSidebarTitle": "展开章节辅助",
+    "editor.openWorkspaceTitle": "展开工作侧栏",
+    "editor.bodyEditor": "正文编辑器",
+    "editor.bodyStatusDefault": "正文内容实时跟随当前章节切换。",
+    "editor.bodyStatus": "正文 {status} · {time}",
+    "editor.emptyPlaceholder": "请先从目录页选择章节或新建章节。",
+    "editor.placeholder": "开始写作……",
+    "editor.findPlaceholder": "查找",
+    "editor.replacePlaceholder": "替换为",
+    "editor.findNext": "查找下一个",
+    "editor.replace": "替换",
+    "editor.quote": "引用",
+    "editor.divider": "插入分隔",
+    "editor.bookmarkSelection": "设为书签",
+    "editor.outlineResize": "拖动调整大纲高度",
+    "editor.save": "保存",
+    "editor.closeOutline": "关闭大纲面板",
+    "editor.outlinePanelPlaceholder": "在这里展开编辑本章大纲……",
+    "workspace.title": "工作侧栏",
+    "workspace.writing": "写作",
+    "workspace.inspiration": "灵感记录",
+    "workspace.settings": "设置",
+    "workspace.punctuation": "快捷标点",
+    "workspace.phrases": "常用短语",
+    "workspace.wordGoal": "字数目标",
+    "workspace.focusTimer": "专注计时",
+    "workspace.focusTimerHint": "仅在编辑器获得焦点时计时",
+    "workspace.resume": "断点续写",
+    "workspace.resumeButton": "回到上次光标",
+    "workspace.resumeHint": "保存上一次编辑位置",
+    "workspace.lastPosition": "上次位置：{position}",
+    "workspace.wordGoalProgress": "当前 {count} / 目标 {goal}",
+    "workspace.selectChapter": "请先选择章节",
+    "workspace.notesEntry": "章节备注入口",
+    "workspace.notesEntryHint": "展开左侧备注面板",
+    "workspace.outlineEntry": "章节大纲入口",
+    "workspace.outlineEntryHint": "查看并编辑本章大纲",
+    "workspace.bookmarkEntry": "书签入口",
+    "workspace.bookmarkEntryHint": "查看并管理书签",
+    "menu.renameChapter": "重命名章节",
+    "menu.moveChapter": "移动章节",
+    "menu.deleteChapter": "删除章节",
+    "menu.history": "历史版本",
+    "menu.shortcuts": "？ 快捷键",
+    "menu.export": "导出",
+    "menu.focus": "专注模式",
+    "menu.night": "夜间模式",
+    "status.saved": "已保存",
+    "status.saving": "保存中",
+    "status.unsaved": "未保存",
+    "status.justChanged": "刚刚修改",
+    "status.noChapter": "未打开章节",
+    "status.bodyOutlinePending": "正文/大纲待保存 · 刚刚修改",
+    "status.outlinePending": "大纲{status} · 刚刚修改",
+    "status.reverted": "回退到上次保存",
+    "status.local": "本地写作中",
+    "status.syncing": "同步等待中",
+    "status.synced": "已连接云端，同步正常",
+    "app.version": "版本 {version}",
+  },
+  en: {
+    "language.label": "System Language",
+    "language.zh": "Chinese",
+    "language.en": "English",
+    "library.kicker": "Library",
+    "library.title": "Works",
+    "library.description": "Organize folders and works, then open a work to continue writing by chapter.",
+    "library.up": "Up One Level",
+    "library.create": "New",
+    "library.createFolder": "New Folder",
+    "library.createWork": "New Work",
+    "library.searchPlaceholder": "Search folders or works in this folder",
+    "library.sort.updated": "Recently Edited",
+    "library.sort.title": "Name A-Z",
+    "library.sort.created": "Newest Created",
+    "library.folders": "Folders",
+    "library.folderChildren": "Subfolders in {name}",
+    "library.rootFolders": "Folders in root",
+    "library.searchLabel": " · Search \"{query}\"",
+    "library.noFolders": "No folders in this location yet.",
+    "library.works": "Works",
+    "library.worksSummary": "{count} works. Open one to write or manage chapters.",
+    "library.subfolderCount": "{folders} subfolders · {works} works",
+    "library.noDescription": "No description",
+    "library.chapterCount": "{count} chapters",
+    "library.wordCount": "{count} words",
+    "library.location": "In: {name}",
+    "library.root": "Root",
+    "library.continue": "Continue Writing",
+    "library.manageChapters": "Manage Chapters",
+    "library.rename": "Rename",
+    "library.delete": "Delete",
+    "library.emptyTitle": "This folder is empty",
+    "library.emptyCopy": "No works yet. Use \"New\" in the top right to start.",
+    "library.allWorks": "All Works",
+    "chapter.new": "New Chapter",
+    "chapter.all": "All Chapters",
+    "chapter.currentSummary": "{count} chapters · Current {title}",
+    "chapter.noneSelected": "None",
+    "chapter.noManageable": "No manageable chapters yet.",
+    "chapter.noChapters": "This work has no chapters yet.",
+    "chapter.actionsTitle": "Chapter Actions",
+    "editor.backTitle": "Back to Library",
+    "editor.noWork": "No Work Selected",
+    "editor.selectChapter": "Go back to the library and select a chapter",
+    "editor.chapterMeta": "{count} words · {time}",
+    "editor.switchHint": "View all chapters",
+    "editor.newChapterTitle": "New Chapter",
+    "editor.sidebarTitle": "Chapter Tools",
+    "editor.collapse": "Collapse",
+    "editor.expand": "Expand",
+    "editor.notes": "Chapter Notes",
+    "editor.locate": "Locate",
+    "editor.notesPlaceholder": "Record notes for this chapter",
+    "editor.outline": "Chapter Outline",
+    "editor.outlineExpand": "Expand",
+    "editor.outlinePlaceholder": "Record this chapter's outline and beats",
+    "editor.bookmarks": "Bookmarks",
+    "editor.addBookmark": "Add Bookmark",
+    "editor.openSidebarTitle": "Open chapter tools",
+    "editor.openWorkspaceTitle": "Open workspace sidebar",
+    "editor.bodyEditor": "Body Editor",
+    "editor.bodyStatusDefault": "Body content follows the current chapter.",
+    "editor.bodyStatus": "Body {status} · {time}",
+    "editor.emptyPlaceholder": "Select or create a chapter from the library first.",
+    "editor.placeholder": "Start writing...",
+    "editor.findPlaceholder": "Find",
+    "editor.replacePlaceholder": "Replace with",
+    "editor.findNext": "Find Next",
+    "editor.replace": "Replace",
+    "editor.quote": "Quote",
+    "editor.divider": "Insert Divider",
+    "editor.bookmarkSelection": "Bookmark",
+    "editor.outlineResize": "Drag to resize outline",
+    "editor.save": "Save",
+    "editor.closeOutline": "Close outline panel",
+    "editor.outlinePanelPlaceholder": "Expand and edit this chapter outline here...",
+    "workspace.title": "Workspace",
+    "workspace.writing": "Writing",
+    "workspace.inspiration": "Ideas",
+    "workspace.settings": "Settings",
+    "workspace.punctuation": "Quick Punctuation",
+    "workspace.phrases": "Common Phrases",
+    "workspace.wordGoal": "Word Goal",
+    "workspace.focusTimer": "Focus Timer",
+    "workspace.focusTimerHint": "Counts only while the editor is focused",
+    "workspace.resume": "Resume Point",
+    "workspace.resumeButton": "Return to Cursor",
+    "workspace.resumeHint": "Save the previous cursor position",
+    "workspace.lastPosition": "Last position: {position}",
+    "workspace.wordGoalProgress": "Current {count} / Goal {goal}",
+    "workspace.selectChapter": "Select a chapter first",
+    "workspace.notesEntry": "Chapter Notes",
+    "workspace.notesEntryHint": "Open the notes panel",
+    "workspace.outlineEntry": "Chapter Outline",
+    "workspace.outlineEntryHint": "View and edit this outline",
+    "workspace.bookmarkEntry": "Bookmarks",
+    "workspace.bookmarkEntryHint": "View and manage bookmarks",
+    "menu.renameChapter": "Rename Chapter",
+    "menu.moveChapter": "Move Chapter",
+    "menu.deleteChapter": "Delete Chapter",
+    "menu.history": "Version History",
+    "menu.shortcuts": "? Shortcuts",
+    "menu.export": "Export",
+    "menu.focus": "Focus Mode",
+    "menu.night": "Night Mode",
+    "status.saved": "Saved",
+    "status.saving": "Saving",
+    "status.unsaved": "Unsaved",
+    "status.justChanged": "Just changed",
+    "status.noChapter": "No chapter open",
+    "status.bodyOutlinePending": "Body/outline pending · just changed",
+    "status.outlinePending": "Outline {status} · just changed",
+    "status.reverted": "Reverted to last save",
+    "status.local": "Writing locally",
+    "status.syncing": "Sync pending",
+    "status.synced": "Connected to cloud, sync healthy",
+    "app.version": "Version {version}",
+  },
+};
 
 const DEFAULT_CHAPTER_TEMPLATE = {
   blank: {
@@ -349,17 +590,15 @@ let focusTimer = null;
 let suppressHistory = false;
 let draggedChapterId = null;
 let outlineResizeState = null;
+let globalEventsBound = false;
 
 init();
 
 async function init() {
   ensureStateIntegrity();
   await bootstrapDesktopLibrary();
-  document.getElementById("app").innerHTML = AppShell();
-  collectRefs();
-  bindEvents();
+  renderAppShell();
   await loadAppVersion();
-  hydrateEditor();
   updateAll();
 }
 
@@ -367,12 +606,42 @@ async function loadAppVersion() {
   if (!desktopApi?.getAppVersion) return;
   try {
     appVersion = await desktopApi.getAppVersion();
-    if (refs.appVersion) refs.appVersion.textContent = appVersion ? `版本 ${appVersion}` : "";
+    updateAppVersionText();
   } catch (error) {
     console.error(error);
     appVersion = "";
-    if (refs.appVersion) refs.appVersion.textContent = "";
+    updateAppVersionText();
   }
+}
+
+function renderAppShell() {
+  document.documentElement.lang = getLanguage() === "en" ? "en" : "zh-CN";
+  document.getElementById("app").innerHTML = AppShell();
+  collectRefs();
+  bindEvents();
+  updateAppVersionText();
+}
+
+function getLanguage() {
+  return supportedLanguages.includes(state?.ui?.language) ? state.ui.language : "zh";
+}
+
+function t(key, values = {}) {
+  const dictionary = translations[getLanguage()] ?? translations.zh;
+  const template = dictionary[key] ?? translations.zh[key] ?? key;
+  return template.replace(/\{(\w+)\}/g, (_match, name) => (values[name] ?? values[name] === 0 ? String(values[name]) : ""));
+}
+
+function updateAppVersionText() {
+  if (refs.appVersion) refs.appVersion.textContent = appVersion ? t("app.version", { version: appVersion }) : "";
+}
+
+function setLanguage(language) {
+  if (!supportedLanguages.includes(language) || language === getLanguage()) return;
+  state.ui.language = language;
+  persist();
+  renderAppShell();
+  updateAll();
 }
 
 function loadState() {
@@ -601,6 +870,7 @@ function createSeedState() {
       librarySearch: "",
       librarySort: "updated-desc",
       libraryWorkViewId: "work-1",
+      language: "zh",
       chapterPanelOpen: false,
       chapterPanelFocusedId: null,
       chapterCreateMenuPosition: null,
@@ -694,6 +964,7 @@ function ensureStateIntegrity() {
   state.ui.librarySearch ??= "";
   state.ui.librarySort ??= "updated-desc";
   state.ui.libraryWorkViewId ??= null;
+  state.ui.language = supportedLanguages.includes(state.ui.language) ? state.ui.language : "zh";
   state.ui.chapterPanelOpen ??= false;
   state.ui.chapterPanelFocusedId ??= null;
   state.ui.chapterCreateMenuPosition ??= null;
@@ -1027,28 +1298,35 @@ function FileManagerPage() {
       <header class="library-header surface">
         <div class="library-header-row">
           <div class="library-title-block">
-            <span class="section-kicker">文件管理页</span>
-            <h1>作品目录</h1>
-            <p>支持文件夹与作品两层管理，进入后可继续按章节写作。</p>
+            <span class="section-kicker">${t("library.kicker")}</span>
+            <h1>${t("library.title")}</h1>
+            <p>${t("library.description")}</p>
           </div>
         <div class="library-header-actions">
-          <button class="ghost-button" id="folder-up-button">返回上一级</button>
+          <label class="language-switcher">
+            <span>${t("language.label")}</span>
+            <select id="language-select">
+              <option value="zh" ${getLanguage() === "zh" ? "selected" : ""}>${t("language.zh")}</option>
+              <option value="en" ${getLanguage() === "en" ? "selected" : ""}>${t("language.en")}</option>
+            </select>
+          </label>
+          <button class="ghost-button" id="folder-up-button">${t("library.up")}</button>
           <div class="menu-wrap">
-            <button class="primary-button" id="create-entry-button">新建</button>
+            <button class="primary-button" id="create-entry-button">${t("library.create")}</button>
             <div class="dropdown-menu hidden" id="create-entry-menu">
-                <button data-library-action="open-create-folder">新建文件夹</button>
-                <button data-library-action="open-create-work">新建作品</button>
+                <button data-library-action="open-create-folder">${t("library.createFolder")}</button>
+                <button data-library-action="open-create-work">${t("library.createWork")}</button>
               </div>
             </div>
           </div>
         </div>
         <div class="library-breadcrumb" id="library-breadcrumb"></div>
         <div class="library-toolbar">
-          <input id="library-search-input" type="search" placeholder="搜索当前目录下的文件夹或作品" />
+          <input id="library-search-input" type="search" placeholder="${escapeAttribute(t("library.searchPlaceholder"))}" />
           <select id="library-sort-select">
-            <option value="updated-desc">最近编辑优先</option>
-            <option value="title-asc">名称 A-Z</option>
-            <option value="created-desc">最新创建优先</option>
+            <option value="updated-desc">${t("library.sort.updated")}</option>
+            <option value="title-asc">${t("library.sort.title")}</option>
+            <option value="created-desc">${t("library.sort.created")}</option>
           </select>
         </div>
       </header>
@@ -1066,36 +1344,36 @@ function EditorPage() {
       <div class="editor-body">
         <aside class="chapter-sidebar surface" id="chapter-sidebar">
           <div class="sidebar-header">
-            <strong>章节辅助</strong>
-            <button class="ghost-button compact-button" id="left-sidebar-toggle-button">收起</button>
+            <strong>${t("editor.sidebarTitle")}</strong>
+            <button class="ghost-button compact-button" id="left-sidebar-toggle-button">${t("editor.collapse")}</button>
           </div>
           <div class="sidebar-section">
             <div class="sidebar-section-head">
-              <strong>章节备注</strong>
-              <button class="ghost-button compact-button" data-open-side="notes">定位</button>
+              <strong>${t("editor.notes")}</strong>
+              <button class="ghost-button compact-button" data-open-side="notes">${t("editor.locate")}</button>
             </div>
-            <textarea id="chapter-notes-input" placeholder="记录当前章节备注"></textarea>
+            <textarea id="chapter-notes-input" placeholder="${escapeAttribute(t("editor.notesPlaceholder"))}"></textarea>
           </div>
           <div class="sidebar-section">
             <div class="sidebar-section-head">
-              <strong>章节大纲</strong>
-              <button class="ghost-button compact-button" id="outline-expand-button">拓展</button>
+              <strong>${t("editor.outline")}</strong>
+              <button class="ghost-button compact-button" id="outline-expand-button">${t("editor.outlineExpand")}</button>
             </div>
-            <textarea id="chapter-outline-input" class="chapter-outline-input" placeholder="记录本章大纲与推进节点"></textarea>
+            <textarea id="chapter-outline-input" class="chapter-outline-input" placeholder="${escapeAttribute(t("editor.outlinePlaceholder"))}"></textarea>
           </div>
           <div class="sidebar-section">
             <div class="sidebar-section-head">
-              <strong>书签</strong>
-              <button class="ghost-button compact-button" id="add-bookmark-button">添加书签</button>
+              <strong>${t("editor.bookmarks")}</strong>
+              <button class="ghost-button compact-button" id="add-bookmark-button">${t("editor.addBookmark")}</button>
             </div>
             <div class="bookmark-list" id="bookmark-list"></div>
           </div>
         </aside>
-        <button class="edge-toggle edge-toggle-left hidden" id="left-sidebar-reopen-button" title="展开章节辅助">></button>
+        <button class="edge-toggle edge-toggle-left hidden" id="left-sidebar-reopen-button" title="${escapeAttribute(t("editor.openSidebarTitle"))}">></button>
         <div class="editor-column" id="editor-column">
           ${DocumentEditor()}
         </div>
-        <button class="edge-toggle edge-toggle-right hidden" id="right-sidebar-reopen-button" title="展开工作侧栏"><</button>
+        <button class="edge-toggle edge-toggle-right hidden" id="right-sidebar-reopen-button" title="${escapeAttribute(t("editor.openWorkspaceTitle"))}"><</button>
         ${BottomWorkspaceTabs()}
       </div>
     </section>
@@ -1105,25 +1383,25 @@ function EditorPage() {
 function TopBar() {
   return `
     <header class="top-bar surface">
-      <button class="icon-button" id="back-button" title="返回文件管理页">←</button>
+      <button class="icon-button" id="back-button" title="${escapeAttribute(t("editor.backTitle"))}">←</button>
       <div class="top-bar-meta">
         <strong id="current-work-title"></strong>
-        <small class="app-version" id="app-version">${appVersion ? `版本 ${escapeHtml(appVersion)}` : ""}</small>
+        <small class="app-version" id="app-version">${appVersion ? escapeHtml(t("app.version", { version: appVersion })) : ""}</small>
         <div class="chapter-switcher-shell">
           <div class="chapter-switcher-row">
-            <button class="chapter-switcher-trigger" id="chapter-switcher-button" title="查看并切换章节">
+            <button class="chapter-switcher-trigger" id="chapter-switcher-button" title="${escapeAttribute(t("editor.switchHint"))}">
               <span class="chapter-switcher-label" id="current-chapter-title"></span>
               <small id="current-chapter-meta"></small>
             </button>
-            <button class="ghost-button compact-button" id="new-chapter-button" data-chapter-create-trigger title="新建章节">+ 新建章节</button>
+            <button class="ghost-button compact-button" id="new-chapter-button" data-chapter-create-trigger title="${escapeAttribute(t("editor.newChapterTitle"))}">+ ${t("chapter.new")}</button>
           </div>
           <div class="chapter-panel hidden" id="chapter-panel">
             <div class="chapter-panel-head">
               <div>
-                <strong>全部章节</strong>
+                <strong>${t("chapter.all")}</strong>
                 <small id="chapter-panel-summary"></small>
               </div>
-              <button class="ghost-button compact-button" data-chapter-create-trigger>+ 新建章节</button>
+              <button class="ghost-button compact-button" data-chapter-create-trigger>+ ${t("chapter.new")}</button>
             </div>
             <div class="chapter-panel-list" id="chapter-panel-list"></div>
           </div>
@@ -1135,14 +1413,14 @@ function TopBar() {
         <div class="menu-wrap">
           <button class="icon-button" id="more-menu-button">⋯</button>
           <div class="dropdown-menu hidden" id="more-menu">
-            <button data-menu-action="rename-chapter">重命名章节</button>
-            <button data-menu-action="move-chapter">移动章节</button>
-            <button data-menu-action="delete-chapter">删除章节</button>
-            <button data-menu-action="history">历史版本</button>
-            <button data-menu-action="shortcuts">？ 快捷键</button>
-            <button data-menu-action="export">导出</button>
-            <button data-menu-action="focus">专注模式</button>
-            <button data-menu-action="night">夜间模式</button>
+            <button data-menu-action="rename-chapter">${t("menu.renameChapter")}</button>
+            <button data-menu-action="move-chapter">${t("menu.moveChapter")}</button>
+            <button data-menu-action="delete-chapter">${t("menu.deleteChapter")}</button>
+            <button data-menu-action="history">${t("menu.history")}</button>
+            <button data-menu-action="shortcuts">${t("menu.shortcuts")}</button>
+            <button data-menu-action="export">${t("menu.export")}</button>
+            <button data-menu-action="focus">${t("menu.focus")}</button>
+            <button data-menu-action="night">${t("menu.night")}</button>
           </div>
         </div>
       </div>
@@ -1154,47 +1432,47 @@ function DocumentEditor() {
   return `
     <section class="editor-main surface" id="editor-main">
       <div class="find-replace-bar hidden" id="find-replace-bar">
-        <input id="find-query-input" type="text" placeholder="查找" />
-        <input id="replace-query-input" type="text" placeholder="替换为" />
-        <button class="ghost-button" id="find-next-button">查找下一个</button>
-        <button class="ghost-button" id="replace-button">替换</button>
+        <input id="find-query-input" type="text" placeholder="${escapeAttribute(t("editor.findPlaceholder"))}" />
+        <input id="replace-query-input" type="text" placeholder="${escapeAttribute(t("editor.replacePlaceholder"))}" />
+        <button class="ghost-button" id="find-next-button">${t("editor.findNext")}</button>
+        <button class="ghost-button" id="replace-button">${t("editor.replace")}</button>
       </div>
       <div class="selection-toolbar hidden" id="selection-toolbar">
-        <button class="ghost-button compact-button" data-selection-action="quote">引用</button>
-        <button class="ghost-button compact-button" data-selection-action="divider">插入分隔</button>
-        <button class="ghost-button compact-button" data-selection-action="bookmark">设为书签</button>
+        <button class="ghost-button compact-button" data-selection-action="quote">${t("editor.quote")}</button>
+        <button class="ghost-button compact-button" data-selection-action="divider">${t("editor.divider")}</button>
+        <button class="ghost-button compact-button" data-selection-action="bookmark">${t("editor.bookmarkSelection")}</button>
       </div>
       <div class="editor-stack" id="editor-stack">
         <div class="editor-primary-pane" id="editor-primary-pane">
           <div class="editor-pane-shell">
             <div class="editor-pane-head">
               <div>
-                <strong>正文编辑器</strong>
-                <small id="document-editor-status">正文内容实时跟随当前章节切换。</small>
+                <strong>${t("editor.bodyEditor")}</strong>
+                <small id="document-editor-status">${t("editor.bodyStatusDefault")}</small>
               </div>
             </div>
             <div class="editor-pane-body">
-              <textarea id="document-editor" class="document-editor" spellcheck="false" placeholder="开始写作……"></textarea>
+              <textarea id="document-editor" class="document-editor" spellcheck="false" placeholder="${escapeAttribute(t("editor.placeholder"))}"></textarea>
             </div>
           </div>
         </div>
         <section class="outline-panel hidden" id="outline-panel">
-          <button class="outline-panel-resize-handle" id="outline-panel-resize-handle" title="拖动调整大纲高度" aria-label="拖动调整大纲高度">
+          <button class="outline-panel-resize-handle" id="outline-panel-resize-handle" title="${escapeAttribute(t("editor.outlineResize"))}" aria-label="${escapeAttribute(t("editor.outlineResize"))}">
             <span class="outline-panel-size-indicator" id="outline-panel-size-indicator">20%</span>
           </button>
           <div class="outline-panel-shell editor-pane-shell">
             <div class="outline-panel-head editor-pane-head">
               <div>
-                <strong>章节大纲</strong>
-                <small id="outline-panel-status">已保存</small>
+                <strong>${t("editor.outline")}</strong>
+                <small id="outline-panel-status">${t("status.saved")}</small>
               </div>
               <div class="outline-panel-actions">
-                <button class="ghost-button compact-button" id="outline-panel-save-button">保存</button>
-                <button class="icon-button outline-panel-close-button" id="outline-panel-close-button" title="关闭大纲面板" aria-label="关闭大纲面板">×</button>
+                <button class="ghost-button compact-button" id="outline-panel-save-button">${t("editor.save")}</button>
+                <button class="icon-button outline-panel-close-button" id="outline-panel-close-button" title="${escapeAttribute(t("editor.closeOutline"))}" aria-label="${escapeAttribute(t("editor.closeOutline"))}">×</button>
               </div>
             </div>
             <div class="editor-pane-body">
-              <textarea id="outline-panel-editor" class="outline-panel-editor" spellcheck="false" placeholder="在这里展开编辑本章大纲……"></textarea>
+              <textarea id="outline-panel-editor" class="outline-panel-editor" spellcheck="false" placeholder="${escapeAttribute(t("editor.outlinePanelPlaceholder"))}"></textarea>
             </div>
           </div>
         </section>
@@ -1207,8 +1485,8 @@ function BottomWorkspaceTabs() {
   return `
     <aside class="workspace-sidebar surface" id="workspace-sidebar">
       <div class="workspace-sidebar-head">
-        <strong>工作侧栏</strong>
-        <button class="ghost-button compact-button" id="right-sidebar-toggle-button">收起</button>
+        <strong>${t("workspace.title")}</strong>
+        <button class="ghost-button compact-button" id="right-sidebar-toggle-button">${t("editor.collapse")}</button>
       </div>
       <div class="workspace-panels">
         <section class="workspace-panel" data-panel="writing">${WritingPanel()}</section>
@@ -1216,9 +1494,9 @@ function BottomWorkspaceTabs() {
         <section class="workspace-panel hidden" data-panel="settings">${SettingsPanel()}</section>
       </div>
       <nav class="workspace-tabs">
-        <button class="tab-chip active" data-tab="writing">写作</button>
-        <button class="tab-chip" data-tab="inspiration">灵感记录</button>
-        <button class="tab-chip" data-tab="settings">设置</button>
+        <button class="tab-chip active" data-tab="writing">${t("workspace.writing")}</button>
+        <button class="tab-chip" data-tab="inspiration">${t("workspace.inspiration")}</button>
+        <button class="tab-chip" data-tab="settings">${t("workspace.settings")}</button>
       </nav>
     </aside>
   `;
@@ -1228,56 +1506,56 @@ function WritingPanel() {
   return `
     <div class="writing-panel" id="writing-panel">
       <div class="tool-group">
-        <label>快捷标点</label>
+        <label>${t("workspace.punctuation")}</label>
         <div class="chip-row">
           ${punctuationChoices.map((item) => `<button class="chip" data-insert-text="${escapeAttribute(item)}">${escapeHtml(item)}</button>`).join("")}
         </div>
       </div>
       <div class="tool-group">
-        <label>常用短语</label>
+        <label>${t("workspace.phrases")}</label>
         <div class="chip-row">
           ${phraseChoices.map((item) => `<button class="chip" data-insert-text="${escapeAttribute(item)}">${escapeHtml(item)}</button>`).join("")}
         </div>
       </div>
       <div class="tool-grid two-col">
-        <button class="ghost-button" data-writing-action="divider">插入分隔符</button>
-        <button class="ghost-button" data-writing-action="toggle-find">查找替换</button>
-        <button class="ghost-button" data-writing-action="undo">撤销</button>
-        <button class="ghost-button" data-writing-action="redo">重做</button>
-        <button class="ghost-button" data-writing-action="prev">上一章节</button>
-        <button class="ghost-button" data-writing-action="next">下一章节</button>
+        <button class="ghost-button" data-writing-action="divider">${t("editor.divider")}</button>
+        <button class="ghost-button" data-writing-action="toggle-find">${getLanguage() === "en" ? "Find/Replace" : "查找替换"}</button>
+        <button class="ghost-button" data-writing-action="undo">${getLanguage() === "en" ? "Undo" : "撤销"}</button>
+        <button class="ghost-button" data-writing-action="redo">${getLanguage() === "en" ? "Redo" : "重做"}</button>
+        <button class="ghost-button" data-writing-action="prev">${getLanguage() === "en" ? "Previous Chapter" : "上一章节"}</button>
+        <button class="ghost-button" data-writing-action="next">${getLanguage() === "en" ? "Next Chapter" : "下一章节"}</button>
       </div>
       <div class="tool-grid three-col">
         <div class="tool-card stat-card">
-          <label>字数目标</label>
+          <label>${t("workspace.wordGoal")}</label>
           <input id="word-goal-input" type="number" min="0" />
           <small id="word-goal-progress"></small>
         </div>
         <div class="tool-card stat-card">
-          <label>专注计时</label>
+          <label>${t("workspace.focusTimer")}</label>
           <strong id="focus-timer-value">0h 0m 0s</strong>
-          <small>仅在编辑器获得焦点时计时</small>
+          <small>${t("workspace.focusTimerHint")}</small>
         </div>
         <div class="tool-card stat-card">
-          <label>断点续写</label>
-          <button class="ghost-button" data-writing-action="resume">回到上次光标</button>
-          <small id="resume-hint">保存上一次编辑位置</small>
+          <label>${t("workspace.resume")}</label>
+          <button class="ghost-button" data-writing-action="resume">${t("workspace.resumeButton")}</button>
+          <small id="resume-hint">${t("workspace.resumeHint")}</small>
         </div>
       </div>
       <div class="tool-grid two-col">
         <button class="tool-card action-card" data-writing-action="open-notes">
-          <strong>章节备注入口</strong>
-          <small>展开左侧备注面板</small>
+          <strong>${t("workspace.notesEntry")}</strong>
+          <small>${t("workspace.notesEntryHint")}</small>
         </button>
         <button class="tool-card action-card" data-writing-action="open-outline">
-          <strong>章节大纲入口</strong>
-          <small>查看并编辑本章大纲</small>
+          <strong>${t("workspace.outlineEntry")}</strong>
+          <small>${t("workspace.outlineEntryHint")}</small>
         </button>
       </div>
       <div class="tool-grid two-col">
         <button class="tool-card action-card" data-writing-action="open-bookmarks">
-          <strong>书签入口</strong>
-          <small>查看并管理书签</small>
+          <strong>${t("workspace.bookmarkEntry")}</strong>
+          <small>${t("workspace.bookmarkEntryHint")}</small>
         </button>
       </div>
     </div>
@@ -1290,41 +1568,41 @@ function InspirationPanel() {
       <div class="inspiration-toolbar">
         <div class="inspiration-toolbar-row inspiration-toolbar-row-primary">
           <select id="inspiration-category-filter"></select>
-          <button class="primary-button" id="new-inspiration-button">新建灵感</button>
+          <button class="primary-button" id="new-inspiration-button">${getLanguage() === "en" ? "New Idea" : "新建灵感"}</button>
         </div>
         <div class="inspiration-toolbar-row inspiration-toolbar-row-filter">
-          <input id="inspiration-search-input" type="search" placeholder="搜索灵感内容" />
-          <button class="ghost-button subtle-button" id="inspiration-sort-button">排序：最新</button>
+          <input id="inspiration-search-input" type="search" placeholder="${escapeAttribute(getLanguage() === "en" ? "Search ideas" : "搜索灵感内容")}" />
+          <button class="ghost-button subtle-button" id="inspiration-sort-button">${getLanguage() === "en" ? "Sort: Newest" : "排序：最新"}</button>
         </div>
       </div>
       <div class="inspiration-category-manager tool-card">
         <button class="section-line accordion-trigger" id="inspiration-category-manager-button">
-          <strong>分类管理</strong>
-          <small id="inspiration-category-manager-hint">点击展开分类管理</small>
+          <strong>${getLanguage() === "en" ? "Category Management" : "分类管理"}</strong>
+          <small id="inspiration-category-manager-hint">${getLanguage() === "en" ? "Click to expand category management" : "点击展开分类管理"}</small>
         </button>
         <div class="inspiration-category-manager-body hidden" id="inspiration-category-manager-body">
           <div class="inspiration-category-create-row">
-            <input id="inspiration-category-create-input" type="text" placeholder="新建分类名称" />
-            <button class="ghost-button" id="create-inspiration-category-button">新建分类</button>
+            <input id="inspiration-category-create-input" type="text" placeholder="${escapeAttribute(getLanguage() === "en" ? "New category name" : "新建分类名称")}" />
+            <button class="ghost-button" id="create-inspiration-category-button">${getLanguage() === "en" ? "New Category" : "新建分类"}</button>
           </div>
           <div class="inspiration-category-list" id="inspiration-category-list"></div>
         </div>
       </div>
       <div class="inspiration-compose hidden" id="inspiration-compose">
         <div class="section-line">
-          <strong id="inspiration-compose-title">新建灵感</strong>
-          <small id="inspiration-compose-hint">填写内容和分类后保存到灵感列表。</small>
+          <strong id="inspiration-compose-title">${getLanguage() === "en" ? "New Idea" : "新建灵感"}</strong>
+          <small id="inspiration-compose-hint">${getLanguage() === "en" ? "Add content and categories, then save it to the idea list." : "填写内容和分类后保存到灵感列表。"}</small>
         </div>
-        <textarea id="inspiration-compose-input" rows="4" placeholder="记录一条灵感内容"></textarea>
+        <textarea id="inspiration-compose-input" rows="4" placeholder="${escapeAttribute(getLanguage() === "en" ? "Record an idea" : "记录一条灵感内容")}"></textarea>
         <div class="inspiration-compose-row">
           <select id="inspiration-compose-category"></select>
-          <input id="inspiration-custom-category-input" type="text" placeholder="自定义分类" />
-          <button class="ghost-button" id="add-inspiration-category-button">添加分类</button>
+          <input id="inspiration-custom-category-input" type="text" placeholder="${escapeAttribute(getLanguage() === "en" ? "Custom category" : "自定义分类")}" />
+          <button class="ghost-button" id="add-inspiration-category-button">${getLanguage() === "en" ? "Add Category" : "添加分类"}</button>
         </div>
         <div class="inspiration-selected-tags" id="inspiration-selected-tags"></div>
         <div class="inspiration-compose-row">
-          <button class="primary-button" id="save-inspiration-button">保存灵感</button>
-          <button class="ghost-button" id="cancel-inspiration-button">取消</button>
+          <button class="primary-button" id="save-inspiration-button">${getLanguage() === "en" ? "Save Idea" : "保存灵感"}</button>
+          <button class="ghost-button" id="cancel-inspiration-button">${getLanguage() === "en" ? "Cancel" : "取消"}</button>
         </div>
       </div>
       <div class="inspiration-chat-list" id="inspiration-chat-list"></div>
@@ -1340,11 +1618,11 @@ function SettingsPanel() {
       ${FontSelector()}
       <section class="tool-card">
         <div class="section-line">
-          <strong>编辑器行为</strong>
-          <small>控制返回前处理和自动保存逻辑。</small>
+          <strong>${getLanguage() === "en" ? "Editor Behavior" : "编辑器行为"}</strong>
+          <small>${getLanguage() === "en" ? "Control return handling and autosave." : "控制返回前处理和自动保存逻辑。"}</small>
         </div>
         <label class="toggle-row">
-          <span>自动保存</span>
+          <span>${getLanguage() === "en" ? "Autosave" : "自动保存"}</span>
           <input id="autosave-toggle" type="checkbox" />
         </label>
       </section>
@@ -1360,8 +1638,8 @@ function ThemeSelector() {
   return `
     <section class="tool-card">
       <button class="section-line accordion-trigger" id="theme-accordion-button">
-        <strong>主题</strong>
-        <small id="theme-accordion-hint">点击展开主题设置</small>
+        <strong>${getLanguage() === "en" ? "Theme" : "主题"}</strong>
+        <small id="theme-accordion-hint">${getLanguage() === "en" ? "Click to expand theme settings" : "点击展开主题设置"}</small>
       </button>
       <div class="theme-list hidden" id="theme-list"></div>
     </section>
@@ -1372,17 +1650,17 @@ function FontSelector() {
   return `
     <section class="tool-card">
       <div class="section-line">
-        <strong>字体与排版</strong>
-        <small>实时作用于正文编辑器、顶部栏和按钮。</small>
+        <strong>${getLanguage() === "en" ? "Font and Layout" : "字体与排版"}</strong>
+        <small>${getLanguage() === "en" ? "Applies to the editor, top bar, and buttons in real time." : "实时作用于正文编辑器、顶部栏和按钮。"}</small>
       </div>
-      <label>开源字体</label>
+      <label>${getLanguage() === "en" ? "Open-source Font" : "开源字体"}</label>
       <select id="font-family-select"></select>
-      <small>已离线内置 10 组简体中文字体，并保留其他开源英文字体预设。</small>
-      <label>字号</label>
+      <small>${getLanguage() === "en" ? "Includes offline Simplified Chinese fonts and open-source English font presets." : "已离线内置 10 组简体中文字体，并保留其他开源英文字体预设。"}</small>
+      <label>${getLanguage() === "en" ? "Font Size" : "字号"}</label>
       <input id="font-size-range" type="range" min="14" max="28" />
-      <label>行高</label>
+      <label>${getLanguage() === "en" ? "Line Height" : "行高"}</label>
       <input id="line-height-range" type="range" min="1.4" max="2.6" step="0.1" />
-      <label>字间距</label>
+      <label>${getLanguage() === "en" ? "Letter Spacing" : "字间距"}</label>
       <input id="letter-spacing-range" type="range" min="-1" max="4" step="0.1" />
     </section>
   `;
@@ -1392,6 +1670,7 @@ function collectRefs() {
   refs.app = document.getElementById("app");
   refs.libraryPage = document.getElementById("library-page");
   refs.libraryBreadcrumb = document.getElementById("library-breadcrumb");
+  refs.languageSelect = document.getElementById("language-select");
   refs.folderUpButton = document.getElementById("folder-up-button");
   refs.createEntryButton = document.getElementById("create-entry-button");
   refs.createEntryMenu = document.getElementById("create-entry-menu");
@@ -1484,6 +1763,7 @@ function collectRefs() {
 }
 
 function bindEvents() {
+  refs.languageSelect.addEventListener("change", (event) => setLanguage(event.target.value));
   refs.folderUpButton.addEventListener("click", handleFolderUp);
   refs.createEntryButton.addEventListener("click", () => {
     state.ui.libraryCreateOpen = !state.ui.libraryCreateOpen;
@@ -1618,13 +1898,16 @@ function bindEvents() {
     submitCurrentModalIfPossible();
   });
 
-  if (desktopApi?.onMenuAction) {
+  if (!globalEventsBound && desktopApi?.onMenuAction) {
     desktopApi.onMenuAction((action) => handleDesktopMenuAction(action));
   }
 
-  window.addEventListener("mousemove", handleOutlineResizeMove);
-  window.addEventListener("mouseup", endOutlineResize);
-  window.addEventListener("resize", syncOutlinePanelLayout);
+  if (!globalEventsBound) {
+    window.addEventListener("mousemove", handleOutlineResizeMove);
+    window.addEventListener("mouseup", endOutlineResize);
+    window.addEventListener("resize", syncOutlinePanelLayout);
+    globalEventsBound = true;
+  }
 }
 
 async function handleDelegatedClick(event) {
@@ -1871,26 +2154,26 @@ function renderLibraryPage() {
   const works = getVisibleWorksInFolder(state.activeFolderId);
   const currentFolder = getFolder(state.activeFolderId);
   const detailWork = getVisibleWorkDetail();
-  const searchLabel = state.ui.librarySearch.trim() ? ` · 搜索“${escapeHtml(state.ui.librarySearch.trim())}”` : "";
+  const searchLabel = state.ui.librarySearch.trim() ? t("library.searchLabel", { query: escapeHtml(state.ui.librarySearch.trim()) }) : "";
 
   refs.libraryList.innerHTML = `
     ${detailWork ? renderWorkDetailPanel(detailWork) : ""}
     <section class="library-section surface">
       <div class="library-section-head">
         <div>
-          <strong>文件夹</strong>
-          <small>${currentFolder ? `${escapeHtml(currentFolder.name)} 内的子文件夹` : "根目录中的文件夹"}${searchLabel}</small>
+          <strong>${t("library.folders")}</strong>
+          <small>${currentFolder ? t("library.folderChildren", { name: escapeHtml(currentFolder.name) }) : t("library.rootFolders")}${searchLabel}</small>
         </div>
       </div>
       <div class="folder-grid">
-        ${folders.length > 0 ? folders.map(renderFolderCard).join("") : `<div class="empty-state compact-empty">当前目录下还没有文件夹。</div>`}
+        ${folders.length > 0 ? folders.map(renderFolderCard).join("") : `<div class="empty-state compact-empty">${t("library.noFolders")}</div>`}
       </div>
     </section>
     <section class="library-section surface">
       <div class="library-section-head">
         <div>
-          <strong>作品</strong>
-          <small>${works.length} 个作品，可直接进入写作或展开章节管理。</small>
+          <strong>${t("library.works")}</strong>
+          <small>${t("library.worksSummary", { count: works.length })}</small>
         </div>
       </div>
       <div class="work-column">
@@ -1906,7 +2189,7 @@ function renderFolderCard(folder) {
       <button class="folder-main" data-open-folder="${folder.id}">
         <div>
           <strong>${escapeHtml(folder.name)}</strong>
-          <small>${getFoldersInFolder(folder.id).length} 个子文件夹 · ${getWorksInFolder(folder.id).length} 个作品</small>
+          <small>${t("library.subfolderCount", { folders: getFoldersInFolder(folder.id).length, works: getWorksInFolder(folder.id).length })}</small>
         </div>
         <span class="folder-arrow">›</span>
       </button>
@@ -1927,24 +2210,24 @@ function renderWorkCard(work) {
       <div class="work-card-head">
         <button class="work-main-entry" data-open-work="${work.id}">
           <strong>${escapeHtml(work.title)}</strong>
-          <p>${escapeHtml(work.description || "暂无简介")}</p>
+          <p>${escapeHtml(work.description || t("library.noDescription"))}</p>
         </button>
         <div class="entity-menu-wrap">
           <button class="icon-button" data-entity-menu-trigger data-entity-type="work" data-entity-id="${work.id}">⋯</button>
         </div>
       </div>
       <div class="work-meta-row">
-        <span class="tag">${work.chapterIds.length} 章</span>
-        <span class="meta-chip">${totalWords} 字</span>
+        <span class="tag">${t("library.chapterCount", { count: work.chapterIds.length })}</span>
+        <span class="meta-chip">${t("library.wordCount", { count: totalWords })}</span>
         <span class="meta-chip">${formatRelativeTime(work.updatedAt)}</span>
-        ${folder ? `<span class="meta-chip">所在：${escapeHtml(folder.name)}</span>` : `<span class="meta-chip">根目录</span>`}
+        ${folder ? `<span class="meta-chip">${t("library.location", { name: escapeHtml(folder.name) })}</span>` : `<span class="meta-chip">${t("library.root")}</span>`}
       </div>
       <div class="chapter-list">
         ${chapters.map((chapter) => renderChapterRow(work, chapter)).join("")}
       </div>
       <div class="work-card-footer">
-        <button class="ghost-button compact-button" data-open-work="${work.id}">继续写作</button>
-        <button class="ghost-button compact-button" data-manage-work="${work.id}">章节管理</button>
+        <button class="ghost-button compact-button" data-open-work="${work.id}">${t("library.continue")}</button>
+        <button class="ghost-button compact-button" data-manage-work="${work.id}">${t("library.manageChapters")}</button>
       </div>
     </article>
   `;
@@ -1955,11 +2238,11 @@ function renderChapterRow(work, chapter) {
     <div class="chapter-item">
       <button class="chapter-row ${chapter.id === state.activeChapterId && work.id === state.activeWorkId ? "active" : ""}" data-work-id="${work.id}" data-open-chapter="${chapter.id}">
         <span>${escapeHtml(chapter.title)}</span>
-        <small>${chapter.wordCount} 字</small>
+        <small>${t("library.wordCount", { count: chapter.wordCount })}</small>
       </button>
       <div class="inline-actions">
-        <button class="ghost-button compact-button" data-chapter-action="rename-chapter" data-work-id="${work.id}" data-chapter-id="${chapter.id}">重命名</button>
-        <button class="ghost-button compact-button" data-chapter-action="delete-chapter" data-work-id="${work.id}" data-chapter-id="${chapter.id}">删除</button>
+        <button class="ghost-button compact-button" data-chapter-action="rename-chapter" data-work-id="${work.id}" data-chapter-id="${chapter.id}">${t("library.rename")}</button>
+        <button class="ghost-button compact-button" data-chapter-action="delete-chapter" data-work-id="${work.id}" data-chapter-id="${chapter.id}">${t("library.delete")}</button>
       </div>
     </div>
   `;
@@ -1970,12 +2253,12 @@ function renderWorkDetailPanel(work) {
     <section class="library-section surface">
       <div class="library-section-head">
         <div>
-          <strong>章节管理</strong>
-          <small>${escapeHtml(work.title)} · 最近更新 ${formatRelativeTime(work.updatedAt)}</small>
+          <strong>${t("library.manageChapters")}</strong>
+          <small>${escapeHtml(work.title)} · ${getLanguage() === "en" ? "Updated" : "最近更新"} ${formatRelativeTime(work.updatedAt)}</small>
         </div>
         <div class="inline-actions">
-          <button class="ghost-button compact-button" data-work-action="new-chapter" data-work-id="${work.id}">新建章节</button>
-          <button class="ghost-button compact-button" data-work-action="close-detail" data-work-id="${work.id}">收起</button>
+          <button class="ghost-button compact-button" data-work-action="new-chapter" data-work-id="${work.id}">${t("chapter.new")}</button>
+          <button class="ghost-button compact-button" data-work-action="close-detail" data-work-id="${work.id}">${t("editor.collapse")}</button>
         </div>
       </div>
       <div class="chapter-list">
@@ -1989,8 +2272,8 @@ function renderEmptyLibraryState() {
   return `
     <div class="empty-state">
       <div>
-        <strong>当前目录还是空的</strong>
-        <p>还没有作品，点击右上角“新建”开始创作。</p>
+        <strong>${t("library.emptyTitle")}</strong>
+        <p>${t("library.emptyCopy")}</p>
       </div>
     </div>
   `;
@@ -2007,15 +2290,15 @@ function renderEntityMenuPortal() {
   const buttons =
     type === "folder"
       ? [
-          `<button data-entity-action="enter" data-entity-type="folder" data-entity-id="${id}">进入文件夹</button>`,
-          `<button data-entity-action="rename" data-entity-type="folder" data-entity-id="${id}">重命名</button>`,
-          `<button data-entity-action="delete" data-entity-type="folder" data-entity-id="${id}">删除</button>`,
+          `<button data-entity-action="enter" data-entity-type="folder" data-entity-id="${id}">${getLanguage() === "en" ? "Open Folder" : "进入文件夹"}</button>`,
+          `<button data-entity-action="rename" data-entity-type="folder" data-entity-id="${id}">${t("library.rename")}</button>`,
+          `<button data-entity-action="delete" data-entity-type="folder" data-entity-id="${id}">${t("library.delete")}</button>`,
         ]
       : [
-          `<button data-entity-action="open" data-entity-type="work" data-entity-id="${id}">进入编辑页</button>`,
-          `<button data-entity-action="detail" data-entity-type="work" data-entity-id="${id}">章节管理</button>`,
-          `<button data-entity-action="rename" data-entity-type="work" data-entity-id="${id}">重命名</button>`,
-          `<button data-entity-action="delete" data-entity-type="work" data-entity-id="${id}">删除</button>`,
+          `<button data-entity-action="open" data-entity-type="work" data-entity-id="${id}">${getLanguage() === "en" ? "Open Editor" : "进入编辑页"}</button>`,
+          `<button data-entity-action="detail" data-entity-type="work" data-entity-id="${id}">${t("library.manageChapters")}</button>`,
+          `<button data-entity-action="rename" data-entity-type="work" data-entity-id="${id}">${t("library.rename")}</button>`,
+          `<button data-entity-action="delete" data-entity-type="work" data-entity-id="${id}">${t("library.delete")}</button>`,
         ];
 
   const { top, left } = state.ui.libraryEntityMenuPosition;
@@ -2027,9 +2310,9 @@ function renderChapterCreateMenuPortal() {
   const { top, left } = state.ui.chapterCreateMenuPosition;
   return `
     <div class="dropdown-menu portal-menu" style="top:${top}px;left:${left}px;">
-      <button data-chapter-create-mode="end">在末尾新建</button>
-      <button data-chapter-create-mode="after-current">在当前章节后插入</button>
-      <button data-chapter-create-mode="before-current">在当前章节前插入</button>
+      <button data-chapter-create-mode="end">${getLanguage() === "en" ? "Create at End" : "在末尾新建"}</button>
+      <button data-chapter-create-mode="after-current">${getLanguage() === "en" ? "Insert After Current" : "在当前章节后插入"}</button>
+      <button data-chapter-create-mode="before-current">${getLanguage() === "en" ? "Insert Before Current" : "在当前章节前插入"}</button>
     </div>
   `;
 }
@@ -2043,11 +2326,11 @@ function renderChapterItemMenuPortal() {
   const index = work.chapterIds.indexOf(chapter.id);
   return `
     <div class="dropdown-menu portal-menu" style="top:${top}px;left:${left}px;">
-      <button data-chapter-item-action="rename" data-chapter-id="${chapter.id}">重命名</button>
-      <button data-chapter-item-action="duplicate" data-chapter-id="${chapter.id}">复制</button>
-      <button data-chapter-item-action="move-up" data-chapter-id="${chapter.id}" ${index <= 0 ? "disabled" : ""}>上移</button>
-      <button data-chapter-item-action="move-down" data-chapter-id="${chapter.id}" ${index >= work.chapterIds.length - 1 ? "disabled" : ""}>下移</button>
-      <button data-chapter-item-action="delete" data-chapter-id="${chapter.id}">删除</button>
+      <button data-chapter-item-action="rename" data-chapter-id="${chapter.id}">${t("library.rename")}</button>
+      <button data-chapter-item-action="duplicate" data-chapter-id="${chapter.id}">${getLanguage() === "en" ? "Duplicate" : "复制"}</button>
+      <button data-chapter-item-action="move-up" data-chapter-id="${chapter.id}" ${index <= 0 ? "disabled" : ""}>${getLanguage() === "en" ? "Move Up" : "上移"}</button>
+      <button data-chapter-item-action="move-down" data-chapter-id="${chapter.id}" ${index >= work.chapterIds.length - 1 ? "disabled" : ""}>${getLanguage() === "en" ? "Move Down" : "下移"}</button>
+      <button data-chapter-item-action="delete" data-chapter-id="${chapter.id}">${t("library.delete")}</button>
     </div>
   `;
 }
@@ -2074,14 +2357,14 @@ function hydrateEditor() {
     refs.chapterOutlineInput.value = "";
     refs.outlinePanelEditor.value = "";
     refs.wordGoalInput.value = "0";
-    refs.documentEditor.placeholder = "请先从目录页选择章节或新建章节。";
+    refs.documentEditor.placeholder = t("editor.emptyPlaceholder");
     refs.findQueryInput.value = state.ui.findQuery;
     refs.replaceQueryInput.value = state.ui.replaceQuery;
     state.currentChapterOutline = "";
     return;
   }
   syncOutlineStateWithCurrentChapter();
-  refs.documentEditor.placeholder = "开始写作……";
+  refs.documentEditor.placeholder = t("editor.placeholder");
   if (refs.documentEditor.value !== chapter.content) refs.documentEditor.value = chapter.content;
   refs.chapterNotesInput.value = chapter.notes;
   refs.chapterOutlineInput.value = state.currentChapterOutline;
@@ -2094,10 +2377,10 @@ function hydrateEditor() {
 function updateTopBar() {
   const work = getCurrentWork();
   const chapter = getCurrentChapter();
-  refs.currentWorkTitle.textContent = work?.title ?? "未选择作品";
-  refs.currentChapterTitle.textContent = chapter?.title ?? "请先返回目录页选择章节";
-  refs.currentChapterMeta.textContent = chapter ? `${chapter.wordCount} 字 · ${formatRelativeTime(chapter.updatedAt)}` : "点击查看全部章节";
-  refs.wordCountButton.textContent = `${countWords(chapter?.content ?? "")} 字`;
+  refs.currentWorkTitle.textContent = work?.title ?? t("editor.noWork");
+  refs.currentChapterTitle.textContent = chapter?.title ?? t("editor.selectChapter");
+  refs.currentChapterMeta.textContent = chapter ? t("editor.chapterMeta", { count: chapter.wordCount, time: formatRelativeTime(chapter.updatedAt) }) : t("editor.switchHint");
+  refs.wordCountButton.textContent = t("library.wordCount", { count: countWords(chapter?.content ?? "") });
   refs.saveStatusPill.textContent = getSaveStatusText(chapter);
 }
 
@@ -2106,18 +2389,18 @@ function updateChapterPanel() {
   const chapter = getCurrentChapter();
   refs.chapterPanel.classList.toggle("hidden", !state.ui.chapterPanelOpen || !work);
   if (!work) {
-    refs.chapterPanelSummary.textContent = "请先打开作品";
-    refs.chapterPanelList.innerHTML = `<div class="empty-inline">当前没有可管理的章节。</div>`;
+    refs.chapterPanelSummary.textContent = getLanguage() === "en" ? "Open a work first" : "请先打开作品";
+    refs.chapterPanelList.innerHTML = `<div class="empty-inline">${t("chapter.noManageable")}</div>`;
     return;
   }
 
   const chapters = getWorkChapters(work.id);
   ensureFocusedChapter(work.id, chapters);
-  refs.chapterPanelSummary.textContent = `${getWorkChapters(work.id).length} 章 · 当前 ${chapter?.title ?? "未选择"}`;
+  refs.chapterPanelSummary.textContent = t("chapter.currentSummary", { count: getWorkChapters(work.id).length, title: chapter?.title ?? t("chapter.noneSelected") });
   refs.chapterPanelList.innerHTML =
     chapters.length > 0
       ? chapters.map((item, index) => renderEditorChapterPanelRow(work, item, index)).join("")
-      : `<div class="empty-inline">当前作品还没有章节。</div>`;
+      : `<div class="empty-inline">${t("chapter.noChapters")}</div>`;
 
   if (state.ui.chapterPanelOpen) {
     requestAnimationFrame(() => {
@@ -2146,17 +2429,17 @@ function renderEditorChapterPanelRow(work, chapter, index) {
         data-work-id="${work.id}"
         data-open-chapter="${chapter.id}"
       >
-        <span class="chapter-panel-index" title="拖拽可排序">${getChapterOrderNumber(work.id, chapter.id)}</span>
+        <span class="chapter-panel-index" title="${escapeAttribute(getLanguage() === "en" ? "Drag to reorder" : "拖拽可排序")}">${getChapterOrderNumber(work.id, chapter.id)}</span>
         <span class="chapter-panel-text">
           <strong>${escapeHtml(chapter.title)}</strong>
-          <small>${chapter.wordCount} 字 · ${formatRelativeTime(chapter.updatedAt)}</small>
+          <small>${t("library.wordCount", { count: chapter.wordCount })} · ${formatRelativeTime(chapter.updatedAt)}</small>
         </span>
       </button>
       <button
         class="icon-button chapter-panel-item-button"
         data-chapter-item-menu-trigger
         data-chapter-id="${chapter.id}"
-        title="章节操作"
+        title="${escapeAttribute(t("chapter.actionsTitle"))}"
       >⋯</button>
     </div>
   `;
@@ -2166,12 +2449,12 @@ function updateSidebar() {
   const chapter = getCurrentChapter();
   refs.chapterSidebar.classList.toggle("sidebar-collapsed", state.ui.leftSidebarCollapsed);
   refs.leftSidebarReopenButton.classList.toggle("hidden", !state.ui.leftSidebarCollapsed);
-  refs.leftSidebarToggleButton.textContent = state.ui.leftSidebarCollapsed ? "展开" : "收起";
+  refs.leftSidebarToggleButton.textContent = state.ui.leftSidebarCollapsed ? t("editor.expand") : t("editor.collapse");
   refs.chapterNotesInput.parentElement.classList.toggle("muted-section", state.ui.sidebarSection !== "notes");
   refs.chapterOutlineInput.parentElement.classList.toggle("muted-section", state.ui.sidebarSection !== "outline");
   refs.bookmarkList.parentElement.classList.toggle("muted-section", state.ui.sidebarSection !== "bookmarks");
   if (!chapter) {
-    refs.bookmarkList.innerHTML = `<span class="empty-inline">请先打开章节</span>`;
+    refs.bookmarkList.innerHTML = `<span class="empty-inline">${t("status.noChapter")}</span>`;
     return;
   }
   refs.bookmarkList.innerHTML =
@@ -2179,7 +2462,7 @@ function updateSidebar() {
       ? chapter.bookmarks
           .map((item, index) => `<button class="bookmark-pill" data-bookmark-index="${index}" data-bookmark-text="${escapeAttribute(item)}">${escapeHtml(item)}</button>`)
           .join("")
-      : `<span class="empty-inline">还没有书签</span>`;
+      : `<span class="empty-inline">${getLanguage() === "en" ? "No bookmarks yet" : "还没有书签"}</span>`;
 }
 
 function updateWorkspace() {
@@ -2194,16 +2477,16 @@ function updateWorkspace() {
   });
   refs.findReplaceBar.classList.toggle("hidden", !state.ui.replaceOpen);
   refs.selectionToolbar.classList.toggle("hidden", !state.ui.selectionVisible);
-  refs.resumeHint.textContent = `上次位置：${state.ui.selectionStart}`;
-  refs.wordGoalProgress.textContent = chapter ? `当前 ${countWords(chapter.content)} / 目标 ${chapter.wordGoal}` : "请先选择章节";
+  refs.resumeHint.textContent = t("workspace.lastPosition", { position: state.ui.selectionStart });
+  refs.wordGoalProgress.textContent = chapter ? t("workspace.wordGoalProgress", { count: countWords(chapter.content), goal: chapter.wordGoal }) : t("workspace.selectChapter");
   refs.focusTimerValue.textContent = formatDuration(getFocusSeconds());
   refs.inspirationCompose.classList.toggle("hidden", !state.ui.inspirationComposeOpen);
   refs.outlinePanel.classList.toggle("hidden", !state.outlinePanelOpen || !chapter);
   refs.outlineExpandButton.disabled = !chapter;
   refs.outlinePanelStatus.textContent = getOutlineStatusText();
   refs.documentEditorStatus.textContent = chapter
-    ? `正文 ${chapter.saveStatus} · ${chapter.saveTime}`
-    : "正文内容实时跟随当前章节切换。";
+    ? t("editor.bodyStatus", { status: translateSaveStatus(chapter.saveStatus), time: translateSaveTime(chapter.saveTime) })
+    : t("editor.bodyStatusDefault");
   syncOutlinePanelLayout();
 }
 
@@ -2229,17 +2512,38 @@ function syncOutlineEditors(source = null) {
 }
 
 function getOutlineStatusText() {
-  if (!getCurrentChapter()) return "未打开章节";
-  if (state.outlineDirty) return `${state.outlineSaveStatus} · 刚刚修改`;
+  if (!getCurrentChapter()) return t("status.noChapter");
+  if (state.outlineDirty) return `${translateSaveStatus(state.outlineSaveStatus)} · ${t("status.justChanged")}`;
   const savedAt = formatOutlineSavedAt(state.outlineLastSavedAt);
-  return savedAt ? `已保存 · ${savedAt}` : "已保存";
+  return savedAt ? `${t("status.saved")} · ${savedAt}` : t("status.saved");
 }
 
 function getSaveStatusText(chapter) {
-  if (!chapter) return "未打开章节";
-  if (chapter.dirty && state.outlineDirty) return `正文/大纲待保存 · 刚刚修改`;
-  if (state.outlineDirty) return `大纲${state.ui.autosaveEnabled ? "保存中" : "未保存"} · 刚刚修改`;
-  return `${chapter.saveStatus} · ${chapter.saveTime}`;
+  if (!chapter) return t("status.noChapter");
+  if (chapter.dirty && state.outlineDirty) return t("status.bodyOutlinePending");
+  if (state.outlineDirty) return t("status.outlinePending", { status: state.ui.autosaveEnabled ? t("status.saving") : t("status.unsaved") });
+  return `${translateSaveStatus(chapter.saveStatus)} · ${translateSaveTime(chapter.saveTime)}`;
+}
+
+function translateSaveStatus(value) {
+  if (value === "已保存") return t("status.saved");
+  if (value === "保存中") return t("status.saving");
+  if (value === "未保存") return t("status.unsaved");
+  return value;
+}
+
+function translateSaveTime(value) {
+  if (value === "刚刚") return getLanguage() === "en" ? "Just now" : value;
+  if (value === "刚刚修改") return t("status.justChanged");
+  if (value === "回退到上次保存") return t("status.reverted");
+  return value;
+}
+
+function translateAccountStatus(value) {
+  if (value === "本地写作中") return t("status.local");
+  if (value === "同步等待中") return t("status.syncing");
+  if (value === "已连接云端，同步正常") return t("status.synced");
+  return value;
 }
 
 function formatOutlineSavedAt(value) {
@@ -2336,12 +2640,12 @@ function updateSettingsPanel() {
   if (!state.account.loggedIn) {
     refs.accountCard.innerHTML = `
       <div>
-        <strong>未登录</strong>
-        <p>登录后可同步草稿，但不会打断当前写作。</p>
+        <strong>${getLanguage() === "en" ? "Signed Out" : "未登录"}</strong>
+        <p>${getLanguage() === "en" ? "Sign in to sync drafts without interrupting your writing." : "登录后可同步草稿，但不会打断当前写作。"}</p>
       </div>
       <div class="tool-grid two-col">
-        <button class="primary-button" data-account-action="email-login">邮箱登录</button>
-        <button class="ghost-button" data-account-action="third-party-login">第三方登录</button>
+        <button class="primary-button" data-account-action="email-login">${getLanguage() === "en" ? "Email Login" : "邮箱登录"}</button>
+        <button class="ghost-button" data-account-action="third-party-login">${getLanguage() === "en" ? "Third-party Login" : "第三方登录"}</button>
       </div>
     `;
   } else {
@@ -2350,14 +2654,16 @@ function updateSettingsPanel() {
         <span class="avatar">${escapeHtml(state.account.avatar)}</span>
         <div>
           <strong>${escapeHtml(state.account.nickname)}</strong>
-          <p>${escapeHtml(state.account.syncStatus)}</p>
+          <p>${escapeHtml(translateAccountStatus(state.account.syncStatus))}</p>
         </div>
       </div>
-      <button class="ghost-button" data-account-action="logout">退出登录</button>
+      <button class="ghost-button" data-account-action="logout">${getLanguage() === "en" ? "Log Out" : "退出登录"}</button>
     `;
   }
 
-  refs.themeAccordionHint.textContent = state.ui.settingsThemeExpanded ? "点击收起主题设置" : "点击展开主题设置";
+  refs.themeAccordionHint.textContent = state.ui.settingsThemeExpanded
+    ? (getLanguage() === "en" ? "Click to collapse theme settings" : "点击收起主题设置")
+    : (getLanguage() === "en" ? "Click to expand theme settings" : "点击展开主题设置");
   refs.themeList.classList.toggle("hidden", !state.ui.settingsThemeExpanded);
   refs.themeList.innerHTML = state.theme.presets
     .map(
@@ -2394,14 +2700,18 @@ function renderInspirationList() {
     ? getInspirationById(work?.id, state.ui.inspirationEditingId) ?? null
     : null;
   refs.inspirationCategoryFilter.innerHTML = categories
-    .map((item) => `<option value="${item}">${item === "all" ? "全部分类" : escapeHtml(item)}</option>`)
+    .map((item) => `<option value="${item}">${item === "all" ? (getLanguage() === "en" ? "All Categories" : "全部分类") : escapeHtml(item)}</option>`)
     .join("");
   refs.inspirationCategoryFilter.value = state.inspirations.activeCategory;
   refs.inspirationSearchInput.value = state.inspirations.search;
-  refs.inspirationCategoryManagerHint.textContent = state.ui.inspirationCategoryManagerExpanded ? "点击收起分类管理" : "点击展开分类管理";
+  refs.inspirationCategoryManagerHint.textContent = state.ui.inspirationCategoryManagerExpanded
+    ? (getLanguage() === "en" ? "Click to collapse category management" : "点击收起分类管理")
+    : (getLanguage() === "en" ? "Click to expand category management" : "点击展开分类管理");
   refs.inspirationCategoryManagerBody.classList.toggle("hidden", !state.ui.inspirationCategoryManagerExpanded);
-  refs.inspirationComposeTitle.textContent = editingItem ? "编辑灵感" : "新建灵感";
-  refs.inspirationComposeHint.textContent = editingItem ? "修改后会直接更新当前灵感条目。" : "填写内容和分类后保存到灵感列表。";
+  refs.inspirationComposeTitle.textContent = editingItem ? (getLanguage() === "en" ? "Edit Idea" : "编辑灵感") : (getLanguage() === "en" ? "New Idea" : "新建灵感");
+  refs.inspirationComposeHint.textContent = editingItem
+    ? (getLanguage() === "en" ? "Changes update the current idea directly." : "修改后会直接更新当前灵感条目。")
+    : (getLanguage() === "en" ? "Add content and categories, then save it to the idea list." : "填写内容和分类后保存到灵感列表。");
   refs.inspirationComposeCategory.innerHTML = categories
     .filter((item) => item !== "all")
     .map((item) => `<option value="${item}">${escapeHtml(item)}</option>`)
@@ -2413,10 +2723,10 @@ function renderInspirationList() {
         <div class="inspiration-category-row">
           <span class="tag">${escapeHtml(item)}</span>
           <div class="inline-actions inspiration-category-actions">
-            <button class="ghost-button compact-button" data-inspiration-category-action="move-up" data-category-name="${escapeAttribute(item)}" ${index === 0 ? "disabled" : ""}>上移</button>
-            <button class="ghost-button compact-button" data-inspiration-category-action="move-down" data-category-name="${escapeAttribute(item)}" ${index === items.length - 1 ? "disabled" : ""}>下移</button>
-            <button class="ghost-button compact-button" data-inspiration-category-action="rename" data-category-name="${escapeAttribute(item)}">重命名</button>
-            <button class="ghost-button compact-button" data-inspiration-category-action="delete" data-category-name="${escapeAttribute(item)}">删除</button>
+            <button class="ghost-button compact-button" data-inspiration-category-action="move-up" data-category-name="${escapeAttribute(item)}" ${index === 0 ? "disabled" : ""}>${getLanguage() === "en" ? "Up" : "上移"}</button>
+            <button class="ghost-button compact-button" data-inspiration-category-action="move-down" data-category-name="${escapeAttribute(item)}" ${index === items.length - 1 ? "disabled" : ""}>${getLanguage() === "en" ? "Down" : "下移"}</button>
+            <button class="ghost-button compact-button" data-inspiration-category-action="rename" data-category-name="${escapeAttribute(item)}">${t("library.rename")}</button>
+            <button class="ghost-button compact-button" data-inspiration-category-action="delete" data-category-name="${escapeAttribute(item)}">${t("library.delete")}</button>
           </div>
         </div>`)
     .join("");
@@ -2426,16 +2736,16 @@ function renderInspirationList() {
         `<button class="bookmark-pill" data-inspiration-action="remove-tag" data-id="${escapeAttribute(tag)}">${escapeHtml(tag)} ×</button>`,
     )
     .join("");
-  refs.inspirationSortButton.textContent = `排序：${
-    state.inspirations.sort === "newest" ? "最新" : state.inspirations.sort === "oldest" ? "最早" : "收藏优先"
-  }`;
-  refs.saveInspirationButton.textContent = editingItem ? "保存修改" : "保存灵感";
+  refs.inspirationSortButton.textContent = getLanguage() === "en"
+    ? `Sort: ${state.inspirations.sort === "newest" ? "Newest" : state.inspirations.sort === "oldest" ? "Oldest" : "Favorites"}`
+    : `排序：${state.inspirations.sort === "newest" ? "最新" : state.inspirations.sort === "oldest" ? "最早" : "收藏优先"}`;
+  refs.saveInspirationButton.textContent = editingItem ? (getLanguage() === "en" ? "Save Changes" : "保存修改") : (getLanguage() === "en" ? "Save Idea" : "保存灵感");
   const items = getVisibleInspirations();
   refs.inspirationChatList.innerHTML =
     !work
-      ? `<div class="empty-state">请先打开一个作品，再查看该作品的灵感。</div>`
+      ? `<div class="empty-state">${getLanguage() === "en" ? "Open a work before viewing its ideas." : "请先打开一个作品，再查看该作品的灵感。"}</div>`
       : items.length === 0
-      ? `<div class="empty-state">没有符合条件的灵感。</div>`
+      ? `<div class="empty-state">${getLanguage() === "en" ? "No matching ideas." : "没有符合条件的灵感。"}</div>`
       : items
           .map(
             (item) => `
@@ -2446,11 +2756,11 @@ function renderInspirationList() {
                 </header>
                 <p>${escapeHtml(item.content)}</p>
                 <footer>
-                  <button data-inspiration-action="favorite" data-id="${item.id}">${item.isFavorite ? "取消收藏" : "收藏"}</button>
-                  <button data-inspiration-action="pin" data-id="${item.id}">${item.isPinned ? "取消置顶" : "置顶"}</button>
-                  <button data-inspiration-action="insert" data-id="${item.id}">插入正文</button>
-                  <button data-inspiration-action="edit" data-id="${item.id}">编辑</button>
-                  <button data-inspiration-action="delete" data-id="${item.id}">删除</button>
+                  <button data-inspiration-action="favorite" data-id="${item.id}">${item.isFavorite ? (getLanguage() === "en" ? "Unfavorite" : "取消收藏") : (getLanguage() === "en" ? "Favorite" : "收藏")}</button>
+                  <button data-inspiration-action="pin" data-id="${item.id}">${item.isPinned ? (getLanguage() === "en" ? "Unpin" : "取消置顶") : (getLanguage() === "en" ? "Pin" : "置顶")}</button>
+                  <button data-inspiration-action="insert" data-id="${item.id}">${getLanguage() === "en" ? "Insert" : "插入正文"}</button>
+                  <button data-inspiration-action="edit" data-id="${item.id}">${getLanguage() === "en" ? "Edit" : "编辑"}</button>
+                  <button data-inspiration-action="delete" data-id="${item.id}">${t("library.delete")}</button>
                 </footer>
               </article>
             `,
@@ -2593,18 +2903,18 @@ async function handleChapterItemAction(action, chapterId) {
 function openCreateFolderModal() {
   state.ui.modal = {
     type: "create-folder",
-    title: "新建文件夹",
+    title: t("library.createFolder"),
     body: `
       <div class="modal-form">
-        <label>文件夹名称</label>
-        <input id="modal-folder-name" type="text" placeholder="例如：长篇连载" />
-        <label>父级位置</label>
+        <label>${getLanguage() === "en" ? "Folder Name" : "文件夹名称"}</label>
+        <input id="modal-folder-name" type="text" placeholder="${escapeAttribute(getLanguage() === "en" ? "For example: Novel Series" : "例如：长篇连载")}" />
+        <label>${getLanguage() === "en" ? "Parent Location" : "父级位置"}</label>
         <select id="modal-folder-parent">${renderFolderOptions(state.activeFolderId, true)}</select>
       </div>
     `,
     actions: [
-      { id: "cancel-modal", label: "取消", primary: false },
-      { id: "submit-create-folder", label: "创建文件夹", primary: true },
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "submit-create-folder", label: getLanguage() === "en" ? "Create Folder" : "创建文件夹", primary: true },
     ],
   };
   updateModal();
@@ -2613,26 +2923,26 @@ function openCreateFolderModal() {
 function openCreateWorkModal() {
   state.ui.modal = {
     type: "create-work",
-    title: "新建作品",
+    title: t("library.createWork"),
     body: `
       <div class="modal-form">
-        <label>作品名称</label>
-        <input id="modal-work-title" type="text" placeholder="输入作品名称" />
-        <label>作品简介</label>
-        <textarea id="modal-work-description" rows="4" placeholder="简要说明作品方向"></textarea>
-        <label>所属文件夹</label>
+        <label>${getLanguage() === "en" ? "Work Title" : "作品名称"}</label>
+        <input id="modal-work-title" type="text" placeholder="${escapeAttribute(getLanguage() === "en" ? "Enter work title" : "输入作品名称")}" />
+        <label>${getLanguage() === "en" ? "Description" : "作品简介"}</label>
+        <textarea id="modal-work-description" rows="4" placeholder="${escapeAttribute(getLanguage() === "en" ? "Briefly describe this work" : "简要说明作品方向")}"></textarea>
+        <label>${getLanguage() === "en" ? "Folder" : "所属文件夹"}</label>
         <select id="modal-work-folder">${renderFolderOptions(state.activeFolderId, true)}</select>
-        <label>默认章节模板</label>
+        <label>${getLanguage() === "en" ? "Default Chapter Template" : "默认章节模板"}</label>
         <select id="modal-work-template">
-          <option value="blank">空白章节</option>
-          <option value="intro">开场模板</option>
-          <option value="outline">大纲模板</option>
+          <option value="blank">${getLanguage() === "en" ? "Blank Chapter" : "空白章节"}</option>
+          <option value="intro">${getLanguage() === "en" ? "Opening Template" : "开场模板"}</option>
+          <option value="outline">${getLanguage() === "en" ? "Outline Template" : "大纲模板"}</option>
         </select>
       </div>
     `,
     actions: [
-      { id: "cancel-modal", label: "取消", primary: false },
-      { id: "submit-create-work", label: "创建作品", primary: true },
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "submit-create-work", label: getLanguage() === "en" ? "Create Work" : "创建作品", primary: true },
     ],
   };
   updateModal();
@@ -2646,22 +2956,22 @@ function openCreateChapterModal(workId, options = {}) {
   state.ui.modal = {
     type: "create-chapter",
     payload: { workId, referenceChapterId: currentChapterId },
-    title: "新建章节",
+    title: t("chapter.new"),
     body: `
       <div class="modal-form">
-        <label>章节标题</label>
-        <input id="modal-chapter-title" type="text" placeholder="例如：第三章：夜航" value="${escapeAttribute(generateDefaultChapterTitle(workId))}" />
-        <label>插入位置</label>
+        <label>${getLanguage() === "en" ? "Chapter Title" : "章节标题"}</label>
+        <input id="modal-chapter-title" type="text" placeholder="${escapeAttribute(getLanguage() === "en" ? "For example: Chapter 3: Night Sailing" : "例如：第三章：夜航")}" value="${escapeAttribute(generateDefaultChapterTitle(workId))}" />
+        <label>${getLanguage() === "en" ? "Position" : "插入位置"}</label>
         <select id="modal-chapter-position">
-          <option value="end" ${defaultMode === "end" ? "selected" : ""}>在末尾新建</option>
-          <option value="after-current" ${defaultMode === "after-current" ? "selected" : ""} ${hasCurrent ? "" : "disabled"}>在当前章节后插入</option>
-          <option value="before-current" ${defaultMode === "before-current" ? "selected" : ""} ${hasCurrent ? "" : "disabled"}>在当前章节前插入</option>
+          <option value="end" ${defaultMode === "end" ? "selected" : ""}>${getLanguage() === "en" ? "Create at End" : "在末尾新建"}</option>
+          <option value="after-current" ${defaultMode === "after-current" ? "selected" : ""} ${hasCurrent ? "" : "disabled"}>${getLanguage() === "en" ? "Insert After Current" : "在当前章节后插入"}</option>
+          <option value="before-current" ${defaultMode === "before-current" ? "selected" : ""} ${hasCurrent ? "" : "disabled"}>${getLanguage() === "en" ? "Insert Before Current" : "在当前章节前插入"}</option>
         </select>
       </div>
     `,
     actions: [
-      { id: "cancel-modal", label: "取消", primary: false },
-      { id: "submit-create-chapter", label: "创建章节", primary: true },
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "submit-create-chapter", label: getLanguage() === "en" ? "Create Chapter" : "创建章节", primary: true },
     ],
   };
   updateModal();
@@ -2673,16 +2983,20 @@ function openRenameModal(entityType, entityId) {
   state.ui.modal = {
     type: "rename-entity",
     payload: { entityType, entityId },
-    title: entityType === "folder" ? "重命名文件夹" : entityType === "work" ? "重命名作品" : "重命名章节",
+    title: entityType === "folder"
+      ? (getLanguage() === "en" ? "Rename Folder" : "重命名文件夹")
+      : entityType === "work"
+        ? (getLanguage() === "en" ? "Rename Work" : "重命名作品")
+        : (getLanguage() === "en" ? "Rename Chapter" : "重命名章节"),
     body: `
       <div class="modal-form">
-        <label>名称</label>
+        <label>${getLanguage() === "en" ? "Name" : "名称"}</label>
         <input id="modal-rename-value" type="text" value="${escapeAttribute(entity.name ?? entity.title)}" />
       </div>
     `,
     actions: [
-      { id: "cancel-modal", label: "取消", primary: false },
-      { id: "submit-rename-entity", label: "保存", primary: true },
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "submit-rename-entity", label: t("editor.save"), primary: true },
     ],
   };
   updateModal();
@@ -2694,11 +3008,11 @@ function openDeleteWorkModal(workId) {
   state.ui.modal = {
     type: "delete-work",
     payload: { workId },
-    title: "删除作品",
-    message: `确认删除作品“${work.title}”？将同时删除该作品下的全部章节数据。`,
+    title: getLanguage() === "en" ? "Delete Work" : "删除作品",
+    message: getLanguage() === "en" ? `Delete "${work.title}"? All chapters in this work will also be deleted.` : `确认删除作品“${work.title}”？将同时删除该作品下的全部章节数据。`,
     actions: [
-      { id: "cancel-modal", label: "取消", primary: false },
-      { id: "confirm-delete-work", label: "删除作品", primary: true },
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "confirm-delete-work", label: getLanguage() === "en" ? "Delete Work" : "删除作品", primary: true },
     ],
   };
   updateModal();
@@ -2710,11 +3024,11 @@ function openDeleteChapterModal(workId, chapterId) {
   state.ui.modal = {
     type: "delete-chapter",
     payload: { workId, chapterId },
-    title: "删除章节",
-    message: `确认删除章节“${chapter.title}”？`,
+    title: getLanguage() === "en" ? "Delete Chapter" : "删除章节",
+    message: getLanguage() === "en" ? `Delete chapter "${chapter.title}"?` : `确认删除章节“${chapter.title}”？`,
     actions: [
-      { id: "cancel-modal", label: "取消", primary: false },
-      { id: "confirm-delete-chapter", label: "删除章节", primary: true },
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "confirm-delete-chapter", label: getLanguage() === "en" ? "Delete Chapter" : "删除章节", primary: true },
     ],
   };
   updateModal();
@@ -2729,17 +3043,17 @@ function openDeleteFolderModal(folderId) {
   state.ui.modal = {
     type: "delete-folder",
     payload: { folderId },
-    title: "删除文件夹",
+    title: getLanguage() === "en" ? "Delete Folder" : "删除文件夹",
     body: `
       <div class="modal-copy-block">
-        <p>当前文件夹“${escapeHtml(folder.name)}”下共影响 ${descendantIds.length + 1} 个文件夹、${affectedWorks.length} 个作品、${affectedChapterCount} 个章节。</p>
-        <p>你可以选择直接删除全部内容，或仅删除文件夹并将内部作品与子文件夹上移到上一级。</p>
+        <p>${getLanguage() === "en" ? `Folder "${escapeHtml(folder.name)}" affects ${descendantIds.length + 1} folders, ${affectedWorks.length} works, and ${affectedChapterCount} chapters.` : `当前文件夹“${escapeHtml(folder.name)}”下共影响 ${descendantIds.length + 1} 个文件夹、${affectedWorks.length} 个作品、${affectedChapterCount} 个章节。`}</p>
+        <p>${getLanguage() === "en" ? "You can delete everything, or delete only the folder and move its contents up one level." : "你可以选择直接删除全部内容，或仅删除文件夹并将内部作品与子文件夹上移到上一级。"}</p>
       </div>
     `,
     actions: [
-      { id: "cancel-modal", label: "取消", primary: false },
-      { id: "confirm-delete-folder-keep", label: "删除文件夹并上移内容", primary: false },
-      { id: "confirm-delete-folder-all", label: "连同内容一起删除", primary: true },
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "confirm-delete-folder-keep", label: getLanguage() === "en" ? "Delete Folder and Move Contents Up" : "删除文件夹并上移内容", primary: false },
+      { id: "confirm-delete-folder-all", label: getLanguage() === "en" ? "Delete With Contents" : "连同内容一起删除", primary: true },
     ],
   };
   updateModal();
@@ -3001,12 +3315,12 @@ async function handleBackNavigation() {
   }
   state.ui.modal = {
     type: "back-confirm",
-    title: "返回文件管理页？",
-    message: "当前章节还有未保存修改，返回前请决定如何处理。",
+    title: getLanguage() === "en" ? "Return to Library?" : "返回文件管理页？",
+    message: getLanguage() === "en" ? "The current chapter has unsaved changes. Choose how to handle them before returning." : "当前章节还有未保存修改，返回前请决定如何处理。",
     actions: [
-      { id: "save-and-back", label: "保存并返回", primary: true },
-      { id: "discard-and-back", label: "不保存直接返回", primary: false },
-      { id: "cancel-back", label: "取消", primary: false },
+      { id: "save-and-back", label: getLanguage() === "en" ? "Save and Return" : "保存并返回", primary: true },
+      { id: "discard-and-back", label: getLanguage() === "en" ? "Return Without Saving" : "不保存直接返回", primary: false },
+      { id: "cancel-back", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
     ],
   };
   updateModal();
@@ -3262,14 +3576,14 @@ async function handleMenuAction(action) {
   if (action === "history") {
     state.ui.modal = {
       type: "history",
-      title: "历史版本",
-      message: "以下是当前章节自动保存过的版本。",
+      title: t("menu.history"),
+      message: getLanguage() === "en" ? "These are autosaved versions of the current chapter." : "以下是当前章节自动保存过的版本。",
       body: `<div class="history-list">${
         chapter.versions.length > 0
           ? chapter.versions.map((version) => `<div class="history-row"><strong>${escapeHtml(version.label)}</strong><span>${escapeHtml(version.time)}</span></div>`).join("")
-          : `<div class="empty-inline">暂无历史版本</div>`
+          : `<div class="empty-inline">${getLanguage() === "en" ? "No version history yet" : "暂无历史版本"}</div>`
       }</div>`,
-      actions: [{ id: "close-modal", label: "关闭", primary: true }],
+      actions: [{ id: "close-modal", label: getLanguage() === "en" ? "Close" : "关闭", primary: true }],
     };
     updateModal();
     return;
@@ -3278,19 +3592,19 @@ async function handleMenuAction(action) {
   if (action === "shortcuts") {
     state.ui.modal = {
       type: "shortcuts",
-      title: "快捷键说明",
-      message: "以下快捷键可在编辑页和章节面板中使用。",
+      title: getLanguage() === "en" ? "Keyboard Shortcuts" : "快捷键说明",
+      message: getLanguage() === "en" ? "These shortcuts work in the editor and chapter panel." : "以下快捷键可在编辑页和章节面板中使用。",
       body: `
         <div class="history-list">
-          <div class="history-row"><strong>Ctrl / Cmd + Shift + O</strong><span>打开章节面板并聚焦搜索</span></div>
-          <div class="history-row"><strong>↑ / ↓</strong><span>在章节面板中移动焦点</span></div>
-          <div class="history-row"><strong>Enter</strong><span>在章节面板中切换到当前焦点章节</span></div>
-          <div class="history-row"><strong>Esc</strong><span>关闭章节面板并返回正文</span></div>
-          <div class="history-row"><strong>Alt + ↑ / ↓</strong><span>在编辑器中快速切换上一章 / 下一章</span></div>
-          <div class="history-row"><strong>拖拽章节行</strong><span>在章节面板中调整章节顺序</span></div>
+          <div class="history-row"><strong>Ctrl / Cmd + Shift + O</strong><span>${getLanguage() === "en" ? "Open the chapter panel and focus it" : "打开章节面板并聚焦搜索"}</span></div>
+          <div class="history-row"><strong>↑ / ↓</strong><span>${getLanguage() === "en" ? "Move focus in the chapter panel" : "在章节面板中移动焦点"}</span></div>
+          <div class="history-row"><strong>Enter</strong><span>${getLanguage() === "en" ? "Open the focused chapter" : "在章节面板中切换到当前焦点章节"}</span></div>
+          <div class="history-row"><strong>Esc</strong><span>${getLanguage() === "en" ? "Close the chapter panel and return to the body" : "关闭章节面板并返回正文"}</span></div>
+          <div class="history-row"><strong>Alt + ↑ / ↓</strong><span>${getLanguage() === "en" ? "Switch to the previous/next chapter in the editor" : "在编辑器中快速切换上一章 / 下一章"}</span></div>
+          <div class="history-row"><strong>${getLanguage() === "en" ? "Drag chapter rows" : "拖拽章节行"}</strong><span>${getLanguage() === "en" ? "Reorder chapters in the chapter panel" : "在章节面板中调整章节顺序"}</span></div>
         </div>
       `,
-      actions: [{ id: "close-modal", label: "关闭", primary: true }],
+      actions: [{ id: "close-modal", label: getLanguage() === "en" ? "Close" : "关闭", primary: true }],
     };
     updateModal();
     return;
@@ -4064,8 +4378,9 @@ function duplicateChapter(workId, sourceChapterId) {
   const work = getWork(workId);
   const source = getChapter(sourceChapterId);
   if (!work || !source) return null;
-  const chapter = createChapterForWork(work.id, `${source.title}（副本）`, {
-    chapterTitle: `${source.title}（副本）`,
+  const copySuffix = getLanguage() === "en" ? " (Copy)" : "（副本）";
+  const chapter = createChapterForWork(work.id, `${source.title}${copySuffix}`, {
+    chapterTitle: `${source.title}${copySuffix}`,
     content: source.content,
     notes: source.notes,
     outline: source.outline,
@@ -4086,7 +4401,7 @@ function duplicateChapter(workId, sourceChapterId) {
 
 function generateDefaultChapterTitle(workId) {
   const count = getWork(workId)?.chapterIds.length ?? 0;
-  return `第 ${count + 1} 章`;
+  return getLanguage() === "en" ? `Chapter ${count + 1}` : `第 ${count + 1} 章`;
 }
 
 function getPopupPosition(trigger, menuWidth = 196) {
@@ -4418,7 +4733,7 @@ function getWorkWordCount(workId) {
 }
 
 function getFolderPath(folderId) {
-  const path = [{ id: null, name: "全部作品" }];
+  const path = [{ id: null, name: t("library.allWorks") }];
   let current = getFolder(folderId);
   const stack = [];
   while (current) {
@@ -4452,7 +4767,7 @@ function getVisibleWorkDetail() {
 function renderFolderOptions(selectedId, includeRoot) {
   const options = [];
   if (includeRoot) {
-    options.push(`<option value="">根目录</option>`);
+    options.push(`<option value="">${t("library.root")}</option>`);
   }
   state.folders.forEach((folder) => {
     const depth = getFolderDepth(folder.id);
@@ -4531,15 +4846,15 @@ function formatDuration(seconds) {
 
 function formatRelativeTime(value) {
   const time = new Date(value).getTime();
-  if (Number.isNaN(time)) return "刚刚";
+  if (Number.isNaN(time)) return getLanguage() === "en" ? "just now" : "刚刚";
   const diff = Date.now() - time;
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "刚刚";
-  if (minutes < 60) return `${minutes} 分钟前`;
+  if (minutes < 1) return getLanguage() === "en" ? "just now" : "刚刚";
+  if (minutes < 60) return getLanguage() === "en" ? `${minutes}m ago` : `${minutes} 分钟前`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} 小时前`;
+  if (hours < 24) return getLanguage() === "en" ? `${hours}h ago` : `${hours} 小时前`;
   const days = Math.floor(hours / 24);
-  return `${days} 天前`;
+  return getLanguage() === "en" ? `${days}d ago` : `${days} 天前`;
 }
 
 function slugify(text) {
