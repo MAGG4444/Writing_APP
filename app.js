@@ -429,6 +429,7 @@ const translations = {
     "menu.history": "历史版本",
     "menu.shortcuts": "？ 快捷键",
     "menu.export": "导出",
+    "menu.importText": "导入 TXT",
     "menu.focus": "专注模式",
     "menu.night": "夜间模式",
     "status.saved": "已保存",
@@ -439,9 +440,9 @@ const translations = {
     "status.bodyOutlinePending": "正文/大纲待保存 · 刚刚修改",
     "status.outlinePending": "大纲{status} · 刚刚修改",
     "status.reverted": "回退到上次保存",
-    "status.local": "本地写作中",
-    "status.syncing": "同步等待中",
-    "status.synced": "已连接云端，同步正常",
+    "status.local": "本地保存",
+    "status.syncing": "本地有未保存修改",
+    "status.synced": "本地已保存",
     "app.version": "版本 {version}",
   },
   en: {
@@ -552,6 +553,7 @@ const translations = {
     "menu.history": "Version History",
     "menu.shortcuts": "? Shortcuts",
     "menu.export": "Export",
+    "menu.importText": "Import TXT",
     "menu.focus": "Focus Mode",
     "menu.night": "Night Mode",
     "status.saved": "Saved",
@@ -562,9 +564,9 @@ const translations = {
     "status.bodyOutlinePending": "Body/outline pending · just changed",
     "status.outlinePending": "Outline {status} · just changed",
     "status.reverted": "Reverted to last save",
-    "status.local": "Writing locally",
-    "status.syncing": "Sync pending",
-    "status.synced": "Connected to cloud, sync healthy",
+    "status.local": "Local storage",
+    "status.syncing": "Unsaved local changes",
+    "status.synced": "Saved locally",
     "app.version": "Version {version}",
   },
 };
@@ -596,6 +598,7 @@ const refs = {};
 const desktopApi = window.storyForgeDesktop ?? null;
 let appVersion = "";
 let autosaveTimer = null;
+let librarySyncTimer = null;
 let focusTimer = null;
 let suppressHistory = false;
 let draggedChapterId = null;
@@ -846,9 +849,9 @@ function createSeedState() {
     },
     account: {
       loggedIn: false,
-      nickname: "未登录用户",
-      avatar: "SF",
-      syncStatus: "本地写作中",
+      nickname: "本地模式",
+      avatar: "本",
+      syncStatus: "本地已保存",
     },
     theme: {
       presets: themePresets,
@@ -1005,25 +1008,32 @@ function ensureStateIntegrity() {
   state.font.lineHeight = Number(state.font.lineHeight) || 1.9;
   state.font.letterSpacing = Number(state.font.letterSpacing) || 0;
 
-  const folderIds = new Set(state.folders.map((folder) => folder.id));
+  const folderIdMap = createIdMap(state.folders, "folder");
+  const workIdMap = createIdMap(state.works, "work");
+  const chapterIdMap = createIdMap(state.chapters, "chapter");
+  const folderIds = new Set([...folderIdMap.values()]);
   state.folders = state.folders.map((folder) => ({
-    id: String(folder.id),
+    id: mapId(folderIdMap, folder.id, "folder"),
     name: String(folder.name || "未命名文件夹"),
-    parentId: folder.parentId == null || !folderIds.has(String(folder.parentId)) ? null : String(folder.parentId),
+    parentId:
+      folder.parentId == null || !folderIds.has(mapId(folderIdMap, folder.parentId, "folder"))
+        ? null
+        : mapId(folderIdMap, folder.parentId, "folder"),
     createdAt: String(folder.createdAt || new Date().toISOString()),
   }));
 
   const worksById = new Map();
   state.works = state.works.map((work) => {
     const normalized = {
-      id: String(work.id),
+      id: mapId(workIdMap, work.id, "work"),
       title: String(work.title || "未命名作品"),
       description: String(work.description || ""),
-      folderId: work.folderId == null ? null : String(work.folderId),
-      chapterIds: Array.isArray(work.chapterIds) ? work.chapterIds.map((id) => String(id)) : [],
+      folderId: work.folderId == null ? null : mapId(folderIdMap, work.folderId, "folder"),
+      chapterIds: Array.isArray(work.chapterIds) ? work.chapterIds.map((id) => mapId(chapterIdMap, id, "chapter")) : [],
       updatedAt: String(work.updatedAt || new Date().toISOString()),
       createdAt: String(work.createdAt || new Date().toISOString()),
-      lastOpenedChapterId: work.lastOpenedChapterId == null ? null : String(work.lastOpenedChapterId),
+      lastOpenedChapterId:
+        work.lastOpenedChapterId == null ? null : mapId(chapterIdMap, work.lastOpenedChapterId, "chapter"),
     };
     worksById.set(normalized.id, normalized);
     return normalized;
@@ -1033,8 +1043,8 @@ function ensureStateIntegrity() {
     .map((chapter) => {
       const content = String(chapter.content || "");
       return {
-        id: String(chapter.id),
-        workId: String(chapter.workId),
+        id: mapId(chapterIdMap, chapter.id, "chapter"),
+        workId: mapId(workIdMap, chapter.workId, "work"),
         title: String(chapter.title || "未命名章节"),
         content,
         savedContent: String(chapter.savedContent ?? content),
@@ -1079,7 +1089,19 @@ function ensureStateIntegrity() {
     return work;
   });
 
-  normalizeInspirationState();
+  state.activeFolderId = state.activeFolderId == null ? null : mapId(folderIdMap, state.activeFolderId, "folder");
+  state.activeWorkId = state.activeWorkId == null ? null : mapId(workIdMap, state.activeWorkId, "work");
+  state.activeChapterId = state.activeChapterId == null ? null : mapId(chapterIdMap, state.activeChapterId, "chapter");
+  state.ui.libraryWorkViewId =
+    state.ui.libraryWorkViewId == null ? null : mapId(workIdMap, state.ui.libraryWorkViewId, "work");
+  state.ui.chapterPanelFocusedId =
+    state.ui.chapterPanelFocusedId == null ? null : mapId(chapterIdMap, state.ui.chapterPanelFocusedId, "chapter");
+  state.ui.chapterItemMenu = state.ui.chapterItemMenu == null ? null : mapId(chapterIdMap, state.ui.chapterItemMenu, "chapter");
+  state.ui.libraryExpandedFolders = state.ui.libraryExpandedFolders.map((id) =>
+    id === "root-collapsed" ? id : mapId(folderIdMap, id, "folder"),
+  );
+
+  normalizeInspirationState(workIdMap);
 
   if (state.activeFolderId != null && !getFolder(state.activeFolderId)) {
     state.activeFolderId = null;
@@ -1092,7 +1114,7 @@ function ensureStateIntegrity() {
   persist();
 }
 
-function normalizeInspirationState() {
+function normalizeInspirationState(workIdMap = null) {
   const fallbackWorkId = state.activeWorkId ?? state.works[0]?.id ?? null;
   const source =
     state.inspirations && typeof state.inspirations.itemsByWork === "object" && state.inspirations.itemsByWork
@@ -1102,7 +1124,7 @@ function normalizeInspirationState() {
 
   if (Array.isArray(state.inspirations.items)) {
     state.inspirations.items.forEach((item) => {
-      const normalized = normalizeInspirationItem(item, fallbackWorkId);
+      const normalized = normalizeInspirationItem(item, fallbackWorkId, workIdMap);
       if (!normalized) return;
       if (!normalizedByWork[normalized.workId]) normalizedByWork[normalized.workId] = [];
       normalizedByWork[normalized.workId].push(normalized);
@@ -1111,8 +1133,9 @@ function normalizeInspirationState() {
 
   Object.entries(source).forEach(([workId, items]) => {
     if (!Array.isArray(items)) return;
+    const normalizedWorkId = mapId(workIdMap, workId, "work");
     items.forEach((item) => {
-      const normalized = normalizeInspirationItem(item, workId || fallbackWorkId);
+      const normalized = normalizeInspirationItem(item, normalizedWorkId || fallbackWorkId, workIdMap);
       if (!normalized) return;
       if (!normalizedByWork[normalized.workId]) normalizedByWork[normalized.workId] = [];
       normalizedByWork[normalized.workId].push(normalized);
@@ -1137,8 +1160,8 @@ function normalizeInspirationState() {
   }
 }
 
-function normalizeInspirationItem(item, fallbackWorkId = null) {
-  const workId = String(item?.workId || fallbackWorkId || "").trim();
+function normalizeInspirationItem(item, fallbackWorkId = null, workIdMap = null) {
+  const workId = mapId(workIdMap, item?.workId || fallbackWorkId || "", "work");
   if (!workId) return null;
   const content = String(item?.content ?? item?.text ?? "").trim();
   if (!content) return null;
@@ -1150,9 +1173,9 @@ function normalizeInspirationItem(item, fallbackWorkId = null) {
   const primaryCategory = categories[0] || "待补充";
   const createdAt = normalizeIsoDate(item?.createdAt);
   return {
-    id: String(item?.id || uid("inspiration")),
+    id: sanitizeEntityId(item?.id || uid("inspiration"), "inspiration"),
     workId,
-    chapterId: item?.chapterId == null ? null : String(item.chapterId),
+    chapterId: item?.chapterId == null ? null : sanitizeEntityId(item.chapterId, "chapter"),
     content,
     categories,
     category: primaryCategory,
@@ -1166,6 +1189,46 @@ function normalizeInspirationItem(item, fallbackWorkId = null) {
 function normalizeIsoDate(value, fallback = new Date().toISOString()) {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? fallback : parsed.toISOString();
+}
+
+function createIdMap(items, prefix) {
+  const used = new Set();
+  const map = new Map();
+  (items || []).forEach((item) => {
+    const raw = String(item?.id ?? "");
+    const base = sanitizeEntityId(raw, prefix);
+    let id = base;
+    let suffix = 2;
+    while (used.has(id)) {
+      id = `${base}-${suffix}`;
+      suffix += 1;
+    }
+    used.add(id);
+    map.set(raw, id);
+  });
+  return map;
+}
+
+function mapId(idMap, value, prefix) {
+  const raw = String(value ?? "");
+  return idMap?.get(raw) ?? sanitizeEntityId(raw, prefix);
+}
+
+function sanitizeEntityId(value, prefix) {
+  const raw = String(value ?? "").trim();
+  const normalized = raw
+    .replace(/[^A-Za-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  return normalized || `${prefix}-${shortHash(raw || prefix)}`;
+}
+
+function shortHash(value) {
+  let hash = 5381;
+  for (const char of String(value)) {
+    hash = ((hash << 5) + hash + char.charCodeAt(0)) >>> 0;
+  }
+  return hash.toString(36);
 }
 
 function migrateLegacyNestedWorks() {
@@ -1252,6 +1315,15 @@ async function syncLibraryToDesktop() {
   } catch (error) {
     console.error("Failed to sync desktop library", error);
   }
+}
+
+function queueLibrarySyncToDesktop() {
+  if (!desktopApi?.syncLibrary) return;
+  clearTimeout(librarySyncTimer);
+  librarySyncTimer = setTimeout(() => {
+    librarySyncTimer = null;
+    void syncLibraryToDesktop();
+  }, 700);
 }
 
 function getLibraryStatePayload() {
@@ -1442,6 +1514,7 @@ function TopBar() {
             <button data-menu-action="delete-chapter">${t("menu.deleteChapter")}</button>
             <button data-menu-action="history">${t("menu.history")}</button>
             <button data-menu-action="shortcuts">${t("menu.shortcuts")}</button>
+            <button data-menu-action="import-text">${t("menu.importText")}</button>
             <button data-menu-action="export">${t("menu.export")}</button>
             <button data-menu-action="focus">${t("menu.focus")}</button>
             <button data-menu-action="night">${t("menu.night")}</button>
@@ -2547,6 +2620,8 @@ function translateAccountStatus(value) {
   if (value === "本地写作中") return t("status.local");
   if (value === "同步等待中") return t("status.syncing");
   if (value === "已连接云端，同步正常") return t("status.synced");
+  if (value === "本地有未保存修改") return t("status.syncing");
+  if (value === "本地已保存") return t("status.synced");
   return value;
 }
 
@@ -2641,29 +2716,16 @@ function clampOutlinePanelRatio(value) {
 }
 
 function updateSettingsPanel() {
-  if (!state.account.loggedIn) {
-    refs.accountCard.innerHTML = `
+  refs.accountCard.innerHTML = `
+    <div class="account-main">
+      <span class="avatar">${getLanguage() === "en" ? "L" : "本"}</span>
       <div>
-        <strong>${getLanguage() === "en" ? "Signed Out" : "未登录"}</strong>
-        <p>${getLanguage() === "en" ? "Sign in to sync drafts without interrupting your writing." : "登录后可同步草稿，但不会打断当前写作。"}</p>
+        <strong>${getLanguage() === "en" ? "Local Writing Mode" : "本地写作模式"}</strong>
+        <p>${escapeHtml(translateAccountStatus(state.account.syncStatus))}</p>
       </div>
-      <div class="tool-grid two-col">
-        <button class="primary-button" data-account-action="email-login">${getLanguage() === "en" ? "Email Login" : "邮箱登录"}</button>
-        <button class="ghost-button" data-account-action="third-party-login">${getLanguage() === "en" ? "Third-party Login" : "第三方登录"}</button>
-      </div>
-    `;
-  } else {
-    refs.accountCard.innerHTML = `
-      <div class="account-main">
-        <span class="avatar">${escapeHtml(state.account.avatar)}</span>
-        <div>
-          <strong>${escapeHtml(state.account.nickname)}</strong>
-          <p>${escapeHtml(translateAccountStatus(state.account.syncStatus))}</p>
-        </div>
-      </div>
-      <button class="ghost-button" data-account-action="logout">${getLanguage() === "en" ? "Log Out" : "退出登录"}</button>
-    `;
-  }
+    </div>
+    <p>${getLanguage() === "en" ? "Drafts are stored on this device. Export a project file when you need a portable backup." : "草稿保存在当前设备。如需备份或迁移，请导出项目文件。"}</p>
+  `;
 
   refs.themeAccordionHint.textContent = state.ui.settingsThemeExpanded
     ? (getLanguage() === "en" ? "Click to collapse theme settings" : "点击收起主题设置")
@@ -2692,9 +2754,6 @@ function updateSettingsPanel() {
   refs.letterSpacingRange.value = String(state.font.letterSpacing);
   refs.autosaveToggle.checked = state.ui.autosaveEnabled;
 
-  refs.accountCard.querySelectorAll("[data-account-action]").forEach((button) => {
-    button.addEventListener("click", () => handleAccountAction(button.dataset.accountAction));
-  });
 }
 
 function renderInspirationList() {
@@ -3021,6 +3080,90 @@ function openDeleteFolderModal(folderId) {
   updateModal();
 }
 
+function openResetProjectModal() {
+  state.ui.modal = {
+    type: "reset-project",
+    title: getLanguage() === "en" ? "Reset Sample Project" : "重置示例项目",
+    message:
+      getLanguage() === "en"
+        ? "Reset the local library to the sample project? Current folders, works, chapters, and ideas will be replaced."
+        : "确认将本地作品库重置为示例项目？当前文件夹、作品、章节和灵感都会被替换。",
+    actions: [
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "confirm-reset-project", label: getLanguage() === "en" ? "Reset" : "确认重置", primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openImportTextConflictModal(importedText) {
+  state.ui.modal = {
+    type: "import-text-conflict",
+    payload: { importedText },
+    title: getLanguage() === "en" ? "Import TXT" : "导入 TXT",
+    message:
+      getLanguage() === "en"
+        ? "The current chapter already has content. Choose how to import this text file."
+        : "当前章节已有正文，请选择如何导入这个 TXT 文件。",
+    actions: [
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "append-imported-text", label: getLanguage() === "en" ? "Append" : "追加到末尾", primary: false },
+      { id: "replace-with-imported-text", label: getLanguage() === "en" ? "Replace" : "覆盖正文", primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openInspirationCategoryRenameModal(categoryName) {
+  state.ui.modal = {
+    type: "rename-inspiration-category",
+    payload: { categoryName },
+    title: getLanguage() === "en" ? "Rename Category" : "重命名分类",
+    body: `
+      <div class="modal-form">
+        <label>${getLanguage() === "en" ? "Category Name" : "分类名称"}</label>
+        <input id="modal-inspiration-category-name" type="text" value="${escapeAttribute(categoryName)}" />
+      </div>
+    `,
+    actions: [
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "submit-rename-inspiration-category", label: t("editor.save"), primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openInspirationCategoryDeleteModal(categoryName) {
+  const affectedCount = getInspirationCategoryUsageCount(categoryName);
+  state.ui.modal = {
+    type: "delete-inspiration-category",
+    payload: { categoryName },
+    title: getLanguage() === "en" ? "Delete Category" : "删除分类",
+    message:
+      getLanguage() === "en"
+        ? `Delete category "${categoryName}"? This affects ${affectedCount} ideas. Existing ideas will remove this category tag.`
+        : `确认删除分类“${categoryName}”？将影响 ${affectedCount} 条灵感，已有灵感会移除这个分类标签。`,
+    actions: [
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "confirm-delete-inspiration-category", label: t("library.delete"), primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openInspirationCategoryDuplicateModal(categoryName) {
+  state.ui.modal = {
+    type: "duplicate-inspiration-category",
+    title: getLanguage() === "en" ? "Category Already Exists" : "分类已存在",
+    message:
+      getLanguage() === "en"
+        ? `Category "${categoryName}" already exists. Use another name.`
+        : `分类“${categoryName}”已经存在，请换一个名字。`,
+    actions: [{ id: "close-modal", label: getLanguage() === "en" ? "Close" : "关闭", primary: true }],
+  };
+  updateModal();
+}
+
 async function handleModalAction(action) {
   if (action === "cancel-modal" || action === "close-modal" || action === "cancel-back") {
     state.ui.modal = null;
@@ -3121,6 +3264,54 @@ async function handleModalAction(action) {
     state.ui.modal = null;
     await syncLibraryToDesktop();
     updateAll();
+    return;
+  }
+
+  if (action === "confirm-reset-project") {
+    Object.assign(state, createSeedState());
+    state.ui.modal = null;
+    ensureStateIntegrity();
+    await syncLibraryToDesktop();
+    updateAll();
+    return;
+  }
+
+  if (action === "replace-with-imported-text" || action === "append-imported-text") {
+    const importedText = state.ui.modal?.payload?.importedText ?? "";
+    state.ui.modal = null;
+    applyImportedTextToCurrentChapter(importedText, action === "append-imported-text" ? "append" : "replace");
+    updateModal();
+    return;
+  }
+
+  if (action === "submit-rename-inspiration-category") {
+    const from = state.ui.modal?.payload?.categoryName;
+    const next = refs.modalRoot.querySelector("#modal-inspiration-category-name")?.value.trim();
+    if (!from || !next || next === from) {
+      state.ui.modal = null;
+      updateModal();
+      return;
+    }
+    if (hasDuplicateInspirationCategoryName(from, next)) {
+      openInspirationCategoryDuplicateModal(next);
+      return;
+    }
+    renameInspirationCategory(from, next);
+    state.ui.modal = null;
+    renderInspirationList();
+    persist();
+    updateModal();
+    return;
+  }
+
+  if (action === "confirm-delete-inspiration-category") {
+    const categoryName = state.ui.modal?.payload?.categoryName;
+    if (!categoryName) return;
+    deleteInspirationCategory(categoryName);
+    state.ui.modal = null;
+    renderInspirationList();
+    persist();
+    updateModal();
     return;
   }
 
@@ -3385,7 +3576,7 @@ function handleEditorInput() {
   chapter.saveTime = "刚刚修改";
   work.updatedAt = chapter.updatedAt;
   work.lastOpenedChapterId = chapter.id;
-  state.account.syncStatus = state.account.loggedIn ? "同步等待中" : "本地写作中";
+  state.account.syncStatus = "本地有未保存修改";
   state.ui.selectionStart = refs.documentEditor.selectionStart;
   state.ui.selectionEnd = refs.documentEditor.selectionEnd;
   updateTopBar();
@@ -3457,6 +3648,7 @@ function handleNotesInput(event) {
   if (!chapter) return;
   chapter.notes = event.target.value;
   persist();
+  queueLibrarySyncToDesktop();
 }
 
 function handleOutlineInput(event) {
@@ -3511,6 +3703,7 @@ function handleWordGoalInput(event) {
   chapter.wordGoal = Number(event.target.value) || 0;
   updateWorkspace();
   persist();
+  queueLibrarySyncToDesktop();
 }
 
 function handleWritingAction(action) {
@@ -3609,6 +3802,11 @@ async function handleMenuAction(action) {
     return;
   }
 
+  if (action === "import-text") {
+    await importTextToCurrentChapter();
+    return;
+  }
+
   if (action === "focus") {
     state.ui.focusMode = !state.ui.focusMode;
     refs.editorPage.classList.toggle("focus-mode", state.ui.focusMode);
@@ -3659,24 +3857,12 @@ function handleInspirationCategoryAction(action, categoryName) {
   if (!categoryName) return;
 
   if (action === "rename") {
-    const next = prompt("重命名分类", categoryName)?.trim();
-    if (!next || next === categoryName) return;
-    if (hasDuplicateInspirationCategoryName(categoryName, next)) {
-      alert(`分类“${next}”已经存在，请换一个名字。`);
-      return;
-    }
-    renameInspirationCategory(categoryName, next);
-    renderInspirationList();
-    persist();
+    openInspirationCategoryRenameModal(categoryName);
     return;
   }
 
   if (action === "delete") {
-    const affectedCount = getInspirationCategoryUsageCount(categoryName);
-    if (!confirm(`确认删除分类“${categoryName}”？将影响 ${affectedCount} 条灵感，已有灵感会移除这个分类标签。`)) return;
-    deleteInspirationCategory(categoryName);
-    renderInspirationList();
-    persist();
+    openInspirationCategoryDeleteModal(categoryName);
     return;
   }
 
@@ -3690,22 +3876,16 @@ function handleInspirationCategoryAction(action, categoryName) {
 function handleAccountAction(action) {
   const chapter = getCurrentChapter();
   if (action === "email-login") {
-    state.account.loggedIn = true;
-    state.account.nickname = "邮箱用户";
-    state.account.avatar = "EM";
-    state.account.syncStatus = chapter?.dirty ? "同步等待中" : "已连接云端，同步正常";
+    state.account.syncStatus = chapter?.dirty ? "本地有未保存修改" : "本地已保存";
   }
   if (action === "third-party-login") {
-    state.account.loggedIn = true;
-    state.account.nickname = "第三方用户";
-    state.account.avatar = "TP";
-    state.account.syncStatus = chapter?.dirty ? "同步等待中" : "已连接云端，同步正常";
+    state.account.syncStatus = chapter?.dirty ? "本地有未保存修改" : "本地已保存";
   }
   if (action === "logout") {
     state.account.loggedIn = false;
-    state.account.nickname = "未登录用户";
-    state.account.avatar = "SF";
-    state.account.syncStatus = "本地写作中";
+    state.account.nickname = "本地模式";
+    state.account.avatar = "本";
+    state.account.syncStatus = chapter?.dirty ? "本地有未保存修改" : "本地已保存";
   }
   updateSettingsPanel();
   persist();
@@ -3789,7 +3969,7 @@ function handleCreateInspirationCategory() {
   const name = refs.inspirationCategoryCreateInput.value.trim();
   if (!name) return;
   if (!createInspirationCategory(name)) {
-    alert(`分类“${name}”已经存在，请换一个名字。`);
+    openInspirationCategoryDuplicateModal(name);
     return;
   }
   refs.inspirationCategoryCreateInput.value = "";
@@ -3999,6 +4179,7 @@ function applySelectionAction(action) {
     chapter.bookmarks.unshift(selected.slice(0, 18));
     updateSidebar();
     persist();
+    queueLibrarySyncToDesktop();
     state.ui.selectionVisible = false;
     refs.selectionToolbar.classList.add("hidden");
   }
@@ -4013,6 +4194,7 @@ function addBookmarkFromSelection() {
   chapter.bookmarks.unshift(source.slice(0, 18));
   updateSidebar();
   persist();
+  queueLibrarySyncToDesktop();
 }
 
 function pushUndoSnapshot(chapter, content, selectionStart, selectionEnd) {
@@ -4122,7 +4304,7 @@ async function saveCurrentChapter(options = {}) {
     chapter.versions.unshift({ id: uid("version"), label: "自动保存版本", time: `今天 ${timeNow()}`, content: chapter.content });
     chapter.versions = chapter.versions.slice(0, 20);
   }
-  state.account.syncStatus = state.account.loggedIn ? "已连接云端，同步正常" : "本地写作中";
+  state.account.syncStatus = "本地已保存";
   await syncLibraryToDesktop();
   updateTopBar();
   updateWorkspace();
@@ -4565,6 +4747,47 @@ function exportCurrentChapter() {
   URL.revokeObjectURL(url);
 }
 
+async function importTextToCurrentChapter() {
+  const chapter = getCurrentChapter();
+  if (!chapter) return;
+  if (!desktopApi?.openTextFile) {
+    state.ui.modal = {
+      type: "text-import-unavailable",
+      title: getLanguage() === "en" ? "Import TXT" : "导入 TXT",
+      message:
+        getLanguage() === "en"
+          ? "TXT import is available in the desktop app."
+          : "TXT 导入功能仅在桌面应用中可用。",
+      actions: [{ id: "close-modal", label: getLanguage() === "en" ? "Close" : "关闭", primary: true }],
+    };
+    updateModal();
+    return;
+  }
+
+  const result = await desktopApi.openTextFile();
+  if (!result || result.canceled || result.content == null) return;
+  const importedText = String(result.content);
+  if (chapter.content.trim()) {
+    openImportTextConflictModal(importedText);
+    return;
+  }
+  applyImportedTextToCurrentChapter(importedText, "replace");
+}
+
+function applyImportedTextToCurrentChapter(importedText, mode) {
+  const chapter = getCurrentChapter();
+  if (!chapter) return;
+  const current = chapter.content || "";
+  const separator = current && !current.endsWith("\n") ? "\n\n" : "";
+  const nextContent = mode === "append" ? `${current}${separator}${importedText}` : importedText;
+  refs.documentEditor.value = nextContent;
+  refs.documentEditor.focus();
+  refs.documentEditor.selectionStart = nextContent.length;
+  refs.documentEditor.selectionEnd = nextContent.length;
+  handleEditorInput();
+  captureSelection();
+}
+
 async function exportProjectFile() {
   const payload = {
     defaultName: `简纪项目-${new Date().toISOString().slice(0, 10)}.json`,
@@ -4615,9 +4838,7 @@ async function handleDesktopMenuAction(action) {
     return;
   }
   if (action === "reset-project") {
-    Object.assign(state, createSeedState());
-    ensureStateIntegrity();
-    void syncLibraryToDesktop().then(() => updateAll());
+    openResetProjectModal();
   }
 }
 
@@ -4776,7 +4997,7 @@ function renderFolderOptions(selectedId, includeRoot) {
 function queueModalFocus() {
   requestAnimationFrame(() => {
     const preferred = refs.modalRoot.querySelector(
-      "#modal-chapter-title, #modal-work-title, #modal-folder-name, #modal-rename-value",
+      "#modal-chapter-title, #modal-work-title, #modal-folder-name, #modal-rename-value, #modal-inspiration-category-name",
     );
     preferred?.focus();
     if (preferred && "select" in preferred) preferred.select();

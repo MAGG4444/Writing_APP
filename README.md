@@ -1,20 +1,21 @@
-# Story Forge
+# 简纪
 
-Story Forge is a local desktop writing studio for authors who want drafting, outlining, plot planning, tag management, character analysis, and relationship mapping in one app.
+简纪 is a local desktop writing studio for authors who want drafting, chapter organization, notes, outlines, bookmarks, idea capture, typography settings, and project import/export in one app.
 
 ## What It Does
 
-Story Forge is built for long-form fiction workflows. It combines the core writing surfaces authors usually have to split across multiple tools:
+简纪 is built for long-form fiction workflows. It combines the core writing surfaces authors usually have to split across multiple tools:
 
 - A real file-management library page for folders, works, and chapter navigation
-- A right-side writing tools panel for formatting rules, outline, detailed outline, plot pointers, tags, mind-map notes, and character analysis
-- An `Inspiration` page with conversation-style idea capture
-- Search and category creation for inspiration posts
+- A writing workspace with chapter notes, outlines, bookmarks, quick punctuation, find/replace, and word goals
+- A resizable outline panel for focused chapter outline editing
+- An `Ideas` page with conversation-style idea capture
+- Search, sorting, favorites, pinning, and category management for ideas
 - A `Settings` page for app color themes and language switching
 - English and Chinese interface support
 - Built-in offline English and Chinese fonts
 - Responsive layout that adapts to different window sizes
-- Local project persistence plus JSON import/export
+- Local project persistence, JSON import/export, and TXT chapter import/export
 
 ## Desktop App
 
@@ -23,8 +24,9 @@ The project now runs as a standalone Electron desktop app.
 Desktop-specific behavior includes:
 
 - Native desktop window
-- App menu for import, export, and reset actions
-- File-based JSON import/export through system dialogs
+- App menu for project import, project export, and reset actions
+- File-based JSON project import/export through system dialogs
+- TXT import into the current chapter and TXT export from the current chapter
 - Local persisted library data for folders, works, and chapters
 - Packaging support for downloadable builds
 - Custom app icon for packaged builds

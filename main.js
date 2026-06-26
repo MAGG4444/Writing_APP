@@ -48,7 +48,7 @@ function buildMenu(window) {
         },
         {
           label: "Export Project",
-          accelerator: "CmdOrCtrl+S",
+          accelerator: "CmdOrCtrl+Shift+S",
           click: () => sendMenuAction(window, "export-project"),
         },
         { type: "separator" },
@@ -112,33 +112,74 @@ async function ensureLibraryRoot() {
   return root;
 }
 
-function normalizeFolder(folder) {
+function createIdMap(items, prefix) {
+  const used = new Set();
+  const map = new Map();
+  (items || []).forEach((item) => {
+    const raw = String(item?.id ?? "");
+    const base = sanitizeEntityId(raw, prefix);
+    let id = base;
+    let suffix = 2;
+    while (used.has(id)) {
+      id = `${base}-${suffix}`;
+      suffix += 1;
+    }
+    used.add(id);
+    map.set(raw, id);
+  });
+  return map;
+}
+
+function mapId(idMap, value, prefix) {
+  const raw = String(value ?? "");
+  return idMap?.get(raw) ?? sanitizeEntityId(raw, prefix);
+}
+
+function sanitizeEntityId(value, prefix) {
+  const raw = String(value ?? "").trim();
+  const normalized = raw
+    .replace(/[^A-Za-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  return normalized || `${prefix}-${shortHash(raw || prefix)}`;
+}
+
+function shortHash(value) {
+  let hash = 5381;
+  for (const char of String(value)) {
+    hash = ((hash << 5) + hash + char.charCodeAt(0)) >>> 0;
+  }
+  return hash.toString(36);
+}
+
+function normalizeFolder(folder, folderIdMap = null) {
   return {
-    id: String(folder.id),
+    id: mapId(folderIdMap, folder.id, "folder"),
     name: String(folder.name || "未命名文件夹"),
-    parentId: folder.parentId == null ? null : String(folder.parentId),
+    parentId: folder.parentId == null ? null : mapId(folderIdMap, folder.parentId, "folder"),
     createdAt: String(folder.createdAt || new Date().toISOString()),
   };
 }
 
-function normalizeWork(work) {
+function normalizeWork(work, folderIdMap = null, workIdMap = null, chapterIdMap = null) {
   return {
-    id: String(work.id),
+    id: mapId(workIdMap, work.id, "work"),
     title: String(work.title || "未命名作品"),
     description: String(work.description || ""),
-    folderId: work.folderId == null ? null : String(work.folderId),
-    chapterIds: Array.isArray(work.chapterIds) ? work.chapterIds.map((id) => String(id)) : [],
+    folderId: work.folderId == null ? null : mapId(folderIdMap, work.folderId, "folder"),
+    chapterIds: Array.isArray(work.chapterIds) ? work.chapterIds.map((id) => mapId(chapterIdMap, id, "chapter")) : [],
     updatedAt: String(work.updatedAt || new Date().toISOString()),
     createdAt: String(work.createdAt || new Date().toISOString()),
-    lastOpenedChapterId: work.lastOpenedChapterId == null ? null : String(work.lastOpenedChapterId),
+    lastOpenedChapterId:
+      work.lastOpenedChapterId == null ? null : mapId(chapterIdMap, work.lastOpenedChapterId, "chapter"),
   };
 }
 
-function normalizeChapter(chapter) {
+function normalizeChapter(chapter, workIdMap = null, chapterIdMap = null) {
   const content = String(chapter.content || "");
   return {
-    id: String(chapter.id),
-    workId: String(chapter.workId),
+    id: mapId(chapterIdMap, chapter.id, "chapter"),
+    workId: mapId(workIdMap, chapter.workId, "work"),
     title: String(chapter.title || "未命名章节"),
     content,
     savedContent: String(chapter.savedContent ?? content),
@@ -173,8 +214,8 @@ function countWords(text) {
   return cjkCount + latinCount;
 }
 
-function normalizeInspirationItem(item, fallbackWorkId = null) {
-  const workId = String(item?.workId || fallbackWorkId || "").trim();
+function normalizeInspirationItem(item, fallbackWorkId = null, workIdMap = null) {
+  const workId = mapId(workIdMap, item?.workId || fallbackWorkId || "", "work");
   const content = String(item?.content ?? item?.text ?? "").trim();
   if (!workId || !content) return null;
   const categories = Array.isArray(item?.categories)
@@ -185,9 +226,9 @@ function normalizeInspirationItem(item, fallbackWorkId = null) {
   const primaryCategory = categories[0] || "待补充";
   const createdAt = normalizeIsoDate(item?.createdAt);
   return {
-    id: String(item?.id || `inspiration-${Date.now()}`),
+    id: sanitizeEntityId(item?.id || `inspiration-${Date.now()}`, "inspiration"),
     workId,
-    chapterId: item?.chapterId == null ? null : String(item.chapterId),
+    chapterId: item?.chapterId == null ? null : sanitizeEntityId(item.chapterId, "chapter"),
     content,
     categories,
     category: primaryCategory,
@@ -203,7 +244,7 @@ function normalizeIsoDate(value, fallback = new Date().toISOString()) {
   return Number.isNaN(parsed.getTime()) ? fallback : parsed.toISOString();
 }
 
-function normalizeInspirations(inspirations, works, activeWorkId = null) {
+function normalizeInspirations(inspirations, works, activeWorkId = null, workIdMap = null) {
   const normalized = {
     categoryOrder: Array.isArray(inspirations?.categoryOrder)
       ? inspirations.categoryOrder.map((item) => String(item).trim()).filter(Boolean)
@@ -219,7 +260,7 @@ function normalizeInspirations(inspirations, works, activeWorkId = null) {
 
   if (Array.isArray(inspirations?.items)) {
     inspirations.items.forEach((item) => {
-      const next = normalizeInspirationItem(item, fallbackWorkId);
+      const next = normalizeInspirationItem(item, fallbackWorkId, workIdMap);
       if (!next || !workIds.has(next.workId)) return;
       if (!normalized.itemsByWork[next.workId]) normalized.itemsByWork[next.workId] = [];
       normalized.itemsByWork[next.workId].push(next);
@@ -227,9 +268,10 @@ function normalizeInspirations(inspirations, works, activeWorkId = null) {
   }
 
   Object.entries(sourceByWork).forEach(([workId, items]) => {
-    if (!Array.isArray(items) || !workIds.has(workId)) return;
-    normalized.itemsByWork[workId] = items
-      .map((item) => normalizeInspirationItem(item, workId))
+    const normalizedWorkId = mapId(workIdMap, workId, "work");
+    if (!Array.isArray(items) || !workIds.has(normalizedWorkId)) return;
+    normalized.itemsByWork[normalizedWorkId] = items
+      .map((item) => normalizeInspirationItem(item, normalizedWorkId, workIdMap))
       .filter(Boolean)
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
   });
@@ -282,23 +324,34 @@ function normalizeLibraryState(payload) {
   }
 
   const state = payload && typeof payload === "object" ? payload : {};
-  const folders = Array.isArray(state.folders) ? state.folders.map(normalizeFolder) : [];
-  const chapters = Array.isArray(state.chapters) ? state.chapters.map(normalizeChapter) : [];
+  const folderIdMap = createIdMap(Array.isArray(state.folders) ? state.folders : [], "folder");
+  const workIdMap = createIdMap(Array.isArray(state.works) ? state.works : [], "work");
+  const chapterIdMap = createIdMap(Array.isArray(state.chapters) ? state.chapters : [], "chapter");
+  const folders = Array.isArray(state.folders) ? state.folders.map((folder) => normalizeFolder(folder, folderIdMap)) : [];
+  const folderIds = new Set(folders.map((folder) => folder.id));
+  folders.forEach((folder) => {
+    if (folder.parentId != null && !folderIds.has(folder.parentId)) folder.parentId = null;
+  });
+  const chapters = Array.isArray(state.chapters)
+    ? state.chapters.map((chapter) => normalizeChapter(chapter, workIdMap, chapterIdMap))
+    : [];
   const chapterMap = new Map(chapters.map((chapter) => [chapter.id, chapter]));
   const works = Array.isArray(state.works)
     ? state.works.map((work) => {
-        const normalized = normalizeWork(work);
+        const normalized = normalizeWork(work, folderIdMap, workIdMap, chapterIdMap);
         normalized.chapterIds = normalized.chapterIds.filter((chapterId) => chapterMap.has(chapterId));
         if (!normalized.lastOpenedChapterId || !chapterMap.has(normalized.lastOpenedChapterId)) {
           normalized.lastOpenedChapterId = normalized.chapterIds[0] ?? null;
         }
+        if (normalized.folderId != null && !folderIds.has(normalized.folderId)) normalized.folderId = null;
         return normalized;
       })
     : [];
 
   const workIds = new Set(works.map((work) => work.id));
   const filteredChapters = chapters.filter((chapter) => workIds.has(chapter.workId));
-  const inspirations = normalizeInspirations(state.inspirations, works, state.activeWorkId);
+  const activeWorkId = state.activeWorkId == null ? null : mapId(workIdMap, state.activeWorkId, "work");
+  const inspirations = normalizeInspirations(state.inspirations, works, activeWorkId, workIdMap);
   return { folders, works, chapters: filteredChapters, inspirations };
 }
 
