@@ -2,10 +2,12 @@ const path = require("node:path");
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require("electron");
 const fs = require("node:fs/promises");
 const { TextDecoder } = require("node:util");
+const { createProjectManager } = require("./project-manager");
 
 const isMac = process.platform === "darwin";
 const LIBRARY_DIRNAME = "jian-ji-library-v2";
 const LIBRARY_STATE_FILE = "library-state.json";
+const AI_SETTINGS_FILE = "ai-settings.json";
 const WORKS_DIRNAME = "works";
 const WORK_INSPIRATIONS_FILE = "inspirations.json";
 
@@ -119,6 +121,10 @@ function getLibraryStatePath() {
   return path.join(getLibraryRoot(), LIBRARY_STATE_FILE);
 }
 
+function getAiSettingsPath() {
+  return path.join(getLibraryRoot(), AI_SETTINGS_FILE);
+}
+
 function getWorksRoot() {
   return path.join(getLibraryRoot(), WORKS_DIRNAME);
 }
@@ -133,6 +139,10 @@ function getWorkInspirationsPath(workId) {
 
 function getWorkTextsDirectory(workId) {
   return path.join(getWorkDirectory(workId), "texts");
+}
+
+function getProjectManager() {
+  return createProjectManager({ projectsRoot: getWorksRoot() });
 }
 
 async function ensureLibraryRoot() {
@@ -407,6 +417,7 @@ async function saveLibrary(libraryPayload) {
   await Promise.all(
     library.works.map(async (work) => {
       await fs.mkdir(getWorkDirectory(work.id), { recursive: true });
+      await getProjectManager().ensureProject(work.id);
       await fs.writeFile(
         getWorkInspirationsPath(work.id),
         JSON.stringify(library.inspirations.itemsByWork[work.id] ?? [], null, 2),
@@ -466,6 +477,77 @@ function sanitizeFileName(value) {
   return normalized || "imported-text.txt";
 }
 
+const AI_PROVIDER_DEFAULTS = {
+  openai: "gpt-5.5",
+  claude: "claude-sonnet-4-5",
+  deepseek: "deepseek-v4-flash",
+  custom: "",
+};
+const AI_PROVIDER_BASE_URLS = {
+  openai: "https://api.openai.com/v1",
+  claude: "https://api.anthropic.com/v1",
+  deepseek: "https://api.deepseek.com",
+  custom: "",
+};
+const AI_REQUEST_TIMEOUT_MS = 60000;
+const AI_MAX_OUTPUT_TOKENS = 4096;
+
+function normalizeAiSettings(value) {
+  const source = value && typeof value === "object" ? value : {};
+  const provider = Object.hasOwn(AI_PROVIDER_DEFAULTS, source.provider) ? source.provider : "openai";
+  const model = String(source.model ?? AI_PROVIDER_DEFAULTS[provider] ?? "").trim().slice(0, 120);
+  const apiKey = String(source.apiKey ?? "").trim().slice(0, 4096);
+  const baseUrl = String(source.baseUrl ?? "").trim().slice(0, 300);
+  return {
+    provider,
+    model,
+    apiKey,
+    baseUrl,
+    updatedAt: String(source.updatedAt || ""),
+  };
+}
+
+function getPublicAiSettings(settings) {
+  const normalized = normalizeAiSettings(settings);
+  return {
+    provider: normalized.provider,
+    model: normalized.model,
+    baseUrl: normalized.baseUrl,
+    hasApiKey: Boolean(normalized.apiKey),
+    apiKeyPreview: normalized.apiKey ? `...${normalized.apiKey.slice(-4)}` : "",
+    updatedAt: normalized.updatedAt,
+  };
+}
+
+function mergeAiSettingsForSave(existingSettings, nextSettings, updatedAt = new Date().toISOString()) {
+  const existing = normalizeAiSettings(existingSettings);
+  const next = normalizeAiSettings(nextSettings);
+  return {
+    ...next,
+    apiKey: next.apiKey || existing.apiKey,
+    updatedAt,
+  };
+}
+
+async function loadAiSettings() {
+  await ensureLibraryRoot();
+  try {
+    const raw = await fs.readFile(getAiSettingsPath(), "utf8");
+    return normalizeAiSettings(JSON.parse(raw));
+  } catch (error) {
+    if (error.code === "ENOENT") return normalizeAiSettings({});
+    throw error;
+  }
+}
+
+async function saveAiSettings(payload) {
+  await ensureLibraryRoot();
+  const existing = await loadAiSettings();
+  const settings = mergeAiSettingsForSave(existing, payload);
+  await fs.writeFile(getAiSettingsPath(), JSON.stringify(settings, null, 2), "utf8");
+  return settings;
+}
+
 function countReplacementCharacters(text) {
   return (String(text || "").match(/\uFFFD/g) || []).length;
 }
@@ -478,6 +560,277 @@ function decodeTextBuffer(buffer) {
   const gbText = new TextDecoder("gb18030").decode(source);
   if (countReplacementCharacters(gbText) < countReplacementCharacters(utf8Text)) return gbText;
   return utf8Text;
+}
+
+function normalizeWritingAgentPayload(payload) {
+  const source = payload && typeof payload === "object" ? payload : {};
+  const chapter = source.chapter && typeof source.chapter === "object" ? source.chapter : {};
+  const work = source.work && typeof source.work === "object" ? source.work : {};
+  return {
+    language: source.language === "en" ? "en" : "zh",
+    work: {
+      id: String(work.id || ""),
+      title: String(work.title || ""),
+    },
+    chapter: {
+      id: String(chapter.id || ""),
+      title: String(chapter.title || ""),
+      content: String(chapter.content || ""),
+      outline: String(chapter.outline || ""),
+      notes: String(chapter.notes || ""),
+    },
+  };
+}
+
+function createMockWritingAgentDraft(payload) {
+  const normalized = normalizeWritingAgentPayload(payload);
+  const { chapter, work, language } = normalized;
+  const title = chapter.title.trim();
+  const content = chapter.content.trim();
+  const outline = chapter.outline.trim();
+  const notes = chapter.notes.trim();
+  const source = content || outline || notes;
+
+  if (language === "en") {
+    if (!source) {
+      return "Mock AI version\n\nAdd body text, outline notes, or chapter notes first. A real AI provider will use that context in a later phase.";
+    }
+    return [
+      `Mock AI version${title ? ` for ${title}` : ""}`,
+      work.title ? `Work: ${work.title}` : "",
+      "",
+      content || "No body text yet.",
+      "",
+      "Revision direction:",
+      outline ? `- Follow the outline: ${outline}` : "- Preserve the current chapter direction.",
+      notes ? `- Keep the chapter note in mind: ${notes}` : "- Tighten pacing and keep the scene focused.",
+    ].filter((line, index, lines) => line || lines[index - 1]).join("\n");
+  }
+
+  if (!source) {
+    return "模拟 AI 新版\n\n请先补充本章正文、大纲或备注。后续接入真实 AI 后，会基于这些上下文生成新版。";
+  }
+  return [
+    `模拟 AI 新版${title ? `：${title}` : ""}`,
+    work.title ? `作品：${work.title}` : "",
+    "",
+    content || "当前章节还没有正文。",
+    "",
+    "改写方向：",
+    outline ? `- 参考本章大纲：${outline}` : "- 保留当前章节走向。",
+    notes ? `- 结合章节备注：${notes}` : "- 收紧节奏，让场景推进更明确。",
+  ].filter((line, index, lines) => line || lines[index - 1]).join("\n");
+}
+
+function buildWritingAgentPrompt(payload) {
+  const normalized = normalizeWritingAgentPayload(payload);
+  const { work, chapter, language } = normalized;
+  const isEnglish = language === "en";
+  return [
+    isEnglish
+      ? "Create a revised version of the current chapter draft. Preserve the author's intent, do not summarize, and return only the revised chapter text."
+      : "请为当前章节生成一个改写后的新版。保留作者原意，不要总结，不要解释，只返回改写后的章节正文。",
+    "",
+    isEnglish ? `Work: ${work.title || "Untitled"}` : `作品：${work.title || "未命名作品"}`,
+    isEnglish ? `Chapter: ${chapter.title || "Untitled chapter"}` : `章节：${chapter.title || "未命名章节"}`,
+    "",
+    isEnglish ? "Chapter notes:" : "章节备注：",
+    chapter.notes || (isEnglish ? "(none)" : "（无）"),
+    "",
+    isEnglish ? "Chapter outline:" : "章节大纲：",
+    chapter.outline || (isEnglish ? "(none)" : "（无）"),
+    "",
+    isEnglish ? "Current chapter draft:" : "当前章节正文：",
+    chapter.content || (isEnglish ? "(empty)" : "（空）"),
+  ].join("\n");
+}
+
+function buildOpenAiResponseRequest(settings, payload) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  return {
+    model: normalizedSettings.model || AI_PROVIDER_DEFAULTS.openai,
+    instructions:
+      normalizeWritingAgentPayload(payload).language === "en"
+        ? "You are a careful fiction writing editor. Produce polished prose while preserving voice, continuity, and concrete story details."
+        : "你是一名谨慎的小说写作编辑。请在保留作者声音、连续性和具体情节细节的前提下，生成更成熟的正文版本。",
+    input: buildWritingAgentPrompt(payload),
+  };
+}
+
+function getWritingAgentSystemPrompt(payload) {
+  return normalizeWritingAgentPayload(payload).language === "en"
+    ? "You are a careful fiction writing editor. Produce polished prose while preserving voice, continuity, and concrete story details. Return only the revised chapter text."
+    : "你是一名谨慎的小说写作编辑。请在保留作者声音、连续性和具体情节细节的前提下，生成更成熟的正文版本。只返回改写后的章节正文。";
+}
+
+function extractOpenAiOutputText(responseBody) {
+  if (typeof responseBody?.output_text === "string" && responseBody.output_text.trim()) return responseBody.output_text;
+  if (!Array.isArray(responseBody?.output)) return "";
+  return responseBody.output
+    .flatMap((item) => (Array.isArray(item?.content) ? item.content : []))
+    .map((content) => content?.text)
+    .filter((text) => typeof text === "string" && text.trim())
+    .join("\n");
+}
+
+function normalizeBaseUrl(value) {
+  return String(value || "").trim().replace(/\/+$/g, "");
+}
+
+function buildProviderEndpoint(settings, pathSuffix) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  const defaultBaseUrl = AI_PROVIDER_BASE_URLS[normalizedSettings.provider] || "";
+  const baseUrl = normalizeBaseUrl(normalizedSettings.baseUrl || defaultBaseUrl);
+  if (!baseUrl) {
+    throw new Error("Base URL is required for this AI provider.");
+  }
+  return `${baseUrl}/${String(pathSuffix || "").replace(/^\/+/g, "")}`;
+}
+
+function buildOpenAiCompatibleChatRequest(settings, payload) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  return {
+    model: normalizedSettings.model || AI_PROVIDER_DEFAULTS[normalizedSettings.provider] || AI_PROVIDER_DEFAULTS.deepseek,
+    messages: [
+      { role: "system", content: getWritingAgentSystemPrompt(payload) },
+      { role: "user", content: buildWritingAgentPrompt(payload) },
+    ],
+    stream: false,
+  };
+}
+
+function extractChatCompletionOutputText(responseBody) {
+  const message = responseBody?.choices?.[0]?.message;
+  if (typeof message?.content === "string") return message.content;
+  if (Array.isArray(message?.content)) {
+    return message.content
+      .map((part) => part?.text || part?.content)
+      .filter((text) => typeof text === "string" && text.trim())
+      .join("\n");
+  }
+  return "";
+}
+
+function buildClaudeMessagesRequest(settings, payload) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  return {
+    model: normalizedSettings.model || AI_PROVIDER_DEFAULTS.claude,
+    max_tokens: AI_MAX_OUTPUT_TOKENS,
+    system: getWritingAgentSystemPrompt(payload),
+    messages: [{ role: "user", content: buildWritingAgentPrompt(payload) }],
+  };
+}
+
+function extractClaudeOutputText(responseBody) {
+  if (!Array.isArray(responseBody?.content)) return "";
+  return responseBody.content
+    .map((item) => item?.text)
+    .filter((text) => typeof text === "string" && text.trim())
+    .join("\n");
+}
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = AI_REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const body = await response.json().catch(() => ({}));
+    return { response, body };
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error("AI request timed out. Please try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function getProviderErrorMessage(provider, body, status) {
+  const errorValue = body?.error;
+  return (
+    errorValue?.message ||
+    body?.message ||
+    (typeof errorValue === "string" ? errorValue : "") ||
+    `${provider} request failed with status ${status}`
+  );
+}
+
+async function runOpenAiWritingAgent(settings, payload) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  if (!normalizedSettings.apiKey) {
+    throw new Error("OpenAI API key is not configured.");
+  }
+  const { response, body } = await fetchJsonWithTimeout(buildProviderEndpoint(normalizedSettings, "responses"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${normalizedSettings.apiKey}`,
+    },
+    body: JSON.stringify(buildOpenAiResponseRequest(normalizedSettings, payload)),
+  });
+  if (!response.ok) {
+    const message = getProviderErrorMessage("OpenAI", body, response.status);
+    throw new Error(message);
+  }
+  const content = extractOpenAiOutputText(body).trim();
+  if (!content) throw new Error("OpenAI returned an empty response.");
+  return {
+    content,
+    provider: "openai",
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function runOpenAiCompatibleWritingAgent(settings, payload, providerLabel) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  if (!normalizedSettings.apiKey) {
+    throw new Error(`${providerLabel} API key is not configured.`);
+  }
+  const { response, body } = await fetchJsonWithTimeout(buildProviderEndpoint(normalizedSettings, "chat/completions"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${normalizedSettings.apiKey}`,
+    },
+    body: JSON.stringify(buildOpenAiCompatibleChatRequest(normalizedSettings, payload)),
+  });
+  if (!response.ok) {
+    throw new Error(getProviderErrorMessage(providerLabel, body, response.status));
+  }
+  const content = extractChatCompletionOutputText(body).trim();
+  if (!content) throw new Error(`${providerLabel} returned an empty response.`);
+  return {
+    content,
+    provider: normalizedSettings.provider,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function runClaudeWritingAgent(settings, payload) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  if (!normalizedSettings.apiKey) {
+    throw new Error("Claude API key is not configured.");
+  }
+  const { response, body } = await fetchJsonWithTimeout(buildProviderEndpoint(normalizedSettings, "messages"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": normalizedSettings.apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify(buildClaudeMessagesRequest(normalizedSettings, payload)),
+  });
+  if (!response.ok) {
+    throw new Error(getProviderErrorMessage("Claude", body, response.status));
+  }
+  const content = extractClaudeOutputText(body).trim();
+  if (!content) throw new Error("Claude returned an empty response.");
+  return {
+    content,
+    provider: "claude",
+    generatedAt: new Date().toISOString(),
+  };
 }
 
 async function ensureUniqueFilePath(directory, fileName) {
@@ -563,6 +916,38 @@ ipcMain.handle("text:store-import", async (_event, payload) => {
 });
 
 ipcMain.handle("app:getVersion", () => app.getVersion());
+
+ipcMain.handle("ai:write", async (_event, payload) => {
+  const normalized = normalizeWritingAgentPayload(payload);
+  const settings = await loadAiSettings();
+  if (settings.provider === "openai") {
+    return runOpenAiWritingAgent(settings, normalized);
+  }
+  if (settings.provider === "claude") {
+    return runClaudeWritingAgent(settings, normalized);
+  }
+  if (settings.provider === "deepseek") {
+    return runOpenAiCompatibleWritingAgent(settings, normalized, "DeepSeek");
+  }
+  if (settings.provider === "custom") {
+    return runOpenAiCompatibleWritingAgent(settings, normalized, "Custom AI provider");
+  }
+  throw new Error(`Unsupported AI provider: ${settings.provider}`);
+});
+
+ipcMain.handle("ai:settings:get", async () => getPublicAiSettings(await loadAiSettings()));
+
+ipcMain.handle("ai:settings:save", async (_event, payload) => getPublicAiSettings(await saveAiSettings(payload)));
+
+ipcMain.handle("project-materials:ensure", async (_event, workId) => getProjectManager().ensureProject(workId));
+
+ipcMain.handle("project-materials:read", async (_event, workId) => getProjectManager().readProject(workId));
+
+ipcMain.handle("project-materials:save", async (_event, payload) =>
+  getProjectManager().saveProjectMaterial(payload?.workId, payload?.material, payload?.content),
+);
+
+ipcMain.handle("project-materials:list-chapters", async (_event, workId) => getProjectManager().listProjectChapters(workId));
 
 ipcMain.handle("library:bootstrap", async (_event, seedLibrary) => {
   const library = await loadLibrary();

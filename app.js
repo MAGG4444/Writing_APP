@@ -431,6 +431,19 @@ const translations = {
     "workspace.writing": "写作",
     "workspace.inspiration": "灵感记录",
     "workspace.settings": "设置",
+    "ai.title": "AI 写作助手",
+    "ai.readyTitle": "准备生成新版",
+    "ai.readyCopy": "后续阶段会在这里显示当前章节的旧版与 AI 新版对照。当前阶段只开放入口，不会修改正文。",
+    "ai.emptyTitle": "请先选择章节",
+    "ai.emptyCopy": "打开一个章节后，AI 写作助手会读取当前正文、大纲和备注作为上下文。",
+    "ai.originalVersion": "旧版",
+    "ai.generatedVersion": "AI 新版",
+    "ai.originalEmpty": "当前章节还没有正文。",
+    "ai.generatedPending": "AI 新版会在下一阶段生成并显示在这里。",
+    "ai.generateMock": "生成模拟新版",
+    "ai.generatedMock": "本地模拟生成",
+    "ai.applyDraft": "覆盖旧版本",
+    "ai.beforeApplyVersion": "AI 覆盖前版本",
     "workspace.punctuation": "快捷标点",
     "workspace.phrases": "常用短语",
     "workspace.wordGoal": "字数目标",
@@ -610,6 +623,19 @@ const translations = {
     "workspace.writing": "Writing",
     "workspace.inspiration": "Ideas",
     "workspace.settings": "Settings",
+    "ai.title": "AI Writing Agent",
+    "ai.readyTitle": "Ready to generate a new version",
+    "ai.readyCopy": "A later phase will show the current chapter beside the AI version here. This phase only adds the entry point and will not modify your draft.",
+    "ai.emptyTitle": "Select a chapter first",
+    "ai.emptyCopy": "Open a chapter so the AI writing agent can use the current body, outline, and notes as context.",
+    "ai.originalVersion": "Original",
+    "ai.generatedVersion": "AI Version",
+    "ai.originalEmpty": "This chapter has no body text yet.",
+    "ai.generatedPending": "The AI version will be generated and shown here in the next phase.",
+    "ai.generateMock": "Generate Mock Version",
+    "ai.generatedMock": "Local mock result",
+    "ai.applyDraft": "Replace Original",
+    "ai.beforeApplyVersion": "Before AI replacement",
     "workspace.punctuation": "Quick Punctuation",
     "workspace.phrases": "Common Phrases",
     "workspace.wordGoal": "Word Goal",
@@ -703,6 +729,12 @@ const DEFAULT_CHAPTER_TEMPLATE = {
   },
 };
 
+const aiProviderDefaults = {
+  openai: "gpt-5.5",
+  claude: "claude-sonnet-4-5",
+  deepseek: "deepseek-v4-flash",
+  custom: "",
+};
 const state = loadState();
 const refs = {};
 const desktopApi = window.storyForgeDesktop ?? null;
@@ -723,6 +755,7 @@ init();
 async function init() {
   ensureStateIntegrity();
   await bootstrapDesktopLibrary();
+  await loadAiSettings();
   renderAppShell();
   await loadAppVersion();
   updateAll();
@@ -966,6 +999,15 @@ function createSeedState() {
       avatar: "本",
       syncStatus: "本地已保存",
     },
+    aiSettings: {
+      provider: "openai",
+      model: aiProviderDefaults.openai,
+      baseUrl: "",
+      hasApiKey: false,
+      apiKeyPreview: "",
+      updatedAt: "",
+      saveStatus: "",
+    },
     theme: {
       presets: themePresets,
       currentId: "cream",
@@ -1013,6 +1055,9 @@ function createSeedState() {
       inspirationComposeTags: ["待补充"],
       inspirationEditingId: null,
       inspirationCategoryManagerExpanded: false,
+      aiDraftsByChapter: {},
+      aiReviewMode: false,
+      aiGenerationPending: false,
       settingsThemeExpanded: false,
       modal: null,
     },
@@ -1088,6 +1133,8 @@ function ensureStateIntegrity() {
   state.inspirations.activeCategory = String(state.inspirations.activeCategory || "all");
   state.inspirations.search = String(state.inspirations.search || "");
   state.inspirations.sort = ["newest", "oldest", "favorite"].includes(state.inspirations.sort) ? state.inspirations.sort : "newest";
+  state.aiSettings = normalizePublicAiSettings(state.aiSettings);
+  state.activeTab = ["writing", "inspiration", "settings"].includes(state.activeTab) ? state.activeTab : "writing";
   state.ui.leftSidebarCollapsed ??= false;
   state.ui.rightSidebarCollapsed ??= false;
   state.ui.libraryScrollTop ??= 0;
@@ -1114,6 +1161,9 @@ function ensureStateIntegrity() {
   state.ui.inspirationComposeTags ??= ["待补充"];
   state.ui.inspirationEditingId ??= null;
   state.ui.inspirationCategoryManagerExpanded ??= false;
+  state.ui.aiDraftsByChapter = state.ui.aiDraftsByChapter && typeof state.ui.aiDraftsByChapter === "object" ? state.ui.aiDraftsByChapter : {};
+  state.ui.aiReviewMode = Boolean(state.ui.aiReviewMode);
+  state.ui.aiGenerationPending = false;
   state.ui.settingsThemeExpanded ??= false;
   state.ui.focusTarget = ["document", "outline"].includes(state.ui.focusTarget) ? state.ui.focusTarget : "document";
   state.theme ??= {};
@@ -1418,6 +1468,74 @@ async function bootstrapDesktopLibrary() {
   } catch (error) {
     console.error("Failed to bootstrap desktop library", error);
   }
+}
+
+function normalizePublicAiSettings(value) {
+  const source = value && typeof value === "object" ? value : {};
+  const provider = Object.hasOwn(aiProviderDefaults, source.provider) ? source.provider : "openai";
+  return {
+    provider,
+    model: String(source.model || aiProviderDefaults[provider] || "").trim(),
+    baseUrl: String(source.baseUrl || "").trim(),
+    hasApiKey: Boolean(source.hasApiKey),
+    apiKeyPreview: String(source.apiKeyPreview || ""),
+    updatedAt: String(source.updatedAt || ""),
+    saveStatus: String(source.saveStatus || ""),
+  };
+}
+
+async function loadAiSettings() {
+  if (!desktopApi?.getAiSettings) return;
+  try {
+    state.aiSettings = normalizePublicAiSettings(await desktopApi.getAiSettings());
+  } catch (error) {
+    console.error("Failed to load AI settings", error);
+    state.aiSettings = {
+      ...normalizePublicAiSettings(state.aiSettings),
+      saveStatus: getLanguage() === "en" ? "Failed to load local AI settings." : "AI 本地设置加载失败。",
+    };
+  }
+}
+
+async function saveAiSettingsFromForm() {
+  const provider = refs.aiProviderSelect?.value || "openai";
+  const payload = {
+    provider,
+    model: refs.aiModelInput?.value || aiProviderDefaults[provider] || "",
+    baseUrl: refs.aiBaseUrlInput?.value || "",
+    apiKey: refs.aiApiKeyInput?.value || "",
+  };
+
+  if (!desktopApi?.saveAiSettings) {
+    state.aiSettings = {
+      ...normalizePublicAiSettings(payload),
+      hasApiKey: Boolean(payload.apiKey),
+      apiKeyPreview: payload.apiKey ? `...${payload.apiKey.slice(-4)}` : "",
+      updatedAt: new Date().toISOString(),
+      saveStatus: getLanguage() === "en" ? "Saved for this browser session only." : "已保存到当前浏览器会话。",
+    };
+    updateAiSettingsPanel();
+    return;
+  }
+
+  state.aiSettings = {
+    ...state.aiSettings,
+    saveStatus: getLanguage() === "en" ? "Saving..." : "保存中……",
+  };
+  updateAiSettingsPanel();
+  try {
+    state.aiSettings = {
+      ...normalizePublicAiSettings(await desktopApi.saveAiSettings(payload)),
+      saveStatus: getLanguage() === "en" ? "Saved locally." : "已保存到本地。",
+    };
+  } catch (error) {
+    console.error("Failed to save AI settings", error);
+    state.aiSettings = {
+      ...normalizePublicAiSettings(state.aiSettings),
+      saveStatus: getLanguage() === "en" ? "Save failed." : "保存失败。",
+    };
+  }
+  updateAiSettingsPanel();
 }
 
 async function syncLibraryToDesktop() {
@@ -1729,6 +1847,7 @@ function DocumentEditor() {
           </div>
         </section>
       </div>
+      <section class="ai-review-surface hidden" id="ai-review-surface"></section>
     </section>
   `;
 }
@@ -1822,6 +1941,16 @@ function WritingPanel() {
           <small>${t("workspace.bookmarkEntryHint")}</small>
         </button>
       </div>
+      <section class="tool-card writing-ai-card">
+        <div class="section-line">
+          <strong>${t("ai.title")}</strong>
+          <small>${getLanguage() === "en" ? "Open a side-by-side revision view for the current chapter." : "进入当前章节的左右对照改稿界面。"}</small>
+        </div>
+        <div class="ai-review-actions">
+          <button class="primary-button" data-ai-action="open-review">${getLanguage() === "en" ? "Review with AI" : "AI 改稿"}</button>
+          <button class="ghost-button" data-ai-action="generate-mock">${getLanguage() === "en" ? "Generate AI Version" : "生成 AI 新版"}</button>
+        </div>
+      </section>
     </div>
   `;
 }
@@ -1878,6 +2007,7 @@ function SettingsPanel() {
   return `
     <div class="settings-panel" id="settings-panel">
       ${AccountCard()}
+      ${AiSettingsCard()}
       ${ThemeSelector()}
       ${FontSelector()}
       <section class="tool-card">
@@ -1896,6 +2026,34 @@ function SettingsPanel() {
 
 function AccountCard() {
   return `<section class="account-card tool-card" id="account-card"></section>`;
+}
+
+function AiSettingsCard() {
+  return `
+    <section class="tool-card ai-settings-card" id="ai-settings-card">
+      <div class="section-line">
+        <strong>${getLanguage() === "en" ? "AI Provider" : "AI 模型配置"}</strong>
+        <small>${getLanguage() === "en" ? "Keys are stored in a local app settings file on this device, not in exported projects." : "密钥以本机应用配置文件保存，不写入作品导出文件。"}</small>
+      </div>
+      <label>${getLanguage() === "en" ? "Provider" : "服务商"}</label>
+      <select id="ai-provider-select">
+        <option value="openai">OpenAI</option>
+        <option value="claude">Claude</option>
+        <option value="deepseek">DeepSeek</option>
+        <option value="custom">${getLanguage() === "en" ? "Custom" : "自定义"}</option>
+      </select>
+      <label>${getLanguage() === "en" ? "Model" : "模型"}</label>
+      <input id="ai-model-input" type="text" autocomplete="off" />
+      <label>${getLanguage() === "en" ? "API Key" : "API Key"}</label>
+      <input id="ai-api-key-input" type="password" autocomplete="off" placeholder="${escapeAttribute(getLanguage() === "en" ? "Leave blank to keep the saved key" : "留空则保留已保存密钥")}" />
+      <label>${getLanguage() === "en" ? "Base URL" : "Base URL"}</label>
+      <input id="ai-base-url-input" type="url" autocomplete="off" placeholder="${escapeAttribute(getLanguage() === "en" ? "Optional for custom-compatible APIs" : "兼容接口可选填写")}" />
+      <div class="ai-settings-footer">
+        <small id="ai-settings-status"></small>
+        <button class="primary-button" id="save-ai-settings-button">${getLanguage() === "en" ? "Save AI Settings" : "保存 AI 设置"}</button>
+      </div>
+    </section>
+  `;
 }
 
 function ThemeSelector() {
@@ -1968,6 +2126,7 @@ function collectRefs() {
   refs.editorMain = document.getElementById("editor-main");
   refs.editorStack = document.getElementById("editor-stack");
   refs.editorPrimaryPane = document.getElementById("editor-primary-pane");
+  refs.aiReviewSurface = document.getElementById("ai-review-surface");
   refs.documentEditorStatus = document.getElementById("document-editor-status");
   refs.documentEditor = document.getElementById("document-editor");
   refs.chapterSidebar = document.getElementById("chapter-sidebar");
@@ -2020,6 +2179,12 @@ function collectRefs() {
   refs.cancelInspirationButton = document.getElementById("cancel-inspiration-button");
   refs.inspirationChatList = document.getElementById("inspiration-chat-list");
   refs.accountCard = document.getElementById("account-card");
+  refs.aiProviderSelect = document.getElementById("ai-provider-select");
+  refs.aiModelInput = document.getElementById("ai-model-input");
+  refs.aiApiKeyInput = document.getElementById("ai-api-key-input");
+  refs.aiBaseUrlInput = document.getElementById("ai-base-url-input");
+  refs.aiSettingsStatus = document.getElementById("ai-settings-status");
+  refs.saveAiSettingsButton = document.getElementById("save-ai-settings-button");
   refs.themeAccordionButton = document.getElementById("theme-accordion-button");
   refs.themeAccordionHint = document.getElementById("theme-accordion-hint");
   refs.themeList = document.getElementById("theme-list");
@@ -2130,6 +2295,8 @@ function bindEvents() {
   refs.addInspirationCategoryButton.addEventListener("click", addSelectedInspirationCategory);
   refs.saveInspirationButton.addEventListener("click", saveComposedInspiration);
   refs.cancelInspirationButton.addEventListener("click", closeInspirationComposer);
+  refs.aiProviderSelect.addEventListener("change", handleAiProviderChange);
+  refs.saveAiSettingsButton.addEventListener("click", () => void saveAiSettingsFromForm());
   refs.themeAccordionButton.addEventListener("click", toggleThemeAccordion);
   refs.fontFamilySelect.addEventListener("change", (event) => {
     state.font.currentId = event.target.value;
@@ -2305,6 +2472,12 @@ async function handleDelegatedClick(event) {
   const writingAction = event.target.closest("[data-writing-action]");
   if (writingAction) {
     handleWritingAction(writingAction.dataset.writingAction);
+    return;
+  }
+
+  const aiAction = event.target.closest("[data-ai-action]");
+  if (aiAction) {
+    await handleAiAction(aiAction.dataset.aiAction);
     return;
   }
 
@@ -2897,27 +3070,248 @@ function updateSidebar() {
 
 function updateWorkspace() {
   const chapter = getCurrentChapter();
+  const isAiReviewMode = Boolean(state.ui.aiReviewMode && chapter);
+  refs.editorPage.classList.toggle("ai-review-mode", isAiReviewMode);
+  refs.editorStack.classList.toggle("hidden", isAiReviewMode);
+  refs.aiReviewSurface.classList.toggle("hidden", !isAiReviewMode);
   refs.workspaceSidebar.classList.toggle("sidebar-collapsed", state.ui.rightSidebarCollapsed);
-  refs.rightSidebarReopenButton.classList.toggle("hidden", !state.ui.rightSidebarCollapsed);
+  refs.rightSidebarReopenButton.classList.toggle("hidden", !state.ui.rightSidebarCollapsed || isAiReviewMode);
   refs.workspaceTabs.forEach((button) => {
     button.classList.toggle("active", button.dataset.tab === state.activeTab);
   });
   refs.workspacePanels.forEach((panel) => {
     panel.classList.toggle("hidden", panel.dataset.panel !== state.activeTab);
   });
-  refs.findReplaceBar.classList.toggle("hidden", !state.ui.replaceOpen);
-  refs.selectionToolbar.classList.toggle("hidden", !state.ui.selectionVisible);
+  refs.findReplaceBar.classList.toggle("hidden", !state.ui.replaceOpen || isAiReviewMode);
+  refs.selectionToolbar.classList.toggle("hidden", !state.ui.selectionVisible || isAiReviewMode);
   refs.resumeHint.textContent = t("workspace.lastPosition", { position: state.ui.selectionStart });
   updateWordGoalPanel(chapter);
   refs.focusTimerValue.textContent = formatDuration(getFocusSeconds());
   refs.inspirationCompose.classList.toggle("hidden", !state.ui.inspirationComposeOpen);
-  refs.outlinePanel.classList.toggle("hidden", !state.outlinePanelOpen || !chapter);
+  refs.outlinePanel.classList.toggle("hidden", !state.outlinePanelOpen || !chapter || isAiReviewMode);
   refs.outlineExpandButton.disabled = !chapter;
   refs.outlinePanelStatus.textContent = getOutlineStatusText();
   refs.documentEditorStatus.textContent = chapter
     ? t("editor.bodyStatus", { status: translateSaveStatus(chapter.saveStatus), time: translateSaveTime(chapter.saveTime) })
     : t("editor.bodyStatusDefault");
+  updateAiReviewSurface(chapter);
   syncOutlinePanelLayout();
+}
+
+function updateAiReviewSurface(chapter = getCurrentChapter()) {
+  if (!refs.aiReviewSurface) return;
+  if (!chapter) {
+    refs.aiReviewSurface.innerHTML = "";
+    state.ui.aiReviewMode = false;
+    return;
+  }
+  const originalContent = chapter.content.trim();
+  const aiDraft = state.ui.aiDraftsByChapter?.[chapter.id]?.content ?? "";
+  const isGenerating = Boolean(state.ui.aiGenerationPending);
+  refs.aiReviewSurface.innerHTML = `
+    <div class="ai-review-mode-shell">
+      <header class="ai-review-mode-toolbar">
+        <div>
+          <span class="section-kicker">${t("ai.title")}</span>
+          <strong>${getLanguage() === "en" ? "AI Review Mode" : "AI 改稿模式"}</strong>
+          <small>${getLanguage() === "en" ? "Compare the current chapter with the generated version." : "左侧为当前旧版，右侧为 AI 生成版本。"}</small>
+        </div>
+        <div class="ai-review-actions">
+          <button class="ghost-button" data-ai-action="close-review">${getLanguage() === "en" ? "Exit" : "退出改稿模式"}</button>
+          <button class="ghost-button" data-ai-action="generate-mock" ${isGenerating ? "disabled" : ""}>${isGenerating ? (getLanguage() === "en" ? "Generating..." : "生成中……") : (getLanguage() === "en" ? "Regenerate" : "重新生成")}</button>
+          ${aiDraft ? `<button class="primary-button" data-ai-action="apply-draft" ${isGenerating ? "disabled" : ""}>${t("ai.applyDraft")}</button>` : ""}
+        </div>
+      </header>
+      ${renderAiCompareGrid(chapter, originalContent, aiDraft)}
+    </div>
+  `;
+}
+
+function renderAiCompareGrid(chapter, originalContent = chapter?.content?.trim() ?? "", aiDraft = "") {
+  return `
+    <div class="ai-compare-grid">
+      <section class="ai-compare-pane">
+        <div class="ai-compare-head">
+          <strong>${t("ai.originalVersion")}</strong>
+          <small>${t("library.wordCount", { count: countWords(chapter?.content ?? "") })}</small>
+        </div>
+        <pre>${originalContent ? escapeHtml(originalContent) : escapeHtml(t("ai.originalEmpty"))}</pre>
+      </section>
+      <section class="ai-compare-pane ${aiDraft ? "" : "is-pending"}">
+        <div class="ai-compare-head">
+          <strong>${t("ai.generatedVersion")}</strong>
+          <small>${aiDraft ? t("ai.generatedMock") : (getLanguage() === "en" ? "Pending" : "待生成")}</small>
+        </div>
+        <pre>${escapeHtml(aiDraft || t("ai.generatedPending"))}</pre>
+      </section>
+    </div>
+  `;
+}
+
+async function handleAiAction(action) {
+  const chapter = getCurrentChapter();
+  if (!chapter) return;
+  if (action === "open-review") {
+    state.ui.aiReviewMode = true;
+    updateWorkspace();
+    persist();
+    return;
+  }
+  if (action === "close-review") {
+    state.ui.aiReviewMode = false;
+    updateWorkspace();
+    persist();
+    return;
+  }
+  if (action === "generate-mock") {
+    if (state.ui.aiGenerationPending) return;
+    state.ui.aiGenerationPending = true;
+    updateAiReviewSurface(chapter);
+    try {
+      const result = await runWritingAgentForChapter(chapter);
+      state.ui.aiDraftsByChapter[chapter.id] = {
+        content: result.content,
+        provider: result.provider,
+        generatedAt: result.generatedAt,
+      };
+      persist();
+    } catch (error) {
+      console.error("Failed to run writing agent", error);
+      openInfoModal(
+        getLanguage() === "en" ? "AI Writing Agent" : "AI 写作助手",
+        error?.message || (getLanguage() === "en" ? "Generation failed." : "生成失败。"),
+      );
+    } finally {
+      state.ui.aiGenerationPending = false;
+      updateAiReviewSurface(chapter);
+    }
+    return;
+  }
+  if (action === "apply-draft") {
+    const aiDraft = state.ui.aiDraftsByChapter?.[chapter.id]?.content ?? "";
+    if (!aiDraft) return;
+    applyAiDraftToCurrentChapter(chapter, aiDraft);
+  }
+}
+
+async function runWritingAgentForChapter(chapter) {
+  const payload = createWritingAgentPayload(chapter);
+  if (desktopApi?.runWritingAgent) {
+    const result = await desktopApi.runWritingAgent(payload);
+    if (result?.content) {
+      return {
+        content: String(result.content),
+        provider: String(result.provider || "desktop-mock"),
+        generatedAt: String(result.generatedAt || new Date().toISOString()),
+      };
+    }
+  }
+  return {
+    content: createMockAiDraft(chapter, getLanguage()),
+    provider: "browser-mock",
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+function createWritingAgentPayload(chapter) {
+  const work = getCurrentWork();
+  return {
+    language: getLanguage(),
+    work: {
+      id: work?.id ?? "",
+      title: work?.title ?? "",
+    },
+    chapter: {
+      id: chapter?.id ?? "",
+      title: chapter?.title ?? "",
+      content: chapter?.content ?? "",
+      outline: chapter?.outline ?? "",
+      notes: chapter?.notes ?? "",
+    },
+  };
+}
+
+function applyAiDraftToCurrentChapter(chapter, aiDraft) {
+  const work = getCurrentWork();
+  if (!chapter || !work || !aiDraft) return;
+  const previousContent = chapter.content || "";
+  if (previousContent === aiDraft) return;
+
+  if (!chapter.versions[0] || chapter.versions[0].content !== previousContent) {
+    chapter.versions.unshift(
+      createAiPreApplyVersion(previousContent, getLanguage(), uid("version"), `${getLanguage() === "en" ? "Today" : "今天"} ${timeNow()}`),
+    );
+    chapter.versions = chapter.versions.slice(0, 20);
+  }
+
+  if (refs.documentEditor) {
+    pushUndoSnapshot(chapter, refs.documentEditor.value, refs.documentEditor.selectionStart, refs.documentEditor.selectionEnd);
+    refs.documentEditor.value = aiDraft;
+    refs.documentEditor.selectionStart = aiDraft.length;
+    refs.documentEditor.selectionEnd = aiDraft.length;
+  }
+
+  const updatedAt = new Date().toISOString();
+  chapter.content = aiDraft;
+  chapter.wordCount = countWords(aiDraft);
+  chapter.updatedAt = updatedAt;
+  chapter.dirty = chapter.content !== chapter.savedContent;
+  chapter.saveStatus = state.ui.autosaveEnabled ? "保存中" : "未保存";
+  chapter.saveTime = "刚刚修改";
+  work.updatedAt = updatedAt;
+  work.lastOpenedChapterId = chapter.id;
+  state.account.syncStatus = "本地有未保存修改";
+  state.ui.selectionStart = aiDraft.length;
+  state.ui.selectionEnd = aiDraft.length;
+  updateTopBar();
+  updateWorkspace();
+  persist();
+  queueAutosave();
+}
+
+function createAiPreApplyVersion(content, language = "zh", id = "version-ai-before", timeLabel = "") {
+  return {
+    id,
+    label: language === "en" ? "Before AI replacement" : "AI 覆盖前版本",
+    time: timeLabel || (language === "en" ? "Before replacement" : "覆盖前"),
+    content: String(content ?? ""),
+  };
+}
+
+function createMockAiDraft(chapter, language = "zh") {
+  const title = String(chapter?.title || "").trim();
+  const content = String(chapter?.content || "").trim();
+  const outline = String(chapter?.outline || "").trim();
+  const notes = String(chapter?.notes || "").trim();
+  const source = content || outline || notes;
+
+  if (language === "en") {
+    if (!source) {
+      return "Mock AI version\n\nAdd body text, outline notes, or chapter notes first. A real AI provider will use that context in a later phase.";
+    }
+    return [
+      `Mock AI version${title ? ` for ${title}` : ""}`,
+      "",
+      content || "No body text yet.",
+      "",
+      "Revision direction:",
+      outline ? `- Follow the outline: ${outline}` : "- Preserve the current chapter direction.",
+      notes ? `- Keep the chapter note in mind: ${notes}` : "- Tighten pacing and keep the scene focused.",
+    ].join("\n");
+  }
+
+  if (!source) {
+    return "模拟 AI 新版\n\n请先补充本章正文、大纲或备注。后续接入真实 AI 后，会基于这些上下文生成新版。";
+  }
+  return [
+    `模拟 AI 新版${title ? `：${title}` : ""}`,
+    "",
+    content || "当前章节还没有正文。",
+    "",
+    "改写方向：",
+    outline ? `- 参考本章大纲：${outline}` : "- 保留当前章节走向。",
+    notes ? `- 结合章节备注：${notes}` : "- 收紧节奏，让场景推进更明确。",
+  ].join("\n");
 }
 
 function syncOutlineStateWithCurrentChapter() {
@@ -3147,6 +3541,8 @@ function updateSettingsPanel() {
     </div>
   `;
 
+  updateAiSettingsPanel();
+
   refs.themeAccordionHint.textContent = state.ui.settingsThemeExpanded
     ? (getLanguage() === "en" ? "Click to collapse theme settings" : "点击收起主题设置")
     : (getLanguage() === "en" ? "Click to expand theme settings" : "点击展开主题设置");
@@ -3174,6 +3570,27 @@ function updateSettingsPanel() {
   refs.letterSpacingRange.value = String(state.font.letterSpacing);
   refs.autosaveToggle.checked = state.ui.autosaveEnabled;
 
+}
+
+function updateAiSettingsPanel() {
+  if (!refs.aiProviderSelect) return;
+  const settings = normalizePublicAiSettings(state.aiSettings);
+  refs.aiProviderSelect.value = settings.provider;
+  refs.aiModelInput.value = settings.model || aiProviderDefaults[settings.provider] || "";
+  refs.aiBaseUrlInput.value = settings.baseUrl;
+  refs.aiApiKeyInput.value = "";
+  const savedKeyText = settings.hasApiKey
+    ? (getLanguage() === "en" ? `Saved key ${settings.apiKeyPreview}` : `已保存密钥 ${settings.apiKeyPreview}`)
+    : (getLanguage() === "en" ? "No API key saved." : "尚未保存 API Key。");
+  const savedAtText = settings.updatedAt ? ` · ${formatRelativeTime(settings.updatedAt)}` : "";
+  refs.aiSettingsStatus.textContent = settings.saveStatus || `${savedKeyText}${savedAtText}`;
+}
+
+function handleAiProviderChange(event) {
+  const provider = event.target.value;
+  if (!refs.aiModelInput.value || refs.aiModelInput.value === aiProviderDefaults[state.aiSettings.provider]) {
+    refs.aiModelInput.value = aiProviderDefaults[provider] || "";
+  }
 }
 
 function renderInspirationList() {

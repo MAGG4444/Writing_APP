@@ -1809,6 +1809,154 @@ textarea {
   gap: 12px;
 }
 
+.ai-empty-state {
+  align-content: start;
+}
+
+.ai-empty-state strong {
+  font-size: 15px;
+}
+
+.ai-empty-state small {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.ai-review-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.ai-review-intro {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.ai-review-intro strong {
+  display: block;
+  font-size: 15px;
+}
+
+.ai-review-intro small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.ai-review-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ai-review-actions .primary-button,
+.ai-review-actions .ghost-button {
+  white-space: nowrap;
+}
+
+.ai-review-actions .primary-button:disabled,
+.ai-review-actions .ghost-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+  transform: none;
+}
+
+.writing-ai-card {
+  display: grid;
+  gap: 12px;
+}
+
+.ai-settings-card input,
+.ai-settings-card select {
+  width: 100%;
+}
+
+.ai-settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ai-settings-footer small {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.ai-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ai-compare-pane {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto minmax(160px, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
+  overflow: hidden;
+}
+
+.ai-compare-pane.is-pending {
+  background: color-mix(in srgb, var(--panel) 78%, var(--panel-strong));
+}
+
+.ai-compare-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ai-compare-head small {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ai-compare-pane pre {
+  margin: 0;
+  padding: 14px;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow: auto;
+  font-family: var(--font-family);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.ai-compare-pane.is-pending pre {
+  color: var(--muted);
+}
+
+@media (max-width: 1280px) {
+  .ai-compare-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-review-intro {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-review-actions {
+    justify-content: stretch;
+  }
+
+  .ai-review-actions .primary-button,
+  .ai-review-actions .ghost-button {
+    width: 100%;
+  }
+
+  .ai-settings-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .tool-group,
 .tool-card,
 .account-card {
@@ -2343,6 +2491,80 @@ textarea {
 .editor-page.focus-mode .workspace-sidebar,
 .editor-page.focus-mode .edge-toggle {
   display: none;
+}
+
+.editor-page.ai-review-mode .chapter-sidebar,
+.editor-page.ai-review-mode .workspace-sidebar,
+.editor-page.ai-review-mode .edge-toggle {
+  display: none;
+}
+
+.editor-page.ai-review-mode .editor-column {
+  width: 100%;
+}
+
+.ai-review-surface {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+}
+
+.ai-review-mode-shell {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 72%, transparent), color-mix(in srgb, var(--panel-strong) 58%, transparent));
+}
+
+.ai-review-mode-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
+}
+
+.ai-review-mode-toolbar strong,
+.ai-review-mode-toolbar small {
+  display: block;
+}
+
+.ai-review-mode-toolbar small {
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.ai-review-mode-shell .ai-compare-grid {
+  min-height: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ai-review-mode-shell .ai-compare-pane {
+  grid-template-rows: auto minmax(0, 1fr);
+  border-radius: 14px;
+}
+
+.ai-review-mode-shell .ai-compare-pane pre {
+  min-height: 0;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+@media (max-width: 820px) {
+  .ai-review-mode-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-review-mode-shell .ai-compare-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .editor-page.focus-mode .document-editor {
