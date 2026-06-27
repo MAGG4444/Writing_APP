@@ -24,6 +24,31 @@ function createWindow() {
     },
   });
 
+  let closeAfterFlush = false;
+  let closeFlushTimer = null;
+  const continueClose = () => {
+    if (closeAfterFlush || window.isDestroyed()) return;
+    closeAfterFlush = true;
+    if (closeFlushTimer) clearTimeout(closeFlushTimer);
+    window.close();
+  };
+  const handleCloseReady = (event) => {
+    if (event.sender !== window.webContents) return;
+    continueClose();
+  };
+
+  ipcMain.on("app:close-ready", handleCloseReady);
+  window.on("close", (event) => {
+    if (closeAfterFlush || window.webContents.isDestroyed()) return;
+    event.preventDefault();
+    window.webContents.send("app:prepare-close");
+    closeFlushTimer = setTimeout(continueClose, 1500);
+  });
+  window.on("closed", () => {
+    if (closeFlushTimer) clearTimeout(closeFlushTimer);
+    ipcMain.off("app:close-ready", handleCloseReady);
+  });
+
   window.loadFile(path.join(__dirname, "index.html"));
   buildMenu(window);
 }

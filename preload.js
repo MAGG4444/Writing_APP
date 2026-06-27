@@ -8,6 +8,10 @@ contextBridge.exposeInMainWorld("storyForgeDesktop", {
   saveTextFile: (payload) => ipcRenderer.invoke("text:save", payload),
   bootstrapLibrary: (seedWorks) => ipcRenderer.invoke("library:bootstrap", seedWorks),
   syncLibrary: (works) => ipcRenderer.invoke("library:sync", works),
+  closeReady: () => ipcRenderer.send("app:close-ready"),
+  onPrepareClose: (callback) => {
+    ipcRenderer.on("app:prepare-close", () => callback());
+  },
   onMenuAction: (callback) => {
     ipcRenderer.on("menu-action", (_event, action) => callback(action));
   },

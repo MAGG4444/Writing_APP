@@ -333,6 +333,7 @@ const translations = {
     "library.createFolder": "新建文件夹",
     "library.createWork": "新建作品",
     "library.searchPlaceholder": "搜索当前目录下的文件夹或作品",
+    "library.fullTextSearchPlaceholder": "搜索全部章节、正文、备注",
     "library.sort.updated": "最近编辑优先",
     "library.sort.title": "名称 A-Z",
     "library.sort.created": "最新创建优先",
@@ -359,13 +360,27 @@ const translations = {
     "library.delete": "删除",
     "library.emptyTitle": "当前文件夹为空",
     "library.emptyCopy": "可以新建文件夹或新建作品。",
+    "library.emptyRootTitle": "还没有作品",
+    "library.emptyRootCopy": "新建一个作品，或先创建文件夹来整理你的写作项目。",
+    "library.emptySearchTitle": "没有匹配结果",
+    "library.emptySearchCopy": "换一个关键词，或清空搜索查看全部内容。",
     "library.allWorks": "全部作品",
+    "library.recent": "最近编辑",
+    "library.recentHint": "快速回到刚写过的章节",
+    "library.recentEmpty": "编辑章节后会显示在这里。",
+    "library.globalSearch": "全文搜索",
+    "library.globalSearchHint": "搜索作品、章节标题、正文、备注和大纲",
+    "library.globalSearchEmpty": "输入关键词后搜索全部章节。",
+    "library.globalSearchNoResults": "没有找到匹配章节。",
+    "library.globalSearchSummary": "找到 {count} 个匹配章节",
     "chapter.new": "新建章节",
     "chapter.all": "全部章节",
     "chapter.currentSummary": "{count} 章 · 当前 {title}",
     "chapter.noneSelected": "未选择",
     "chapter.noManageable": "当前没有可管理的章节。",
     "chapter.noChapters": "当前作品还没有章节。",
+    "chapter.emptyWorkTitle": "这个作品还没有章节",
+    "chapter.emptyWorkCopy": "先新建一个章节，再开始写作。",
     "chapter.actionsTitle": "章节操作",
     "editor.backTitle": "返回文件管理页",
     "editor.noWork": "未选择作品",
@@ -390,6 +405,11 @@ const translations = {
     "editor.bodyStatusDefault": "正文内容实时跟随当前章节切换。",
     "editor.bodyStatus": "正文 {status} · {time}",
     "editor.emptyPlaceholder": "请先从目录页选择章节或新建章节。",
+    "error.openFailedTitle": "无法打开",
+    "error.openChapterMissing": "这个章节不存在，可能已经被删除。",
+    "error.openWorkEmpty": "这个作品还没有章节，请先新建章节。",
+    "error.importUnavailable": "当前环境不支持项目导入，请在桌面应用中使用。",
+    "error.importCanceled": "已取消导入。",
     "editor.placeholder": "开始写作……",
     "editor.findPlaceholder": "查找",
     "editor.replacePlaceholder": "替换为",
@@ -409,6 +429,13 @@ const translations = {
     "workspace.punctuation": "快捷标点",
     "workspace.phrases": "常用短语",
     "workspace.wordGoal": "字数目标",
+    "workspace.chapterProgress": "章节进度",
+    "workspace.wordGoalRemaining": "还差 {count} 字",
+    "workspace.wordGoalUnset": "未设置目标",
+    "workspace.wordGoalReached": "已达成目标",
+    "workspace.wordGoalOver": "超出 {count} 字",
+    "workspace.workWords": "作品总字数",
+    "workspace.workGoalTotal": "作品目标 {count} 字",
     "workspace.focusTimer": "专注计时",
     "workspace.focusTimerHint": "仅在编辑器获得焦点时计时",
     "workspace.resume": "断点续写",
@@ -429,12 +456,30 @@ const translations = {
     "menu.history": "历史版本",
     "menu.shortcuts": "？ 快捷键",
     "menu.export": "导出",
+    "shortcuts.quickTitle": "写作",
+    "shortcuts.navigationTitle": "导航",
+    "shortcuts.projectTitle": "项目",
+    "shortcuts.moreTitle": "更多操作",
+    "shortcuts.tip": "这些快捷键来自当前应用的实际操作。可随时关闭这个面板。",
     "menu.importText": "导入 TXT",
     "menu.focus": "专注模式",
     "menu.night": "夜间模式",
+    "export.previewTitle": "导出预览",
+    "export.chapterTitle": "导出当前章节",
+    "export.projectTitle": "导出完整项目",
+    "export.scope": "范围",
+    "export.format": "格式",
+    "export.chapters": "章节数",
+    "export.words": "字数",
+    "export.works": "作品数",
+    "export.fileName": "文件名",
+    "export.currentChapter": "当前章节",
+    "export.fullProject": "完整本地作品库",
+    "export.confirm": "确认导出",
     "status.saved": "已保存",
     "status.saving": "保存中",
     "status.unsaved": "未保存",
+    "status.failed": "保存失败",
     "status.justChanged": "刚刚修改",
     "status.noChapter": "未打开章节",
     "status.bodyOutlinePending": "正文/大纲待保存 · 刚刚修改",
@@ -443,6 +488,7 @@ const translations = {
     "status.local": "本地保存",
     "status.syncing": "本地有未保存修改",
     "status.synced": "本地已保存",
+    "status.syncFailed": "本地保存失败",
     "app.version": "版本 {version}",
   },
   en: {
@@ -457,6 +503,7 @@ const translations = {
     "library.createFolder": "New Folder",
     "library.createWork": "New Work",
     "library.searchPlaceholder": "Search folders or works in this folder",
+    "library.fullTextSearchPlaceholder": "Search all chapters, text, and notes",
     "library.sort.updated": "Recently Edited",
     "library.sort.title": "Name A-Z",
     "library.sort.created": "Newest Created",
@@ -483,13 +530,27 @@ const translations = {
     "library.delete": "Delete",
     "library.emptyTitle": "This folder is empty",
     "library.emptyCopy": "Create a folder or work to start.",
+    "library.emptyRootTitle": "No works yet",
+    "library.emptyRootCopy": "Create a work, or create folders to organize writing projects.",
+    "library.emptySearchTitle": "No matches",
+    "library.emptySearchCopy": "Try another keyword, or clear search to view everything.",
     "library.allWorks": "All Works",
+    "library.recent": "Recently Edited",
+    "library.recentHint": "Jump back to chapters you worked on",
+    "library.recentEmpty": "Edited chapters will appear here.",
+    "library.globalSearch": "Full Text Search",
+    "library.globalSearchHint": "Search works, chapter titles, body, notes, and outlines",
+    "library.globalSearchEmpty": "Enter a keyword to search every chapter.",
+    "library.globalSearchNoResults": "No matching chapters found.",
+    "library.globalSearchSummary": "{count} matching chapters",
     "chapter.new": "New Chapter",
     "chapter.all": "All Chapters",
     "chapter.currentSummary": "{count} chapters · Current {title}",
     "chapter.noneSelected": "None",
     "chapter.noManageable": "No manageable chapters yet.",
     "chapter.noChapters": "This work has no chapters yet.",
+    "chapter.emptyWorkTitle": "This work has no chapters",
+    "chapter.emptyWorkCopy": "Create a chapter first, then start writing.",
     "chapter.actionsTitle": "Chapter Actions",
     "editor.backTitle": "Back to Library",
     "editor.noWork": "No Work Selected",
@@ -514,6 +575,11 @@ const translations = {
     "editor.bodyStatusDefault": "Body content follows the current chapter.",
     "editor.bodyStatus": "Body {status} · {time}",
     "editor.emptyPlaceholder": "Select or create a chapter from the library first.",
+    "error.openFailedTitle": "Cannot Open",
+    "error.openChapterMissing": "This chapter no longer exists. It may have been deleted.",
+    "error.openWorkEmpty": "This work has no chapters. Create a chapter first.",
+    "error.importUnavailable": "Project import is available in the desktop app.",
+    "error.importCanceled": "Import canceled.",
     "editor.placeholder": "Start writing...",
     "editor.findPlaceholder": "Find",
     "editor.replacePlaceholder": "Replace with",
@@ -533,6 +599,13 @@ const translations = {
     "workspace.punctuation": "Quick Punctuation",
     "workspace.phrases": "Common Phrases",
     "workspace.wordGoal": "Word Goal",
+    "workspace.chapterProgress": "Chapter Progress",
+    "workspace.wordGoalRemaining": "{count} words left",
+    "workspace.wordGoalUnset": "No goal set",
+    "workspace.wordGoalReached": "Goal reached",
+    "workspace.wordGoalOver": "{count} words over",
+    "workspace.workWords": "Work Total",
+    "workspace.workGoalTotal": "Work goal {count} words",
     "workspace.focusTimer": "Focus Timer",
     "workspace.focusTimerHint": "Counts only while the editor is focused",
     "workspace.resume": "Resume Point",
@@ -553,12 +626,30 @@ const translations = {
     "menu.history": "Version History",
     "menu.shortcuts": "? Shortcuts",
     "menu.export": "Export",
+    "shortcuts.quickTitle": "Writing",
+    "shortcuts.navigationTitle": "Navigation",
+    "shortcuts.projectTitle": "Project",
+    "shortcuts.moreTitle": "More Actions",
+    "shortcuts.tip": "These shortcuts reflect the app's actual actions. Close this panel anytime.",
     "menu.importText": "Import TXT",
     "menu.focus": "Focus Mode",
     "menu.night": "Night Mode",
+    "export.previewTitle": "Export Preview",
+    "export.chapterTitle": "Export Current Chapter",
+    "export.projectTitle": "Export Full Project",
+    "export.scope": "Scope",
+    "export.format": "Format",
+    "export.chapters": "Chapters",
+    "export.words": "Words",
+    "export.works": "Works",
+    "export.fileName": "File Name",
+    "export.currentChapter": "Current chapter",
+    "export.fullProject": "Full local library",
+    "export.confirm": "Export",
     "status.saved": "Saved",
     "status.saving": "Saving",
     "status.unsaved": "Unsaved",
+    "status.failed": "Save failed",
     "status.justChanged": "Just changed",
     "status.noChapter": "No chapter open",
     "status.bodyOutlinePending": "Body/outline pending · just changed",
@@ -567,6 +658,7 @@ const translations = {
     "status.local": "Local storage",
     "status.syncing": "Unsaved local changes",
     "status.synced": "Saved locally",
+    "status.syncFailed": "Local save failed",
     "app.version": "Version {version}",
   },
 };
@@ -599,6 +691,8 @@ const desktopApi = window.storyForgeDesktop ?? null;
 let appVersion = "";
 let autosaveTimer = null;
 let librarySyncTimer = null;
+let librarySyncSequence = 0;
+let librarySyncPending = false;
 let focusTimer = null;
 let suppressHistory = false;
 let draggedChapterId = null;
@@ -885,6 +979,7 @@ function createSeedState() {
       libraryEntityMenu: null,
       libraryEntityMenuPosition: null,
       librarySearch: "",
+      libraryFullTextSearch: "",
       librarySort: "updated-desc",
       libraryWorkViewId: "work-1",
       libraryExpandedFolders: [],
@@ -979,7 +1074,8 @@ function ensureStateIntegrity() {
   state.ui.libraryCreateOpen ??= false;
   state.ui.libraryEntityMenu ??= null;
   state.ui.libraryEntityMenuPosition ??= null;
-  state.ui.librarySearch ??= "";
+  state.ui.librarySearch = String(state.ui.librarySearch ?? "");
+  state.ui.libraryFullTextSearch = String(state.ui.libraryFullTextSearch ?? "");
   state.ui.librarySort ??= "updated-desc";
   state.ui.libraryWorkViewId ??= null;
   state.ui.libraryExpandedFolders = Array.isArray(state.ui.libraryExpandedFolders)
@@ -1302,28 +1398,56 @@ async function bootstrapDesktopLibrary() {
 }
 
 async function syncLibraryToDesktop() {
-  if (!desktopApi?.syncLibrary) return;
+  if (!desktopApi?.syncLibrary) return true;
+  const syncSequence = ++librarySyncSequence;
+  librarySyncPending = true;
+  state.account.syncStatus = "本地有未保存修改";
+  refreshSaveIndicators();
   const preferredFolderId = state.activeFolderId;
   const preferredWorkId = state.activeWorkId;
   const preferredChapterId = state.activeChapterId;
   try {
     const library = await desktopApi.syncLibrary(getLibraryStatePayload());
+    if (syncSequence !== librarySyncSequence) return true;
+    librarySyncPending = false;
+    state.account.syncStatus = "本地已保存";
     applyLibraryState(library);
     state.activeFolderId = preferredFolderId;
     normalizeActiveSelection(preferredWorkId, preferredChapterId);
     persist();
+    refreshSaveIndicators();
+    return true;
   } catch (error) {
     console.error("Failed to sync desktop library", error);
+    if (syncSequence === librarySyncSequence) {
+      librarySyncPending = false;
+      state.account.syncStatus = "本地保存失败";
+      refreshSaveIndicators();
+      persist();
+    }
+    return false;
   }
 }
 
 function queueLibrarySyncToDesktop() {
   if (!desktopApi?.syncLibrary) return;
   clearTimeout(librarySyncTimer);
+  librarySyncPending = true;
+  state.account.syncStatus = "本地有未保存修改";
+  refreshSaveIndicators();
   librarySyncTimer = setTimeout(() => {
     librarySyncTimer = null;
     void syncLibraryToDesktop();
   }, 700);
+}
+
+async function flushLibrarySyncToDesktop() {
+  if (!desktopApi?.syncLibrary) return;
+  if (librarySyncTimer) {
+    clearTimeout(librarySyncTimer);
+    librarySyncTimer = null;
+  }
+  await syncLibraryToDesktop();
 }
 
 function getLibraryStatePayload() {
@@ -1413,6 +1537,7 @@ function FileManagerPage() {
         <div class="library-breadcrumb" id="library-breadcrumb"></div>
         <div class="library-toolbar">
           <input id="library-search-input" type="search" placeholder="${escapeAttribute(t("library.searchPlaceholder"))}" />
+          <input id="library-full-text-search-input" type="search" placeholder="${escapeAttribute(t("library.fullTextSearchPlaceholder"))}" />
           <select id="library-sort-select">
             <option value="updated-desc">${t("library.sort.updated")}</option>
             <option value="title-asc">${t("library.sort.title")}</option>
@@ -1623,10 +1748,22 @@ function WritingPanel() {
         <button class="ghost-button" data-writing-action="next">${getLanguage() === "en" ? "Next Chapter" : "下一章节"}</button>
       </div>
       <div class="tool-grid three-col">
-        <div class="tool-card stat-card">
+        <div class="tool-card stat-card word-goal-card">
           <label>${t("workspace.wordGoal")}</label>
           <input id="word-goal-input" type="number" min="0" />
+          <div class="word-goal-meter" aria-hidden="true">
+            <span id="word-goal-progress-bar"></span>
+          </div>
           <small id="word-goal-progress"></small>
+          <div class="word-goal-stats">
+            <span>${t("workspace.chapterProgress")}</span>
+            <strong id="word-goal-balance">--</strong>
+          </div>
+          <div class="word-goal-stats">
+            <span>${t("workspace.workWords")}</span>
+            <strong id="work-word-total">--</strong>
+          </div>
+          <small id="work-goal-total"></small>
         </div>
         <div class="tool-card stat-card">
           <label>${t("workspace.focusTimer")}</label>
@@ -1772,6 +1909,7 @@ function collectRefs() {
   refs.createEntryButton = document.getElementById("create-entry-button");
   refs.createEntryMenu = document.getElementById("create-entry-menu");
   refs.librarySearchInput = document.getElementById("library-search-input");
+  refs.libraryFullTextSearchInput = document.getElementById("library-full-text-search-input");
   refs.librarySortSelect = document.getElementById("library-sort-select");
   refs.libraryContent = document.getElementById("library-content");
   refs.libraryTree = document.getElementById("library-tree");
@@ -1824,7 +1962,11 @@ function collectRefs() {
   refs.workspacePanels = [...document.querySelectorAll(".workspace-panel")];
   refs.workspaceTabs = [...document.querySelectorAll("[data-tab]")];
   refs.wordGoalInput = document.getElementById("word-goal-input");
+  refs.wordGoalProgressBar = document.getElementById("word-goal-progress-bar");
   refs.wordGoalProgress = document.getElementById("word-goal-progress");
+  refs.wordGoalBalance = document.getElementById("word-goal-balance");
+  refs.workWordTotal = document.getElementById("work-word-total");
+  refs.workGoalTotal = document.getElementById("work-goal-total");
   refs.focusTimerValue = document.getElementById("focus-timer-value");
   refs.resumeHint = document.getElementById("resume-hint");
   refs.inspirationCategoryFilter = document.getElementById("inspiration-category-filter");
@@ -1870,6 +2012,11 @@ function bindEvents() {
   });
   refs.librarySearchInput.addEventListener("input", (event) => {
     state.ui.librarySearch = event.target.value;
+    renderLibraryPage();
+    persist();
+  });
+  refs.libraryFullTextSearchInput.addEventListener("input", (event) => {
+    state.ui.libraryFullTextSearch = event.target.value;
     renderLibraryPage();
     persist();
   });
@@ -2000,6 +2147,13 @@ function bindEvents() {
     desktopApi.onMenuAction((action) => handleDesktopMenuAction(action));
   }
 
+  if (!globalEventsBound && desktopApi?.onPrepareClose && desktopApi?.closeReady) {
+    desktopApi.onPrepareClose(async () => {
+      await flushLibrarySyncToDesktop();
+      desktopApi.closeReady();
+    });
+  }
+
   if (!globalEventsBound) {
     window.addEventListener("mousemove", handleOutlineResizeMove);
     window.addEventListener("mouseup", endOutlineResize);
@@ -2041,6 +2195,9 @@ async function handleDelegatedClick(event) {
   const chapterOpen = event.target.closest("[data-open-chapter]");
   if (chapterOpen) {
     await openChapter(chapterOpen.dataset.workId, chapterOpen.dataset.openChapter);
+    if (chapterOpen.dataset.searchQuery) {
+      focusEditorSearchMatch(chapterOpen.dataset.searchQuery);
+    }
     return;
   }
 
@@ -2224,6 +2381,7 @@ function updateLibraryHeader() {
   refs.folderUpButton.disabled = state.activeFolderId == null;
   refs.createEntryMenu.classList.toggle("hidden", !state.ui.libraryCreateOpen);
   refs.librarySearchInput.value = state.ui.librarySearch;
+  refs.libraryFullTextSearchInput.value = state.ui.libraryFullTextSearch;
   refs.librarySortSelect.value = state.ui.librarySort;
   refs.libraryBreadcrumb.innerHTML = path
     .map((folder, index) => {
@@ -2248,6 +2406,8 @@ function renderLibraryPage() {
 
   refs.libraryTree.innerHTML = renderFolderTree();
   refs.libraryList.innerHTML = `
+    ${renderGlobalSearchSection()}
+    ${renderRecentChaptersSection()}
     <section class="library-browser surface">
       <div class="library-browser-head">
         <div>
@@ -2259,6 +2419,95 @@ function renderLibraryPage() {
         ${contents.length > 0 ? contents.map(({ type, item }) => renderLibraryItem(type, item)).join("") : renderEmptyLibraryState()}
       </div>
     </section>
+  `;
+}
+
+function renderGlobalSearchSection() {
+  const query = state.ui.libraryFullTextSearch.trim();
+  const results = query ? getFullTextSearchResults(query, 12) : [];
+  const summary = query
+    ? results.length > 0
+      ? t("library.globalSearchSummary", { count: results.length })
+      : t("library.globalSearchNoResults")
+    : t("library.globalSearchEmpty");
+
+  return `
+    <section class="global-search-section surface">
+      <div class="library-browser-head">
+        <div>
+          <strong>${t("library.globalSearch")}</strong>
+          <small>${query ? escapeHtml(query) : t("library.globalSearchHint")}</small>
+        </div>
+        <small>${summary}</small>
+      </div>
+      ${
+        query
+          ? `<div class="global-search-results">
+              ${results.length > 0 ? results.map((result) => renderGlobalSearchResult(result, query)).join("") : `<div class="empty-inline">${t("library.globalSearchNoResults")}</div>`}
+            </div>`
+          : ""
+      }
+    </section>
+  `;
+}
+
+function renderGlobalSearchResult(result, query) {
+  const { chapter, work, field, snippet } = result;
+  return `
+    <button
+      class="global-search-result"
+      data-work-id="${work.id}"
+      data-open-chapter="${chapter.id}"
+      data-search-query="${escapeAttribute(query)}"
+    >
+      <span class="global-search-result-main">
+        <strong>${escapeHtml(chapter.title)}</strong>
+        <small>${escapeHtml(work.title)} · ${escapeHtml(field)} · ${t("library.wordCount", { count: chapter.wordCount })}</small>
+      </span>
+      <span class="global-search-snippet">${escapeHtml(snippet)}</span>
+    </button>
+  `;
+}
+
+function renderRecentChaptersSection() {
+  const recentChapters = getRecentEditedChapters(4);
+  if (recentChapters.length === 0) {
+    return `
+      <section class="recent-section surface">
+        <div class="library-browser-head">
+          <div>
+            <strong>${t("library.recent")}</strong>
+            <small>${t("library.recentEmpty")}</small>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="recent-section surface">
+      <div class="library-browser-head">
+        <div>
+          <strong>${t("library.recent")}</strong>
+          <small>${t("library.recentHint")}</small>
+        </div>
+      </div>
+      <div class="recent-chapter-list">
+        ${recentChapters.map(renderRecentChapterItem).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderRecentChapterItem({ chapter, work }) {
+  return `
+    <button class="recent-chapter-card" data-work-id="${work.id}" data-open-chapter="${chapter.id}">
+      <span>
+        <strong>${escapeHtml(chapter.title)}</strong>
+        <small>${escapeHtml(work.title)} · ${t("library.wordCount", { count: chapter.wordCount })}</small>
+      </span>
+      <time>${formatRelativeTime(chapter.updatedAt)}</time>
+    </button>
   `;
 }
 
@@ -2343,15 +2592,23 @@ function renderLibraryIcon(type, className) {
 }
 
 function renderEmptyLibraryState() {
+  const isSearching = Boolean(state.ui.librarySearch.trim());
+  const isRootEmpty = !isSearching && state.activeFolderId == null && state.folders.length === 0 && state.works.length === 0;
+  const title = isSearching ? t("library.emptySearchTitle") : isRootEmpty ? t("library.emptyRootTitle") : t("library.emptyTitle");
+  const copy = isSearching ? t("library.emptySearchCopy") : isRootEmpty ? t("library.emptyRootCopy") : t("library.emptyCopy");
   return `
     <div class="empty-state">
       <div>
-        <strong>${t("library.emptyTitle")}</strong>
-        <p>${t("library.emptyCopy")}</p>
+        <strong>${title}</strong>
+        <p>${copy}</p>
       </div>
       <div class="inline-actions">
-        <button class="ghost-button compact-button" data-library-action="open-create-folder">${t("library.createFolder")}</button>
-        <button class="primary-button compact-button" data-library-action="open-create-work">${t("library.createWork")}</button>
+        ${
+          isSearching
+            ? `<button class="ghost-button compact-button" data-library-action="clear-library-search">${getLanguage() === "en" ? "Clear Search" : "清空搜索"}</button>`
+            : `<button class="ghost-button compact-button" data-library-action="open-create-folder">${t("library.createFolder")}</button>
+               <button class="primary-button compact-button" data-library-action="open-create-work">${t("library.createWork")}</button>`
+        }
       </div>
     </div>
   `;
@@ -2459,6 +2716,8 @@ function updateTopBar() {
   refs.currentChapterMeta.textContent = chapter ? t("editor.chapterMeta", { count: chapter.wordCount, time: formatRelativeTime(chapter.updatedAt) }) : t("editor.switchHint");
   refs.wordCountButton.textContent = t("library.wordCount", { count: countWords(chapter?.content ?? "") });
   refs.saveStatusPill.textContent = getSaveStatusText(chapter);
+  refs.saveStatusPill.classList.remove("status-saved", "status-saving", "status-unsaved", "status-error");
+  refs.saveStatusPill.classList.add(`status-${getSaveStatusTone(chapter)}`);
 }
 
 function updateChapterPanel() {
@@ -2555,7 +2814,7 @@ function updateWorkspace() {
   refs.findReplaceBar.classList.toggle("hidden", !state.ui.replaceOpen);
   refs.selectionToolbar.classList.toggle("hidden", !state.ui.selectionVisible);
   refs.resumeHint.textContent = t("workspace.lastPosition", { position: state.ui.selectionStart });
-  refs.wordGoalProgress.textContent = chapter ? t("workspace.wordGoalProgress", { count: countWords(chapter.content), goal: chapter.wordGoal }) : t("workspace.selectChapter");
+  updateWordGoalPanel(chapter);
   refs.focusTimerValue.textContent = formatDuration(getFocusSeconds());
   refs.inspirationCompose.classList.toggle("hidden", !state.ui.inspirationComposeOpen);
   refs.outlinePanel.classList.toggle("hidden", !state.outlinePanelOpen || !chapter);
@@ -2595,17 +2854,72 @@ function getOutlineStatusText() {
   return savedAt ? `${t("status.saved")} · ${savedAt}` : t("status.saved");
 }
 
+function updateWordGoalPanel(chapter) {
+  if (!chapter) {
+    refs.wordGoalProgress.textContent = t("workspace.selectChapter");
+    refs.wordGoalProgressBar.style.width = "0%";
+    refs.wordGoalBalance.textContent = "--";
+    refs.workWordTotal.textContent = "--";
+    refs.workGoalTotal.textContent = "";
+    return;
+  }
+
+  const stats = getWordGoalStats(chapter);
+  refs.wordGoalProgress.textContent = t("workspace.wordGoalProgress", { count: stats.chapterWords, goal: stats.chapterGoal });
+  refs.wordGoalProgressBar.style.width = `${stats.percent}%`;
+  refs.wordGoalBalance.textContent = getWordGoalBalanceText(stats);
+  refs.workWordTotal.textContent = t("library.wordCount", { count: stats.workWords });
+  refs.workGoalTotal.textContent = t("workspace.workGoalTotal", { count: stats.workGoal });
+}
+
+function getWordGoalStats(chapter) {
+  const work = getWork(chapter.workId);
+  const chapters = work ? getWorkChapters(work.id) : [chapter];
+  const chapterWords = countWords(chapter.content);
+  const chapterGoal = Math.max(0, Number(chapter.wordGoal) || 0);
+  const workWords = chapters.reduce((sum, item) => sum + countWords(item.content), 0);
+  const workGoal = chapters.reduce((sum, item) => sum + Math.max(0, Number(item.wordGoal) || 0), 0);
+  const percent = chapterGoal > 0 ? Math.min(100, Math.round((chapterWords / chapterGoal) * 100)) : 0;
+  return {
+    chapterWords,
+    chapterGoal,
+    workWords,
+    workGoal,
+    remaining: Math.max(0, chapterGoal - chapterWords),
+    over: Math.max(0, chapterWords - chapterGoal),
+    percent,
+  };
+}
+
+function getWordGoalBalanceText(stats) {
+  if (stats.chapterGoal <= 0) return t("workspace.wordGoalUnset");
+  if (stats.remaining > 0) return t("workspace.wordGoalRemaining", { count: stats.remaining });
+  if (stats.over > 0) return t("workspace.wordGoalOver", { count: stats.over });
+  return t("workspace.wordGoalReached");
+}
+
 function getSaveStatusText(chapter) {
   if (!chapter) return t("status.noChapter");
   if (chapter.dirty && state.outlineDirty) return t("status.bodyOutlinePending");
   if (state.outlineDirty) return t("status.outlinePending", { status: state.ui.autosaveEnabled ? t("status.saving") : t("status.unsaved") });
+  if (chapter.saveStatus === "保存失败") return `${t("status.failed")} · ${translateSaveTime(chapter.saveTime)}`;
+  if (state.account.syncStatus === "本地保存失败") return t("status.syncFailed");
+  if (librarySyncPending) return t("status.syncing");
   return `${translateSaveStatus(chapter.saveStatus)} · ${translateSaveTime(chapter.saveTime)}`;
+}
+
+function getSaveStatusTone(chapter) {
+  if (!chapter) return "unsaved";
+  if (chapter.saveStatus === "保存失败" || state.account.syncStatus === "本地保存失败") return "error";
+  if (chapter.dirty || state.outlineDirty || librarySyncPending) return state.ui.autosaveEnabled ? "saving" : "unsaved";
+  return "saved";
 }
 
 function translateSaveStatus(value) {
   if (value === "已保存") return t("status.saved");
   if (value === "保存中") return t("status.saving");
   if (value === "未保存") return t("status.unsaved");
+  if (value === "保存失败") return t("status.failed");
   return value;
 }
 
@@ -2622,7 +2936,15 @@ function translateAccountStatus(value) {
   if (value === "已连接云端，同步正常") return t("status.synced");
   if (value === "本地有未保存修改") return t("status.syncing");
   if (value === "本地已保存") return t("status.synced");
+  if (value === "本地保存失败") return t("status.syncFailed");
   return value;
+}
+
+function refreshSaveIndicators() {
+  if (!refs.saveStatusPill) return;
+  updateTopBar();
+  updateWorkspace();
+  updateSettingsPanel();
 }
 
 function formatOutlineSavedAt(value) {
@@ -2725,6 +3047,10 @@ function updateSettingsPanel() {
       </div>
     </div>
     <p>${getLanguage() === "en" ? "Drafts are stored on this device. Export a project file when you need a portable backup." : "草稿保存在当前设备。如需备份或迁移，请导出项目文件。"}</p>
+    <div class="inline-actions">
+      <button class="ghost-button compact-button" data-menu-action="import-project">${getLanguage() === "en" ? "Import Project" : "导入项目"}</button>
+      <button class="ghost-button compact-button" data-menu-action="export-project">${getLanguage() === "en" ? "Export Project" : "导出项目"}</button>
+    </div>
   `;
 
   refs.themeAccordionHint.textContent = state.ui.settingsThemeExpanded
@@ -2841,7 +3167,7 @@ function updateModal() {
 
   refs.modalRoot.innerHTML = `
     <div class="modal-backdrop">
-      <div class="modal-card surface">
+      <div class="modal-card surface ${modal.type === "shortcuts" ? "shortcut-modal" : ""}">
         <strong>${escapeHtml(modal.title)}</strong>
         ${modal.message ? `<p>${escapeHtml(modal.message)}</p>` : ""}
         ${modal.body ?? ""}
@@ -2858,6 +3184,13 @@ function updateModal() {
 
 async function handleLibraryAction(action) {
   state.ui.libraryCreateOpen = false;
+  if (action === "clear-library-search") {
+    state.ui.librarySearch = "";
+    updateLibraryHeader();
+    renderLibraryPage();
+    persist();
+    return;
+  }
   if (action === "open-create-folder") {
     openCreateFolderModal();
   }
@@ -3097,18 +3430,161 @@ function openResetProjectModal() {
 }
 
 function openImportTextConflictModal(importedText) {
+  const currentChapter = getCurrentChapter();
   state.ui.modal = {
     type: "import-text-conflict",
     payload: { importedText },
     title: getLanguage() === "en" ? "Import TXT" : "导入 TXT",
     message:
       getLanguage() === "en"
-        ? "The current chapter already has content. Choose how to import this text file."
-        : "当前章节已有正文，请选择如何导入这个 TXT 文件。",
+        ? `The current chapter${currentChapter?.title ? ` "${currentChapter.title}"` : ""} already has content. Choose how to import this text file.`
+        : `当前章节${currentChapter?.title ? `“${currentChapter.title}”` : ""}已有正文，请选择如何导入这个 TXT 文件。`,
     actions: [
       { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
       { id: "append-imported-text", label: getLanguage() === "en" ? "Append" : "追加到末尾", primary: false },
       { id: "replace-with-imported-text", label: getLanguage() === "en" ? "Replace" : "覆盖正文", primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openInfoModal(title, message) {
+  state.ui.modal = {
+    type: "info",
+    title,
+    message,
+    actions: [{ id: "close-modal", label: getLanguage() === "en" ? "Close" : "关闭", primary: true }],
+  };
+  updateModal();
+}
+
+function openEmptyWorkModal(workId) {
+  state.ui.modal = {
+    type: "empty-work",
+    payload: { workId },
+    title: t("chapter.emptyWorkTitle"),
+    message: t("chapter.emptyWorkCopy"),
+    actions: [
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "create-chapter-from-empty-work", label: t("chapter.new"), primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openChapterExportPreview() {
+  const chapter = getCurrentChapter();
+  const work = getCurrentWork();
+  if (!chapter || !work) return;
+  const fileName = `${slugify(chapter.title || "chapter")}.txt`;
+  state.ui.modal = {
+    type: "export-preview",
+    title: t("export.chapterTitle"),
+    body: renderExportPreviewBody([
+      [t("export.scope"), `${t("export.currentChapter")} · ${work.title}`],
+      [t("export.fileName"), fileName],
+      [t("export.format"), "TXT"],
+      [t("export.chapters"), "1"],
+      [t("export.words"), String(countWords(chapter.content))],
+    ]),
+    actions: [
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "confirm-export-chapter", label: t("export.confirm"), primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openProjectExportPreview() {
+  const stats = getProjectExportStats();
+  const fileName = `简纪项目-${new Date().toISOString().slice(0, 10)}.json`;
+  state.ui.modal = {
+    type: "export-preview",
+    title: t("export.projectTitle"),
+    body: renderExportPreviewBody([
+      [t("export.scope"), t("export.fullProject")],
+      [t("export.fileName"), fileName],
+      [t("export.format"), "JSON"],
+      [t("export.works"), String(stats.workCount)],
+      [t("export.chapters"), String(stats.chapterCount)],
+      [t("export.words"), String(stats.wordCount)],
+    ]),
+    actions: [
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "confirm-export-project", label: t("export.confirm"), primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function renderExportPreviewBody(rows) {
+  return `
+    <div class="export-preview-list">
+      ${rows
+        .map(
+          ([label, value]) => `
+            <div class="export-preview-row">
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(value)}</strong>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function getLibraryContentStats(library = null) {
+  const source = library ?? getLibraryStatePayload();
+  const folders = Array.isArray(source?.folders) ? source.folders : [];
+  const works = Array.isArray(source?.works) ? source.works : [];
+  const chapters = Array.isArray(source?.chapters) ? source.chapters : [];
+  const inspirationItems =
+    source?.inspirations && typeof source.inspirations === "object"
+      ? Object.values(source.inspirations.itemsByWork ?? {}).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0)
+      : 0;
+  return {
+    folderCount: folders.length,
+    workCount: works.length,
+    chapterCount: chapters.length,
+    wordCount: chapters.reduce((sum, chapter) => sum + countWords(chapter?.content || ""), 0),
+    inspirationCount: inspirationItems,
+  };
+}
+
+function renderLibraryStatsText(stats) {
+  const inspirationText =
+    stats.inspirationCount > 0
+      ? getLanguage() === "en"
+        ? `, ${stats.inspirationCount} ideas`
+        : `、${stats.inspirationCount} 条灵感`
+      : "";
+  return getLanguage() === "en"
+    ? `${stats.folderCount} folders, ${stats.workCount} works, ${stats.chapterCount} chapters, ${stats.wordCount} words${inspirationText}`
+    : `${stats.folderCount} 个文件夹、${stats.workCount} 个作品、${stats.chapterCount} 个章节、${stats.wordCount} 个字${inspirationText}`;
+}
+
+function openImportProjectConflictModal(importedLibrary) {
+  const currentStats = getLibraryContentStats();
+  const importedStats = getLibraryContentStats(importedLibrary);
+  state.ui.modal = {
+    type: "import-project-conflict",
+    payload: { importedLibrary },
+    title: getLanguage() === "en" ? "Import Project" : "导入项目",
+    body: `
+      <div class="modal-copy-block">
+        <p>${getLanguage() === "en"
+          ? "This will replace the current library with the imported project."
+          : "这次导入会用文件中的项目替换当前作品库。"}</p>
+      </div>
+      ${renderExportPreviewBody([
+        [getLanguage() === "en" ? "Current library" : "当前作品库", renderLibraryStatsText(currentStats)],
+        [getLanguage() === "en" ? "Imported file" : "导入文件", renderLibraryStatsText(importedStats)],
+      ])}
+    `,
+    actions: [
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "confirm-import-project", label: getLanguage() === "en" ? "Replace Library" : "确认替换", primary: true },
     ],
   };
   updateModal();
@@ -3281,6 +3757,38 @@ async function handleModalAction(action) {
     state.ui.modal = null;
     applyImportedTextToCurrentChapter(importedText, action === "append-imported-text" ? "append" : "replace");
     updateModal();
+    return;
+  }
+
+  if (action === "confirm-import-project") {
+    const importedLibrary = state.ui.modal?.payload?.importedLibrary;
+    state.ui.modal = null;
+    applyLibraryState(importedLibrary);
+    ensureStateIntegrity();
+    await syncLibraryToDesktop();
+    updateAll();
+    return;
+  }
+
+  if (action === "confirm-export-chapter") {
+    state.ui.modal = null;
+    updateModal();
+    exportCurrentChapter();
+    return;
+  }
+
+  if (action === "confirm-export-project") {
+    state.ui.modal = null;
+    updateModal();
+    await exportProjectFile();
+    return;
+  }
+
+  if (action === "create-chapter-from-empty-work") {
+    const workId = state.ui.modal?.payload?.workId;
+    state.ui.modal = null;
+    updateModal();
+    openCreateChapterModal(workId);
     return;
   }
 
@@ -3529,11 +4037,20 @@ async function openWorkDefault(workId) {
   const work = getWork(workId);
   if (!work) return;
   const targetChapterId = work.lastOpenedChapterId && work.chapterIds.includes(work.lastOpenedChapterId) ? work.lastOpenedChapterId : work.chapterIds[0];
-  if (!targetChapterId) return;
+  if (!targetChapterId) {
+    openEmptyWorkModal(work.id);
+    return;
+  }
   await openChapter(work.id, targetChapterId);
 }
 
 async function openChapter(workId, chapterId) {
+  const work = getWork(workId);
+  const chapter = getChapter(chapterId);
+  if (!work || !chapter || chapter.workId !== work.id || !work.chapterIds.includes(chapter.id)) {
+    openInfoModal(t("error.openFailedTitle"), t("error.openChapterMissing"));
+    return;
+  }
   const previous = getCurrentChapter();
   if (previous && hasUnsavedChanges() && state.ui.autosaveEnabled) await saveCurrentChapter();
   state.ui.libraryScrollTop = refs.libraryList?.scrollTop ?? state.ui.libraryScrollTop;
@@ -3547,11 +4064,8 @@ async function openChapter(workId, chapterId) {
   state.activeTab = "writing";
   closeChapterMenus();
   state.ui.chapterPanelOpen = false;
-  const work = getWork(workId);
-  if (work) {
-    work.lastOpenedChapterId = chapterId;
-    work.updatedAt = new Date().toISOString();
-  }
+  work.lastOpenedChapterId = chapterId;
+  work.updatedAt = new Date().toISOString();
   hydrateEditor();
   updateAll();
   restoreSelection(0, 0);
@@ -3780,17 +4294,8 @@ async function handleMenuAction(action) {
     state.ui.modal = {
       type: "shortcuts",
       title: getLanguage() === "en" ? "Keyboard Shortcuts" : "快捷键说明",
-      message: getLanguage() === "en" ? "These shortcuts work in the editor and chapter panel." : "以下快捷键可在编辑页和章节面板中使用。",
-      body: `
-        <div class="history-list">
-          <div class="history-row"><strong>Ctrl / Cmd + Shift + O</strong><span>${getLanguage() === "en" ? "Open the chapter panel and focus it" : "打开章节面板并聚焦搜索"}</span></div>
-          <div class="history-row"><strong>↑ / ↓</strong><span>${getLanguage() === "en" ? "Move focus in the chapter panel" : "在章节面板中移动焦点"}</span></div>
-          <div class="history-row"><strong>Enter</strong><span>${getLanguage() === "en" ? "Open the focused chapter" : "在章节面板中切换到当前焦点章节"}</span></div>
-          <div class="history-row"><strong>Esc</strong><span>${getLanguage() === "en" ? "Close the chapter panel and return to the body" : "关闭章节面板并返回正文"}</span></div>
-          <div class="history-row"><strong>Alt + ↑ / ↓</strong><span>${getLanguage() === "en" ? "Switch to the previous/next chapter in the editor" : "在编辑器中快速切换上一章 / 下一章"}</span></div>
-          <div class="history-row"><strong>${getLanguage() === "en" ? "Drag chapter rows" : "拖拽章节行"}</strong><span>${getLanguage() === "en" ? "Reorder chapters in the chapter panel" : "在章节面板中调整章节顺序"}</span></div>
-        </div>
-      `,
+      message: getLanguage() === "en" ? "These shortcuts cover writing, navigation, and project actions." : "这些快捷键覆盖写作、导航和项目操作。",
+      body: renderShortcutHelpBody(),
       actions: [{ id: "close-modal", label: getLanguage() === "en" ? "Close" : "关闭", primary: true }],
     };
     updateModal();
@@ -3798,7 +4303,17 @@ async function handleMenuAction(action) {
   }
 
   if (action === "export") {
-    exportCurrentChapter();
+    openChapterExportPreview();
+    return;
+  }
+
+  if (action === "import-project") {
+    await importProjectFile();
+    return;
+  }
+
+  if (action === "export-project") {
+    openProjectExportPreview();
     return;
   }
 
@@ -3819,6 +4334,75 @@ async function handleMenuAction(action) {
     applyTheme();
     persist();
   }
+}
+
+function renderShortcutHelpBody() {
+  const groups = [
+    {
+      title: t("shortcuts.quickTitle"),
+      items: [
+        ["Ctrl / Cmd + S", getLanguage() === "en" ? "Save the current chapter" : "保存当前章节"],
+        ["Ctrl / Cmd + F", getLanguage() === "en" ? "Open find and replace" : "打开查找替换"],
+        ["Ctrl / Cmd + Z", getLanguage() === "en" ? "Undo the last edit" : "撤销上一步编辑"],
+        ["Ctrl / Cmd + Y", getLanguage() === "en" ? "Redo the last undo" : "重做上一步撤销"],
+        ["Ctrl / Cmd + Shift + Z", getLanguage() === "en" ? "Redo the last undo" : "重做上一步撤销"],
+      ],
+    },
+    {
+      title: t("shortcuts.navigationTitle"),
+      items: [
+        ["Ctrl / Cmd + Shift + O", getLanguage() === "en" ? "Open the chapter panel and focus it" : "打开章节面板并聚焦搜索"],
+        ["↑ / ↓", getLanguage() === "en" ? "Move focus in the chapter panel" : "在章节面板中移动焦点"],
+        ["Enter", getLanguage() === "en" ? "Open the focused chapter" : "打开当前焦点章节"],
+        ["Esc", getLanguage() === "en" ? "Close the chapter panel and return to the editor" : "关闭章节面板并返回正文"],
+        ["Alt + ↑ / ↓", getLanguage() === "en" ? "Switch to the previous or next chapter" : "快速切换上一章或下一章"],
+      ],
+    },
+    {
+      title: t("shortcuts.projectTitle"),
+      items: [
+        ["Ctrl / Cmd + O", getLanguage() === "en" ? "Import a project file" : "导入项目文件"],
+        ["Ctrl / Cmd + Shift + S", getLanguage() === "en" ? "Export the full project" : "导出完整项目"],
+        [getLanguage() === "en" ? "More menu > Export" : "更多菜单 > 导出", getLanguage() === "en" ? "Export the current chapter as TXT" : "将当前章节导出为 TXT"],
+      ],
+    },
+    {
+      title: t("shortcuts.moreTitle"),
+      items: [
+        [getLanguage() === "en" ? "Drag chapter rows" : "拖拽章节行", getLanguage() === "en" ? "Reorder chapters in the chapter panel" : "在章节面板中调整章节顺序"],
+        [getLanguage() === "en" ? "More menu > History" : "更多菜单 > 历史", getLanguage() === "en" ? "Review autosaved chapter versions" : "查看自动保存的版本"],
+      ],
+    },
+  ];
+
+  return `
+    <div class="shortcut-help">
+      <p class="shortcut-help-tip">${t("shortcuts.tip")}</p>
+      <div class="shortcut-group-list">
+        ${groups
+          .map(
+            (group) => `
+              <section class="shortcut-group">
+                <strong>${escapeHtml(group.title)}</strong>
+                <div class="shortcut-list">
+                  ${group.items
+                    .map(
+                      ([key, description]) => `
+                        <div class="shortcut-row">
+                          <kbd>${escapeHtml(key)}</kbd>
+                          <span>${escapeHtml(description)}</span>
+                        </div>
+                      `,
+                    )
+                    .join("")}
+                </div>
+              </section>
+            `,
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
 }
 
 function handleInspirationAction(action, id) {
@@ -4253,6 +4837,24 @@ function findNext() {
   restoreSelection(index, index + query.length);
 }
 
+function focusEditorSearchMatch(query) {
+  state.ui.findQuery = query;
+  state.ui.replaceOpen = true;
+  updateWorkspace();
+  requestAnimationFrame(() => {
+    refs.findQueryInput.value = query;
+    refs.documentEditor.focus();
+    selectEditorSearchMatch(query);
+  });
+}
+
+function selectEditorSearchMatch(query) {
+  const content = refs.documentEditor.value;
+  const index = content.toLowerCase().indexOf(String(query).toLowerCase());
+  if (index === -1) return;
+  restoreSelection(index, index + query.length);
+}
+
 function replaceCurrent() {
   const start = refs.documentEditor.selectionStart;
   const end = refs.documentEditor.selectionEnd;
@@ -4304,8 +4906,11 @@ async function saveCurrentChapter(options = {}) {
     chapter.versions.unshift({ id: uid("version"), label: "自动保存版本", time: `今天 ${timeNow()}`, content: chapter.content });
     chapter.versions = chapter.versions.slice(0, 20);
   }
-  state.account.syncStatus = "本地已保存";
-  await syncLibraryToDesktop();
+  const synced = await syncLibraryToDesktop();
+  if (!synced && saveBody) {
+    chapter.saveStatus = "保存失败";
+    chapter.saveTime = "刚刚修改";
+  }
   updateTopBar();
   updateWorkspace();
   persist();
@@ -4807,11 +5412,33 @@ async function exportProjectFile() {
 }
 
 async function importProjectFile() {
-  if (!desktopApi?.openProjectFile) return;
+  if (!desktopApi?.openProjectFile) {
+    openInfoModal(getLanguage() === "en" ? "Import Project" : "导入项目", t("error.importUnavailable"));
+    return;
+  }
   const result = await desktopApi.openProjectFile();
-  if (!result || result.canceled || !result.content) return;
+  if (!result || result.canceled) return;
+  if (!result.content) {
+    openInfoModal(getLanguage() === "en" ? "Import Project" : "导入项目", getLanguage() === "en" ? "The selected project file is empty." : "选择的项目文件为空。");
+    return;
+  }
   try {
     const imported = JSON.parse(result.content);
+    const importedStats = getLibraryContentStats(imported);
+    const currentStats = getLibraryContentStats();
+    if (importedStats.workCount + importedStats.chapterCount + importedStats.folderCount + importedStats.inspirationCount === 0) {
+      openInfoModal(
+        getLanguage() === "en" ? "Import Project" : "导入项目",
+        getLanguage() === "en"
+          ? "The selected project file does not contain any library data."
+          : "选择的项目文件不包含可导入的作品库数据。",
+      );
+      return;
+    }
+    if (currentStats.folderCount + currentStats.workCount + currentStats.chapterCount + currentStats.inspirationCount > 0) {
+      openImportProjectConflictModal(imported);
+      return;
+    }
     applyLibraryState(imported);
     ensureStateIntegrity();
     await syncLibraryToDesktop();
@@ -4820,9 +5447,9 @@ async function importProjectFile() {
     console.error("Failed to import project file", error);
     state.ui.modal = {
       type: "import-error",
-      title: "导入失败",
-      message: "项目文件格式无法识别，请确认它是有效的简纪导出文件。",
-      actions: [{ id: "close-modal", label: "关闭", primary: true }],
+      title: getLanguage() === "en" ? "Import Failed" : "导入失败",
+      message: getLanguage() === "en" ? "The project file format is not recognized. Make sure it is a valid exported Jian Ji file." : "项目文件格式无法识别，请确认它是有效的简纪导出文件。",
+      actions: [{ id: "close-modal", label: getLanguage() === "en" ? "Close" : "关闭", primary: true }],
     };
     updateModal();
   }
@@ -4834,7 +5461,7 @@ async function handleDesktopMenuAction(action) {
     return;
   }
   if (action === "export-project") {
-    await exportProjectFile();
+    openProjectExportPreview();
     return;
   }
   if (action === "reset-project") {
@@ -4943,8 +5570,71 @@ function getWorkChapters(workId) {
   return work.chapterIds.map((chapterId) => getChapter(chapterId)).filter(Boolean);
 }
 
+function getRecentEditedChapters(limit = 4) {
+  return state.chapters
+    .map((chapter) => ({ chapter, work: getWork(chapter.workId) }))
+    .filter(({ chapter, work }) => work && work.chapterIds.includes(chapter.id))
+    .sort((left, right) => normalizeIsoDate(right.chapter.updatedAt).localeCompare(normalizeIsoDate(left.chapter.updatedAt)))
+    .slice(0, limit);
+}
+
+function getFullTextSearchResults(query, limit = 12) {
+  const keyword = query.trim().toLowerCase();
+  if (!keyword) return [];
+  return state.chapters
+    .map((chapter) => {
+      const work = getWork(chapter.workId);
+      if (!work || !work.chapterIds.includes(chapter.id)) return null;
+      const match = getChapterSearchMatch(chapter, work, keyword);
+      if (!match) return null;
+      return { chapter, work, ...match };
+    })
+    .filter(Boolean)
+    .sort((left, right) => normalizeIsoDate(right.chapter.updatedAt).localeCompare(normalizeIsoDate(left.chapter.updatedAt)))
+    .slice(0, limit);
+}
+
+function getChapterSearchMatch(chapter, work, keyword) {
+  const fields = [
+    { label: getLanguage() === "en" ? "Chapter" : "章节", value: chapter.title },
+    { label: getLanguage() === "en" ? "Work" : "作品", value: work.title },
+    { label: getLanguage() === "en" ? "Body" : "正文", value: chapter.content },
+    { label: getLanguage() === "en" ? "Notes" : "备注", value: chapter.notes },
+    { label: getLanguage() === "en" ? "Outline" : "大纲", value: chapter.outline },
+  ];
+  for (const field of fields) {
+    const value = String(field.value || "");
+    const index = value.toLowerCase().indexOf(keyword);
+    if (index !== -1) {
+      return {
+        field: field.label,
+        snippet: getSearchSnippet(value, index, keyword.length),
+      };
+    }
+  }
+  return null;
+}
+
+function getSearchSnippet(value, index, length) {
+  const source = String(value || "").replace(/\s+/g, " ").trim();
+  if (!source) return "";
+  const normalizedIndex = source.toLowerCase().indexOf(String(value || "").slice(index, index + length).toLowerCase());
+  const safeIndex = Math.max(0, Math.min(normalizedIndex === -1 ? index : normalizedIndex, source.length));
+  const start = Math.max(0, safeIndex - 36);
+  const end = Math.min(source.length, safeIndex + length + 56);
+  return `${start > 0 ? "..." : ""}${source.slice(start, end)}${end < source.length ? "..." : ""}`;
+}
+
 function getWorkWordCount(workId) {
   return getWorkChapters(workId).reduce((sum, chapter) => sum + (chapter.wordCount || countWords(chapter.content)), 0);
+}
+
+function getProjectExportStats() {
+  return {
+    workCount: state.works.length,
+    chapterCount: state.chapters.length,
+    wordCount: state.chapters.reduce((sum, chapter) => sum + countWords(chapter.content), 0),
+  };
 }
 
 function getFolderPath(folderId) {
