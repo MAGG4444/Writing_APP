@@ -421,6 +421,25 @@ textarea {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 180px;
   gap: 10px;
+  align-items: end;
+}
+
+.search-field {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.search-field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  justify-self: start;
+}
+
+.search-field input {
+  width: 100%;
 }
 
 .breadcrumb-chip,
@@ -518,6 +537,11 @@ textarea {
   min-height: 0;
 }
 
+.library-section-stack {
+  display: grid;
+  gap: 12px;
+}
+
 .library-sidebar {
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
@@ -531,6 +555,11 @@ textarea {
   gap: 10px;
 }
 
+.global-search-section .library-browser-head,
+.recent-section .library-browser-head {
+  align-items: flex-start;
+}
+
 .library-sidebar-head strong,
 .library-browser-head strong {
   font-size: 16px;
@@ -538,6 +567,58 @@ textarea {
 
 .library-browser-head small {
   color: var(--muted);
+}
+
+.section-summary {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.section-drag-handle {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
+  color: var(--muted);
+  cursor: grab;
+}
+
+.section-drag-handle:active {
+  cursor: grabbing;
+}
+
+.library-sections-drag-active [data-library-section] {
+  position: relative;
+}
+
+.library-sections-drag-active [data-library-section] {
+  opacity: 0.96;
+}
+
+.library-sections-drag-active [data-library-section].dragging {
+  opacity: 0.5;
+}
+
+.library-sections-drag-active [data-library-section][data-drop-position="before"]::before,
+.library-sections-drag-active [data-library-section][data-drop-position="after"]::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.library-sections-drag-active [data-library-section][data-drop-position="before"]::before {
+  top: -7px;
+}
+
+.library-sections-drag-active [data-library-section][data-drop-position="after"]::after {
+  bottom: -7px;
 }
 
 .library-tree {
@@ -674,6 +755,12 @@ textarea {
   line-height: 1.4;
 }
 
+.library-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: 12px;
+}
+
 .library-section-head {
   justify-content: space-between;
 }
@@ -686,7 +773,7 @@ textarea {
 .global-search-section {
   display: grid;
   gap: 12px;
-  padding: 18px;
+  padding: 16px;
   border-radius: 18px;
 }
 
@@ -736,24 +823,24 @@ textarea {
 
 .recent-section {
   display: grid;
-  gap: 12px;
-  padding: 18px;
+  gap: 10px;
+  padding: 12px;
   border-radius: 18px;
 }
 
 .recent-chapter-list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .recent-chapter-card {
   min-width: 0;
   display: grid;
-  gap: 10px;
+  gap: 8px;
   align-content: start;
-  min-height: 96px;
-  padding: 12px;
+  min-height: 76px;
+  padding: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
@@ -776,14 +863,20 @@ textarea {
 }
 
 .recent-chapter-card strong {
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .recent-chapter-card small,
 .recent-chapter-card time {
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+@media (max-width: 1200px) {
+  .recent-chapter-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .folder-grid,
@@ -2021,6 +2114,12 @@ textarea {
   overflow: auto;
 }
 
+.modal-card.preview-modal {
+  width: min(680px, 100%);
+  max-height: min(86vh, 780px);
+  overflow: auto;
+}
+
 .modal-card strong {
   font-size: 18px;
 }
@@ -2031,9 +2130,73 @@ textarea {
   gap: 10px;
 }
 
+.modal-preview-intro p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .modal-form label {
   font-size: 13px;
   font-weight: 700;
+}
+
+.modal-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.modal-stat {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel-strong) 90%, transparent);
+}
+
+.modal-stat span,
+.modal-stat strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.modal-stat span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.modal-stat strong {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.modal-preview-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.modal-preview-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-strong) 90%, transparent);
+}
+
+.modal-preview-card strong {
+  font-size: 14px;
+}
+
+.modal-preview-subtitle {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .export-preview-list {
@@ -2044,8 +2207,8 @@ textarea {
 .export-preview-row {
   display: grid;
   grid-template-columns: minmax(92px, 0.36fr) minmax(0, 1fr);
-  gap: 12px;
-  align-items: center;
+  gap: 10px;
+  align-items: start;
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -2055,23 +2218,23 @@ textarea {
 .export-preview-row span,
 .export-preview-row strong {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .export-preview-row span {
   color: var(--muted);
   font-size: 12px;
+  line-height: 1.4;
 }
 
 .export-preview-row strong {
   font-size: 13px;
+  line-height: 1.45;
 }
 
 .shortcut-help {
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .shortcut-help-tip {
@@ -2084,31 +2247,31 @@ textarea {
 .shortcut-group-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .shortcut-group {
   display: grid;
-  gap: 10px;
-  padding: 14px;
+  gap: 8px;
+  padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: color-mix(in srgb, var(--panel-strong) 90%, transparent);
 }
 
 .shortcut-group strong {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .shortcut-list {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .shortcut-row {
   display: grid;
-  grid-template-columns: minmax(150px, 0.42fr) minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(128px, 0.4fr) minmax(0, 1fr);
+  gap: 10px;
   align-items: start;
 }
 
@@ -2116,7 +2279,7 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
+  min-height: 26px;
   padding: 0 10px;
   border: 1px solid var(--line);
   border-bottom-width: 2px;
@@ -2124,14 +2287,14 @@ textarea {
   background: var(--panel);
   color: var(--text);
   font-family: var(--font-family);
-  font-size: 12px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
 .shortcut-row span {
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .modal-actions {
@@ -2273,8 +2436,12 @@ body.is-resizing-outline {
     overflow: visible;
   }
 
+  .library-section-stack {
+    gap: 10px;
+  }
+
   .recent-chapter-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .global-search-result {
@@ -2286,6 +2453,15 @@ body.is-resizing-outline {
   }
 
   .shortcut-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-card.preview-modal {
+    width: min(100%, 560px);
+  }
+
+  .modal-stat-grid,
+  .modal-preview-compare {
     grid-template-columns: 1fr;
   }
 

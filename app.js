@@ -334,6 +334,10 @@ const translations = {
     "library.createWork": "新建作品",
     "library.searchPlaceholder": "搜索当前目录下的文件夹或作品",
     "library.fullTextSearchPlaceholder": "搜索全部章节、正文、备注",
+    "library.searchCurrentScope": "当前目录搜索",
+    "library.searchCurrentHint": "只搜当前目录里的文件夹和作品",
+    "library.searchAllScope": "全文搜索",
+    "library.searchAllHint": "搜索章节正文、备注和大纲",
     "library.sort.updated": "最近编辑优先",
     "library.sort.title": "名称 A-Z",
     "library.sort.created": "最新创建优先",
@@ -460,7 +464,7 @@ const translations = {
     "shortcuts.navigationTitle": "导航",
     "shortcuts.projectTitle": "项目",
     "shortcuts.moreTitle": "更多操作",
-    "shortcuts.tip": "这些快捷键来自当前应用的实际操作。可随时关闭这个面板。",
+    "shortcuts.tip": "按功能分组，方便快速查找。",
     "menu.importText": "导入 TXT",
     "menu.focus": "专注模式",
     "menu.night": "夜间模式",
@@ -469,9 +473,11 @@ const translations = {
     "export.projectTitle": "导出完整项目",
     "export.scope": "范围",
     "export.format": "格式",
+    "export.folders": "文件夹",
     "export.chapters": "章节数",
     "export.words": "字数",
     "export.works": "作品数",
+    "export.ideas": "灵感数",
     "export.fileName": "文件名",
     "export.currentChapter": "当前章节",
     "export.fullProject": "完整本地作品库",
@@ -504,6 +510,10 @@ const translations = {
     "library.createWork": "New Work",
     "library.searchPlaceholder": "Search folders or works in this folder",
     "library.fullTextSearchPlaceholder": "Search all chapters, text, and notes",
+    "library.searchCurrentScope": "Search Current Folder",
+    "library.searchCurrentHint": "Only search folders and works in the current folder",
+    "library.searchAllScope": "Full Text Search",
+    "library.searchAllHint": "Search chapter body, notes, and outlines",
     "library.sort.updated": "Recently Edited",
     "library.sort.title": "Name A-Z",
     "library.sort.created": "Newest Created",
@@ -630,7 +640,7 @@ const translations = {
     "shortcuts.navigationTitle": "Navigation",
     "shortcuts.projectTitle": "Project",
     "shortcuts.moreTitle": "More Actions",
-    "shortcuts.tip": "These shortcuts reflect the app's actual actions. Close this panel anytime.",
+    "shortcuts.tip": "Grouped by task for quick scanning.",
     "menu.importText": "Import TXT",
     "menu.focus": "Focus Mode",
     "menu.night": "Night Mode",
@@ -639,9 +649,11 @@ const translations = {
     "export.projectTitle": "Export Full Project",
     "export.scope": "Scope",
     "export.format": "Format",
+    "export.folders": "Folders",
     "export.chapters": "Chapters",
     "export.words": "Words",
     "export.works": "Works",
+    "export.ideas": "Ideas",
     "export.fileName": "File Name",
     "export.currentChapter": "Current chapter",
     "export.fullProject": "Full local library",
@@ -696,6 +708,7 @@ let librarySyncPending = false;
 let focusTimer = null;
 let suppressHistory = false;
 let draggedChapterId = null;
+let draggedLibrarySectionId = null;
 let outlineResizeState = null;
 let globalEventsBound = false;
 
@@ -981,6 +994,7 @@ function createSeedState() {
       librarySearch: "",
       libraryFullTextSearch: "",
       librarySort: "updated-desc",
+      librarySectionOrder: ["global-search", "recent", "browser"],
       libraryWorkViewId: "work-1",
       libraryExpandedFolders: [],
       language: "zh",
@@ -1077,6 +1091,9 @@ function ensureStateIntegrity() {
   state.ui.librarySearch = String(state.ui.librarySearch ?? "");
   state.ui.libraryFullTextSearch = String(state.ui.libraryFullTextSearch ?? "");
   state.ui.librarySort ??= "updated-desc";
+  state.ui.librarySectionOrder = Array.isArray(state.ui.librarySectionOrder)
+    ? state.ui.librarySectionOrder.map((id) => String(id)).filter((id) => ["global-search", "recent", "browser"].includes(id))
+    : ["global-search", "recent", "browser"];
   state.ui.libraryWorkViewId ??= null;
   state.ui.libraryExpandedFolders = Array.isArray(state.ui.libraryExpandedFolders)
     ? state.ui.libraryExpandedFolders.map((id) => String(id))
@@ -1536,8 +1553,14 @@ function FileManagerPage() {
         </div>
         <div class="library-breadcrumb" id="library-breadcrumb"></div>
         <div class="library-toolbar">
-          <input id="library-search-input" type="search" placeholder="${escapeAttribute(t("library.searchPlaceholder"))}" />
-          <input id="library-full-text-search-input" type="search" placeholder="${escapeAttribute(t("library.fullTextSearchPlaceholder"))}" />
+          <label class="search-field">
+            <span>${t("library.searchCurrentScope")}</span>
+            <input id="library-search-input" type="search" placeholder="${escapeAttribute(t("library.searchPlaceholder"))}" />
+          </label>
+          <label class="search-field">
+            <span>${t("library.searchAllScope")}</span>
+            <input id="library-full-text-search-input" type="search" placeholder="${escapeAttribute(t("library.fullTextSearchPlaceholder"))}" />
+          </label>
           <select id="library-sort-select">
             <option value="updated-desc">${t("library.sort.updated")}</option>
             <option value="title-asc">${t("library.sort.title")}</option>
@@ -2029,6 +2052,10 @@ function bindEvents() {
     state.ui.libraryScrollTop = refs.libraryList.scrollTop;
     persist();
   });
+  refs.libraryList.addEventListener("dragstart", handleLibrarySectionDragStart);
+  refs.libraryList.addEventListener("dragover", handleLibrarySectionDragOver);
+  refs.libraryList.addEventListener("drop", handleLibrarySectionDrop);
+  refs.libraryList.addEventListener("dragend", handleLibrarySectionDragEnd);
   refs.backButton.addEventListener("click", handleBackNavigation);
   refs.chapterSwitcherButton.addEventListener("click", toggleChapterPanel);
   refs.chapterPanelList.addEventListener("keydown", handleChapterPanelKeydown);
@@ -2391,6 +2418,21 @@ function updateLibraryHeader() {
     .join(`<span class="breadcrumb-sep">/</span>`);
 }
 
+function getOrderedLibrarySectionIds() {
+  const next = [];
+  const seen = new Set();
+  for (const id of state.ui.librarySectionOrder ?? []) {
+    if (["global-search", "recent", "browser"].includes(id) && !seen.has(id)) {
+      next.push(id);
+      seen.add(id);
+    }
+  }
+  for (const id of ["global-search", "recent", "browser"]) {
+    if (!seen.has(id)) next.push(id);
+  }
+  return next;
+}
+
 function renderLibraryPage() {
   ensureActiveFolderTreeVisible();
   const folders = getVisibleFoldersInFolder(state.activeFolderId);
@@ -2405,15 +2447,36 @@ function renderLibraryPage() {
     : "";
 
   refs.libraryTree.innerHTML = renderFolderTree();
+  const sections = {
+    "global-search": renderGlobalSearchSection(),
+    recent: renderRecentChaptersSection(),
+    browser: renderLibraryBrowserSection(currentFolder, contents, searchLabel),
+  };
   refs.libraryList.innerHTML = `
-    ${renderGlobalSearchSection()}
-    ${renderRecentChaptersSection()}
-    <section class="library-browser surface">
+    <div class="library-section-stack">
+      ${getOrderedLibrarySectionIds()
+        .map((sectionId) => sections[sectionId] ?? "")
+        .join("")}
+    </div>
+  `;
+}
+
+function renderLibraryBrowserSection(currentFolder, contents, searchLabel) {
+  return `
+    <section class="library-browser surface" data-library-section="browser">
       <div class="library-browser-head">
         <div>
           <strong>${currentFolder ? escapeHtml(currentFolder.name) : t("library.allWorks")}</strong>
           <small>${t("library.itemCount", { count: contents.length })}${searchLabel}</small>
         </div>
+        <button
+          class="section-drag-handle"
+          data-library-section-drag-handle
+          data-library-section-id="browser"
+          draggable="true"
+          title="${escapeAttribute(t("library.sectionOrder"))}"
+          aria-label="${escapeAttribute(t("library.sectionOrder"))}"
+        >↕</button>
       </div>
       <div class="library-item-grid">
         ${contents.length > 0 ? contents.map(({ type, item }) => renderLibraryItem(type, item)).join("") : renderEmptyLibraryState()}
@@ -2432,14 +2495,22 @@ function renderGlobalSearchSection() {
     : t("library.globalSearchEmpty");
 
   return `
-    <section class="global-search-section surface">
+    <section class="global-search-section surface" data-library-section="global-search">
       <div class="library-browser-head">
         <div>
           <strong>${t("library.globalSearch")}</strong>
           <small>${query ? escapeHtml(query) : t("library.globalSearchHint")}</small>
         </div>
-        <small>${summary}</small>
+        <button
+          class="section-drag-handle"
+          data-library-section-drag-handle
+          data-library-section-id="global-search"
+          draggable="true"
+          title="${escapeAttribute(t("library.sectionOrder"))}"
+          aria-label="${escapeAttribute(t("library.sectionOrder"))}"
+        >↕</button>
       </div>
+      <small class="section-summary">${summary}</small>
       ${
         query
           ? `<div class="global-search-results">
@@ -2473,24 +2544,40 @@ function renderRecentChaptersSection() {
   const recentChapters = getRecentEditedChapters(4);
   if (recentChapters.length === 0) {
     return `
-      <section class="recent-section surface">
+      <section class="recent-section surface" data-library-section="recent">
         <div class="library-browser-head">
           <div>
             <strong>${t("library.recent")}</strong>
             <small>${t("library.recentEmpty")}</small>
           </div>
+          <button
+            class="section-drag-handle"
+            data-library-section-drag-handle
+            data-library-section-id="recent"
+            draggable="true"
+            title="${escapeAttribute(t("library.sectionOrder"))}"
+            aria-label="${escapeAttribute(t("library.sectionOrder"))}"
+          >↕</button>
         </div>
       </section>
     `;
   }
 
   return `
-    <section class="recent-section surface">
+    <section class="recent-section surface" data-library-section="recent">
       <div class="library-browser-head">
         <div>
           <strong>${t("library.recent")}</strong>
           <small>${t("library.recentHint")}</small>
         </div>
+        <button
+          class="section-drag-handle"
+          data-library-section-drag-handle
+          data-library-section-id="recent"
+          draggable="true"
+          title="${escapeAttribute(t("library.sectionOrder"))}"
+          aria-label="${escapeAttribute(t("library.sectionOrder"))}"
+        >↕</button>
       </div>
       <div class="recent-chapter-list">
         ${recentChapters.map(renderRecentChapterItem).join("")}
@@ -3167,7 +3254,7 @@ function updateModal() {
 
   refs.modalRoot.innerHTML = `
     <div class="modal-backdrop">
-      <div class="modal-card surface ${modal.type === "shortcuts" ? "shortcut-modal" : ""}">
+      <div class="modal-card surface ${modal.type === "shortcuts" ? "shortcut-modal" : ""} ${modal.type === "export-preview" || modal.type === "import-project-conflict" ? "preview-modal" : ""}">
         <strong>${escapeHtml(modal.title)}</strong>
         ${modal.message ? `<p>${escapeHtml(modal.message)}</p>` : ""}
         ${modal.body ?? ""}
@@ -3477,16 +3564,20 @@ function openChapterExportPreview() {
   const work = getCurrentWork();
   if (!chapter || !work) return;
   const fileName = `${slugify(chapter.title || "chapter")}.txt`;
+  const escapedWorkTitle = escapeHtml(work.title);
   state.ui.modal = {
     type: "export-preview",
     title: t("export.chapterTitle"),
-    body: renderExportPreviewBody([
-      [t("export.scope"), `${t("export.currentChapter")} · ${work.title}`],
-      [t("export.fileName"), fileName],
-      [t("export.format"), "TXT"],
-      [t("export.chapters"), "1"],
-      [t("export.words"), String(countWords(chapter.content))],
-    ]),
+    body: `
+      <div class="modal-copy-block modal-preview-intro">
+        <p>${getLanguage() === "en" ? `This export contains the current chapter from “${escapedWorkTitle}”.` : `这次导出只包含“${escapedWorkTitle}”中的当前章节。`}</p>
+      </div>
+      ${renderPreviewStatGrid(getChapterExportStatRows(chapter))}
+      ${renderExportPreviewBody([
+        [t("export.fileName"), fileName],
+        [t("export.format"), "TXT"],
+      ])}
+    `,
     actions: [
       { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
       { id: "confirm-export-chapter", label: t("export.confirm"), primary: true },
@@ -3501,14 +3592,16 @@ function openProjectExportPreview() {
   state.ui.modal = {
     type: "export-preview",
     title: t("export.projectTitle"),
-    body: renderExportPreviewBody([
-      [t("export.scope"), t("export.fullProject")],
-      [t("export.fileName"), fileName],
-      [t("export.format"), "JSON"],
-      [t("export.works"), String(stats.workCount)],
-      [t("export.chapters"), String(stats.chapterCount)],
-      [t("export.words"), String(stats.wordCount)],
-    ]),
+    body: `
+      <div class="modal-copy-block modal-preview-intro">
+        <p>${getLanguage() === "en" ? "This export contains the full local library." : "这次导出包含完整的本地作品库。"}</p>
+      </div>
+      ${renderPreviewStatGrid(getLibraryExportStatRows(stats))}
+      ${renderExportPreviewBody([
+        [t("export.fileName"), fileName],
+        [t("export.format"), "JSON"],
+      ])}
+    `,
     actions: [
       { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
       { id: "confirm-export-project", label: t("export.confirm"), primary: true },
@@ -3532,6 +3625,41 @@ function renderExportPreviewBody(rows) {
         .join("")}
     </div>
   `;
+}
+
+function renderPreviewStatGrid(rows) {
+  return `
+    <div class="modal-stat-grid">
+      ${rows
+        .map(
+          ([label, value]) => `
+            <div class="modal-stat">
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(value)}</strong>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function getLibraryExportStatRows(stats) {
+  return [
+    [t("export.folders"), String(stats.folderCount)],
+    [t("export.works"), String(stats.workCount)],
+    [t("export.chapters"), String(stats.chapterCount)],
+    [t("export.words"), String(stats.wordCount)],
+    [t("export.ideas"), String(stats.inspirationCount)],
+  ];
+}
+
+function getChapterExportStatRows(chapter) {
+  return [
+    [t("export.scope"), t("export.currentChapter")],
+    [t("export.chapters"), "1"],
+    [t("export.words"), String(countWords(chapter.content))],
+  ];
 }
 
 function getLibraryContentStats(library = null) {
@@ -3572,15 +3700,23 @@ function openImportProjectConflictModal(importedLibrary) {
     payload: { importedLibrary },
     title: getLanguage() === "en" ? "Import Project" : "导入项目",
     body: `
-      <div class="modal-copy-block">
+      <div class="modal-copy-block modal-preview-intro">
         <p>${getLanguage() === "en"
           ? "This will replace the current library with the imported project."
           : "这次导入会用文件中的项目替换当前作品库。"}</p>
       </div>
-      ${renderExportPreviewBody([
-        [getLanguage() === "en" ? "Current library" : "当前作品库", renderLibraryStatsText(currentStats)],
-        [getLanguage() === "en" ? "Imported file" : "导入文件", renderLibraryStatsText(importedStats)],
-      ])}
+      <div class="modal-preview-compare">
+        <div class="modal-preview-card">
+          <strong>${getLanguage() === "en" ? "Current library" : "当前作品库"}</strong>
+          <div class="modal-preview-subtitle">${getLanguage() === "en" ? "Will be replaced" : "将被替换"}</div>
+          ${renderPreviewStatGrid(getLibraryExportStatRows(currentStats))}
+        </div>
+        <div class="modal-preview-card">
+          <strong>${getLanguage() === "en" ? "Imported file" : "导入文件"}</strong>
+          <div class="modal-preview-subtitle">${getLanguage() === "en" ? "Will become active" : "将成为当前内容"}</div>
+          ${renderPreviewStatGrid(getLibraryExportStatRows(importedStats))}
+        </div>
+      </div>
     `,
     actions: [
       { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
@@ -4342,20 +4478,17 @@ function renderShortcutHelpBody() {
       title: t("shortcuts.quickTitle"),
       items: [
         ["Ctrl / Cmd + S", getLanguage() === "en" ? "Save the current chapter" : "保存当前章节"],
-        ["Ctrl / Cmd + F", getLanguage() === "en" ? "Open find and replace" : "打开查找替换"],
-        ["Ctrl / Cmd + Z", getLanguage() === "en" ? "Undo the last edit" : "撤销上一步编辑"],
-        ["Ctrl / Cmd + Y", getLanguage() === "en" ? "Redo the last undo" : "重做上一步撤销"],
-        ["Ctrl / Cmd + Shift + Z", getLanguage() === "en" ? "Redo the last undo" : "重做上一步撤销"],
+        ["Ctrl / Cmd + F", getLanguage() === "en" ? "Find and replace" : "查找替换"],
+        ["Ctrl / Cmd + Z", getLanguage() === "en" ? "Undo" : "撤销"],
       ],
     },
     {
       title: t("shortcuts.navigationTitle"),
       items: [
-        ["Ctrl / Cmd + Shift + O", getLanguage() === "en" ? "Open the chapter panel and focus it" : "打开章节面板并聚焦搜索"],
-        ["↑ / ↓", getLanguage() === "en" ? "Move focus in the chapter panel" : "在章节面板中移动焦点"],
-        ["Enter", getLanguage() === "en" ? "Open the focused chapter" : "打开当前焦点章节"],
-        ["Esc", getLanguage() === "en" ? "Close the chapter panel and return to the editor" : "关闭章节面板并返回正文"],
-        ["Alt + ↑ / ↓", getLanguage() === "en" ? "Switch to the previous or next chapter" : "快速切换上一章或下一章"],
+        ["Ctrl / Cmd + Shift + O", getLanguage() === "en" ? "Open chapter panel" : "打开章节面板"],
+        ["↑ / ↓", getLanguage() === "en" ? "Move focus" : "移动焦点"],
+        ["Enter", getLanguage() === "en" ? "Open focused chapter" : "打开当前章节"],
+        ["Esc", getLanguage() === "en" ? "Close panel" : "关闭面板"],
       ],
     },
     {
@@ -4363,14 +4496,14 @@ function renderShortcutHelpBody() {
       items: [
         ["Ctrl / Cmd + O", getLanguage() === "en" ? "Import a project file" : "导入项目文件"],
         ["Ctrl / Cmd + Shift + S", getLanguage() === "en" ? "Export the full project" : "导出完整项目"],
-        [getLanguage() === "en" ? "More menu > Export" : "更多菜单 > 导出", getLanguage() === "en" ? "Export the current chapter as TXT" : "将当前章节导出为 TXT"],
+        [getLanguage() === "en" ? "More menu > Export" : "更多菜单 > 导出", getLanguage() === "en" ? "Current chapter TXT" : "当前章节 TXT"],
       ],
     },
     {
       title: t("shortcuts.moreTitle"),
       items: [
-        [getLanguage() === "en" ? "Drag chapter rows" : "拖拽章节行", getLanguage() === "en" ? "Reorder chapters in the chapter panel" : "在章节面板中调整章节顺序"],
-        [getLanguage() === "en" ? "More menu > History" : "更多菜单 > 历史", getLanguage() === "en" ? "Review autosaved chapter versions" : "查看自动保存的版本"],
+        [getLanguage() === "en" ? "Drag chapter rows" : "拖拽章节行", getLanguage() === "en" ? "Reorder chapters" : "调整章节顺序"],
+        [getLanguage() === "en" ? "More menu > History" : "更多菜单 > 历史", getLanguage() === "en" ? "Autosaved versions" : "自动保存版本"],
       ],
     },
   ];
@@ -5256,6 +5389,80 @@ function clearChapterDragIndicators() {
   refs.chapterPanelList.querySelectorAll("[data-drop-position]").forEach((item) => item.removeAttribute("data-drop-position"));
 }
 
+function handleLibrarySectionDragStart(event) {
+  const handle = event.target.closest("[data-library-section-drag-handle]");
+  const section = event.target.closest("[data-library-section]");
+  if (!handle || !section) return;
+  draggedLibrarySectionId = handle.dataset.librarySectionId || section.dataset.librarySection;
+  refs.libraryList.classList.add("library-sections-drag-active");
+  section.classList.add("dragging");
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", draggedLibrarySectionId);
+  }
+}
+
+function handleLibrarySectionDragOver(event) {
+  const section = event.target.closest("[data-library-section]");
+  if (!draggedLibrarySectionId || !section || section.dataset.librarySection === draggedLibrarySectionId) return;
+  event.preventDefault();
+  const rect = section.getBoundingClientRect();
+  const position = event.clientY - rect.top < rect.height / 2 ? "before" : "after";
+  refs.libraryList.querySelectorAll("[data-drop-position]").forEach((item) => item.removeAttribute("data-drop-position"));
+  section.dataset.dropPosition = position;
+}
+
+async function handleLibrarySectionDrop(event) {
+  const section = event.target.closest("[data-library-section]");
+  if (!draggedLibrarySectionId || !section) return;
+  event.preventDefault();
+  const targetSectionId = section.dataset.librarySection;
+  const rect = section.getBoundingClientRect();
+  const placeAfter = event.clientY - rect.top >= rect.height / 2;
+  clearLibrarySectionDragIndicators();
+  if (targetSectionId === draggedLibrarySectionId) {
+    draggedLibrarySectionId = null;
+    return;
+  }
+  const order = getOrderedLibrarySectionIds();
+  const sourceIndex = order.indexOf(draggedLibrarySectionId);
+  const targetIndex = order.indexOf(targetSectionId);
+  if (sourceIndex < 0 || targetIndex < 0) {
+    draggedLibrarySectionId = null;
+    return;
+  }
+  let nextIndex = placeAfter ? targetIndex + 1 : targetIndex;
+  if (sourceIndex < nextIndex) nextIndex -= 1;
+  const moved = moveLibrarySectionToIndex(draggedLibrarySectionId, nextIndex);
+  draggedLibrarySectionId = null;
+  if (!moved) return;
+  updateAll();
+  persist();
+}
+
+function handleLibrarySectionDragEnd() {
+  draggedLibrarySectionId = null;
+  clearLibrarySectionDragIndicators();
+}
+
+function clearLibrarySectionDragIndicators() {
+  refs.libraryList.classList.remove("library-sections-drag-active");
+  refs.libraryList.querySelectorAll(".dragging").forEach((item) => item.classList.remove("dragging"));
+  refs.libraryList.querySelectorAll("[data-drop-position]").forEach((item) => item.removeAttribute("data-drop-position"));
+}
+
+function moveLibrarySectionToIndex(sectionId, targetIndex) {
+  const order = getOrderedLibrarySectionIds();
+  const currentIndex = order.indexOf(sectionId);
+  if (currentIndex < 0) return false;
+  const boundedIndex = Math.max(0, Math.min(order.length - 1, targetIndex));
+  if (currentIndex === boundedIndex) return false;
+  const [moved] = order.splice(currentIndex, 1);
+  order.splice(boundedIndex, 0, moved);
+  state.ui.librarySectionOrder = order;
+  return true;
+}
+
 function getInspirationItemCategories(item) {
   if (Array.isArray(item.categories) && item.categories.length > 0) return item.categories;
   if (item.category) return [item.category];
@@ -5631,9 +5838,11 @@ function getWorkWordCount(workId) {
 
 function getProjectExportStats() {
   return {
+    folderCount: state.folders.length,
     workCount: state.works.length,
     chapterCount: state.chapters.length,
     wordCount: state.chapters.reduce((sum, chapter) => sum + countWords(chapter.content), 0),
+    inspirationCount: getAllInspirations().length,
   };
 }
 
