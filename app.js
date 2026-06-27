@@ -332,6 +332,7 @@ const translations = {
     "library.create": "新建",
     "library.createFolder": "新建文件夹",
     "library.createWork": "新建作品",
+    "library.importTxt": "导入 TXT",
     "library.searchPlaceholder": "搜索当前目录下的文件夹或作品",
     "library.fullTextSearchPlaceholder": "搜索全部章节、正文、备注",
     "library.searchCurrentScope": "当前目录搜索",
@@ -482,6 +483,8 @@ const translations = {
     "export.currentChapter": "当前章节",
     "export.fullProject": "完整本地作品库",
     "export.confirm": "确认导出",
+    "importTxt.successTitle": "TXT 导入成功",
+    "importTxt.copyFailed": "章节已导入，但原始 TXT 复制失败。",
     "status.saved": "已保存",
     "status.saving": "保存中",
     "status.unsaved": "未保存",
@@ -508,6 +511,7 @@ const translations = {
     "library.create": "New",
     "library.createFolder": "New Folder",
     "library.createWork": "New Work",
+    "library.importTxt": "Import TXT",
     "library.searchPlaceholder": "Search folders or works in this folder",
     "library.fullTextSearchPlaceholder": "Search all chapters, text, and notes",
     "library.searchCurrentScope": "Search Current Folder",
@@ -658,6 +662,8 @@ const translations = {
     "export.currentChapter": "Current chapter",
     "export.fullProject": "Full local library",
     "export.confirm": "Export",
+    "importTxt.successTitle": "TXT Import Successful",
+    "importTxt.copyFailed": "The chapters were imported, but copying the original TXT failed.",
     "status.saved": "Saved",
     "status.saving": "Saving",
     "status.unsaved": "Unsaved",
@@ -1534,6 +1540,7 @@ function FileManagerPage() {
             <p>${t("library.description")}</p>
           </div>
         <div class="library-header-actions">
+          <button class="ghost-button" data-library-action="import-txt">${t("library.importTxt")}</button>
           <label class="language-switcher">
             <span>${t("language.label")}</span>
             <select id="language-select">
@@ -3284,6 +3291,9 @@ async function handleLibraryAction(action) {
   if (action === "open-create-work") {
     openCreateWorkModal();
   }
+  if (action === "import-txt") {
+    await importTxtToNewWork();
+  }
   updateLibraryHeader();
   persist();
 }
@@ -4454,7 +4464,7 @@ async function handleMenuAction(action) {
   }
 
   if (action === "import-text") {
-    await importTextToCurrentChapter();
+    await importTxtToNewWork();
     return;
   }
 
@@ -5542,6 +5552,221 @@ function formatInspirationTime(value) {
   return `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
+function getFileNameFromPath(filePath) {
+  const source = String(filePath || "");
+  const normalized = source.split(/[\\/]/).pop() || "";
+  return normalized.trim();
+}
+
+function getFileStem(fileName) {
+  const name = String(fileName || "").trim();
+  if (!name) return "";
+  return name.replace(/\.[^.]+$/, "");
+}
+
+function normalizeTxtContent(text) {
+  return String(text ?? "").replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
+}
+
+function trimTxtEdges(text) {
+  return String(text ?? "").replace(/^\n+/, "").replace(/\n+$/, "");
+}
+
+function normalizeFullwidthDigits(value) {
+  return String(value ?? "").replace(/[０-９]/g, (digit) => String.fromCharCode(digit.charCodeAt(0) - 0xfee0));
+}
+
+function normalizeImportedTxtHeadingLine(line) {
+  const trimmed = String(line ?? "").replace(/\u3000/g, " ").trim();
+  if (!trimmed || trimmed.length > 120) return "";
+  return trimmed
+    .replace(/^[\s#>*=_\-—~·|｜【［\[\(（《<「『]+/, "")
+    .replace(/[\s#>*=_\-—~·|｜】］\]\)）》>」』]+$/, "")
+    .trim();
+}
+
+function cleanTxtChapterSuffix(value) {
+  return String(value ?? "")
+    .replace(/^[\s:：\-—~·,，。.!！?？、]+/, "")
+    .replace(/[\s:：\-—~·,，。.!！?？、]+$/, "")
+    .trim();
+}
+
+function matchImportedTxtChapterHeading(line) {
+  const trimmed = normalizeImportedTxtHeadingLine(line);
+  if (!trimmed) return null;
+
+  const chapterMatch = trimmed.match(/^第\s*([0-9０-９零一二三四五六七八九十百千万两〇○\s]+)\s*章(.*)$/);
+  if (chapterMatch) {
+    const number = normalizeFullwidthDigits(chapterMatch[1]).replace(/\s+/g, "");
+    const suffix = cleanTxtChapterSuffix(chapterMatch[2] ?? "");
+    return { title: buildImportedTxtChapterTitle(number, suffix, "章") };
+  }
+
+  const specialMatch = trimmed.match(/^(序章|楔子|引子|前言|后记|尾声|终章|番外(?:\s*[0-9０-９一二三四五六七八九十百千零〇两]+)?)(?:[\s:：\-—~·,，。.!！?？、]+(.+))?$/);
+  if (specialMatch) {
+    const prefix = specialMatch[1].replace(/\s+/g, "");
+    const suffix = cleanTxtChapterSuffix(specialMatch[2] ?? "");
+    return { title: suffix ? `${prefix} ${suffix}` : prefix };
+  }
+
+  const match = trimmed.match(/^第\s*([0-9０-９零一二三四五六七八九十百千万两〇○\s]+)\s*(回|节|卷|部|篇)(?:\s*(.*))?$/);
+  if (match) {
+    const number = normalizeFullwidthDigits(match[1]).replace(/\s+/g, "");
+    const marker = match[2];
+    const suffix = cleanTxtChapterSuffix(match[3] ?? "");
+    return { title: buildImportedTxtChapterTitle(number, suffix, marker) };
+  }
+
+  const englishMatch = trimmed.match(/^chapter\s*([0-9０-９]+|[ivxlcdm]+)(?:[\s:：\-—~·,，。.!！?？、]+(.+))?$/i);
+  if (!englishMatch) return null;
+  const number = normalizeFullwidthDigits(englishMatch[1]).replace(/\s+/g, "");
+  const suffix = cleanTxtChapterSuffix(englishMatch[2] ?? "");
+  return { title: suffix ? `Chapter ${number} ${suffix}` : `Chapter ${number}` };
+}
+
+function buildImportedTxtChapterTitle(number, suffix, marker = "章") {
+  const cleanNumber = String(number || "").trim();
+  if (!cleanNumber) return getLanguage() === "en" ? "Chapter 1" : "第一章";
+  return suffix ? `第${cleanNumber}${marker} ${suffix}` : `第${cleanNumber}${marker}`;
+}
+
+function parseImportedTxtChapters(rawText) {
+  const normalized = normalizeTxtContent(rawText);
+  if (!normalized.trim()) {
+    return { chapters: [], recognizedCount: 0 };
+  }
+
+  const sections = [];
+  const prefaceLines = [];
+  let current = null;
+  let recognizedCount = 0;
+
+  for (const line of normalized.split("\n")) {
+    const heading = matchImportedTxtChapterHeading(line);
+    if (heading) {
+      recognizedCount += 1;
+      if (current) sections.push(current);
+      current = { title: heading.title, lines: [] };
+      continue;
+    }
+
+    if (current) {
+      current.lines.push(line);
+    } else {
+      prefaceLines.push(line);
+    }
+  }
+
+  if (current) sections.push(current);
+
+  if (recognizedCount === 0) {
+    return {
+      chapters: [
+        {
+          title: getLanguage() === "en" ? "Chapter 1" : "第一章",
+          content: trimTxtEdges(normalized),
+        },
+      ],
+      recognizedCount: 0,
+    };
+  }
+
+  const prefaceText = trimTxtEdges(prefaceLines.join("\n"));
+  if (prefaceText && sections.length > 0) {
+    sections[0].lines.unshift(prefaceText);
+  }
+
+  return {
+    chapters: sections.map((section, index) => ({
+      title: section.title || buildImportedTxtChapterTitle(String(index + 1), ""),
+      content: trimTxtEdges(section.lines.join("\n")),
+    })),
+    recognizedCount,
+  };
+}
+
+async function importTxtToNewWork() {
+  if (!desktopApi?.openTextFile) {
+    openInfoModal(getLanguage() === "en" ? "Import TXT" : "导入 TXT", t("error.importUnavailable"));
+    return;
+  }
+
+  const result = await desktopApi.openTextFile();
+  if (!result || result.canceled || result.content == null) return;
+
+  const parsed = parseImportedTxtChapters(result.content);
+  const sourceFileName = getFileNameFromPath(result.filePath) || "imported.txt";
+  const workTitle = getFileStem(sourceFileName) || (getLanguage() === "en" ? "Imported TXT" : "TXT 导入");
+  const workId = uid("work");
+  const now = new Date().toISOString();
+  const targetFolderId = state.activeFolderId ?? null;
+  const createdChapters = parsed.chapters.map((chapterData) =>
+    createChapterForWork(workId, chapterData.title, {
+      content: chapterData.content,
+      notes: "",
+      outline: "",
+    }),
+  );
+
+  state.works.unshift({
+    id: workId,
+    title: workTitle,
+    description: getLanguage() === "en" ? `Imported from ${sourceFileName}` : `从 ${sourceFileName} 导入`,
+    folderId: targetFolderId,
+    chapterIds: createdChapters.map((chapter) => chapter.id),
+    updatedAt: now,
+    createdAt: now,
+    lastOpenedChapterId: createdChapters[0]?.id ?? null,
+  });
+
+  state.ui.libraryWorkViewId = workId;
+  state.activeWorkId = workId;
+  state.activeChapterId = createdChapters[0]?.id ?? null;
+  state.route = "editor";
+  state.ui.chapterPanelOpen = false;
+  state.ui.chapterPanelFocusedId = state.activeChapterId;
+  persist();
+  updateAll();
+
+  const synced = await syncLibraryToDesktop();
+  if (!synced) {
+    openInfoModal(
+      t("importTxt.successTitle"),
+      getLanguage() === "en"
+        ? "TXT import finished in the app, but saving it to the work folder failed."
+        : "TXT 已在应用中导入完成，但保存到作品文件夹失败。",
+    );
+    return;
+  }
+
+  let copySucceeded = Boolean(desktopApi?.storeImportedTextFile);
+  try {
+    if (desktopApi?.storeImportedTextFile) {
+      await desktopApi.storeImportedTextFile({
+        sourcePath: result.filePath,
+        workId,
+        sourceName: sourceFileName,
+      });
+    }
+  } catch (error) {
+    copySucceeded = false;
+    console.error("Failed to copy imported TXT", error);
+  }
+
+  const message = parsed.recognizedCount > 0
+    ? (getLanguage() === "en"
+        ? `Imported from “${sourceFileName}”. Recognized ${parsed.chapters.length} chapters, and the original TXT was copied into the work folder.`
+        : `已从“${sourceFileName}”导入，共识别到 ${parsed.chapters.length} 章，原始 TXT 已复制到该作品文件夹。`)
+    : (getLanguage() === "en"
+        ? `Imported from “${sourceFileName}”. No chapter headings were found, so the file was imported as one chapter. The original TXT was copied into the work folder.`
+        : `已从“${sourceFileName}”导入，未识别到章节标题，已作为 1 章导入，原始 TXT 已复制到该作品文件夹。`);
+  openInfoModal(
+    t("importTxt.successTitle"),
+    copySucceeded ? message : `${message} ${t("importTxt.copyFailed")}`,
+  );
+}
+
 function exportCurrentChapter() {
   const chapter = getCurrentChapter();
   if (!chapter) return;
@@ -5663,6 +5888,10 @@ async function importProjectFile() {
 }
 
 async function handleDesktopMenuAction(action) {
+  if (action === "import-text") {
+    await importTxtToNewWork();
+    return;
+  }
   if (action === "import-project") {
     await importProjectFile();
     return;

@@ -1,6 +1,7 @@
 const path = require("node:path");
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require("electron");
 const fs = require("node:fs/promises");
+const { TextDecoder } = require("node:util");
 
 const isMac = process.platform === "darwin";
 const LIBRARY_DIRNAME = "jian-ji-library-v2";
@@ -128,6 +129,10 @@ function getWorkDirectory(workId) {
 
 function getWorkInspirationsPath(workId) {
   return path.join(getWorkDirectory(workId), WORK_INSPIRATIONS_FILE);
+}
+
+function getWorkTextsDirectory(workId) {
+  return path.join(getWorkDirectory(workId), "texts");
 }
 
 async function ensureLibraryRoot() {
@@ -451,6 +456,46 @@ async function loadLibrary() {
   }
 }
 
+function sanitizeFileName(value) {
+  const raw = String(value ?? "").trim();
+  const normalized = raw
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, " ")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
+  return normalized || "imported-text.txt";
+}
+
+function countReplacementCharacters(text) {
+  return (String(text || "").match(/\uFFFD/g) || []).length;
+}
+
+function decodeTextBuffer(buffer) {
+  const source = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer ?? []);
+  const utf8Text = new TextDecoder("utf-8").decode(source);
+  if (countReplacementCharacters(utf8Text) === 0) return utf8Text;
+
+  const gbText = new TextDecoder("gb18030").decode(source);
+  if (countReplacementCharacters(gbText) < countReplacementCharacters(utf8Text)) return gbText;
+  return utf8Text;
+}
+
+async function ensureUniqueFilePath(directory, fileName) {
+  const parsed = path.parse(fileName);
+  let candidate = path.join(directory, fileName);
+  let counter = 2;
+  while (true) {
+    try {
+      await fs.access(candidate);
+      candidate = path.join(directory, `${parsed.name}-${counter}${parsed.ext}`);
+      counter += 1;
+    } catch (error) {
+      if (error.code === "ENOENT") return candidate;
+      throw error;
+    }
+  }
+}
+
 ipcMain.handle("project:save", async (_event, payload) => {
   const result = await dialog.showSaveDialog({
     title: "导出简纪项目",
@@ -485,7 +530,7 @@ ipcMain.handle("text:open", async () => {
 
   if (result.canceled || !result.filePaths[0]) return result;
   const filePath = result.filePaths[0];
-  const content = await fs.readFile(filePath, "utf8");
+  const content = decodeTextBuffer(await fs.readFile(filePath));
   return { canceled: false, filePath, content };
 });
 
@@ -499,6 +544,22 @@ ipcMain.handle("text:save", async (_event, payload) => {
   if (result.canceled || !result.filePath) return result;
   await fs.writeFile(result.filePath, payload.content, "utf8");
   return result;
+});
+
+ipcMain.handle("text:store-import", async (_event, payload) => {
+  const sourcePath = String(payload?.sourcePath ?? "");
+  const workId = String(payload?.workId ?? "").trim();
+  const sourceName = sanitizeFileName(payload?.sourceName ?? path.basename(sourcePath));
+  if (!sourcePath || !workId) {
+    return { canceled: true, error: "Invalid import payload" };
+  }
+
+  await ensureLibraryRoot();
+  const targetDirectory = getWorkTextsDirectory(workId);
+  await fs.mkdir(targetDirectory, { recursive: true });
+  const targetPath = await ensureUniqueFilePath(targetDirectory, sourceName);
+  await fs.copyFile(sourcePath, targetPath);
+  return { canceled: false, filePath: targetPath };
 });
 
 ipcMain.handle("app:getVersion", () => app.getVersion());
