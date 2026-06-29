@@ -30,6 +30,7 @@ const functionNames = [
   "normalizeFullwidthDigits",
   "normalizeImportedTxtHeadingLine",
   "cleanTxtChapterSuffix",
+  "isLikelyImportedTxtTitleLine",
   "matchImportedTxtChapterHeading",
   "buildImportedTxtChapterTitle",
   "parseImportedTxtChapters",
@@ -71,6 +72,25 @@ function titlesOf(result) {
   const result = parse("Chapter 1: Opening\nBody\n\nCHAPTER 02 Return\nMore");
   assert.equal(result.recognizedCount, 2);
   assert.deepEqual(titlesOf(result), ["Chapter 1 Opening", "Chapter 02 Return"]);
+}
+
+{
+  const result = parse("第一卷 风雪来处\n卷正文\n\n第一章 归途\n正文\n\n第二章：灯下\n更多正文");
+  assert.equal(result.recognizedCount, 3);
+  assert.deepEqual(titlesOf(result), ["第一卷 风雪来处", "第一章 归途", "第二章 灯下"]);
+}
+
+{
+  const result = parse("1. 雨夜\n正文\n\n2、破晓\n更多正文\n\n三、旧信\n结尾");
+  assert.equal(result.recognizedCount, 3);
+  assert.deepEqual(titlesOf(result), ["第1章 雨夜", "第2章 破晓", "第三章 旧信"]);
+}
+
+{
+  const result = parse("他在纸上写下第十二章这几个字。\n这只是正文，不应该被拆开。\n\n第一章 真正标题\n正文");
+  assert.equal(result.recognizedCount, 1);
+  assert.deepEqual(titlesOf(result), ["第一章 真正标题"]);
+  assert.equal(result.chapters[0].content, "他在纸上写下第十二章这几个字。\n这只是正文，不应该被拆开。\n正文");
 }
 
 {

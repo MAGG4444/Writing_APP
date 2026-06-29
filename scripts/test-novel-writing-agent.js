@@ -214,6 +214,34 @@ async function main() {
       ["read_project_context", "load_project_material_skills", "generate_project_materials", "normalize_project_materials"],
     );
 
+    const selectedMaterialsAgent = createNovelWritingAgent({
+      projectManager,
+      memoryManager,
+      tools,
+      llmClient: {
+        async generate(request) {
+          assert.equal(request.prompt_id, "project_materials_prompt");
+          assert.match(request.user, /JSON 必须包含这些字符串字段：outline, goals/);
+          return {
+            content: JSON.stringify({
+              outline: "只发展这条灵感对应的主线推进。",
+              goals: "目标 24 章，每章 2800 字，保持慢速展开。",
+            }),
+          };
+        },
+      },
+    });
+
+    const selectedMaterials = await selectedMaterialsAgent.generate_project_materials_from_idea({
+      project_id: "work-1",
+      idea: "只想先扩展主线和写作目标。",
+      material_types: ["outline", "goals"],
+    });
+    assert.equal(selectedMaterials.ok, true, selectedMaterials.error);
+    assert.deepEqual(Object.keys(selectedMaterials.materials), ["outline", "goals"]);
+    assert.match(selectedMaterials.materials.outline, /主线推进/);
+    assert.match(selectedMaterials.materials.goals, /24 章/);
+
     const markdownMaterialsAgent = createNovelWritingAgent({
       projectManager,
       memoryManager,

@@ -797,11 +797,11 @@ const aiProviderDefaults = {
   custom: "",
 };
 const projectMaterialTypes = [
-  { id: "outline", zh: "项目大纲", en: "Outline" },
-  { id: "characters", zh: "角色设定", en: "Characters" },
-  { id: "world", zh: "世界观", en: "World" },
-  { id: "style", zh: "风格偏好", en: "Style" },
-  { id: "goals", zh: "写作目标", en: "Goals" },
+  { id: "outline", zh: "项目大纲", en: "Outline", zhHint: "故事主线、阶段推进和结局方向。", enHint: "Story arc, major beats, and ending direction." },
+  { id: "characters", zh: "角色设定", en: "Characters", zhHint: "人物关系、欲望、秘密和口吻。", enHint: "Relationships, motives, secrets, and voice." },
+  { id: "world", zh: "世界观", en: "World", zhHint: "时代、地点、规则、组织和限制。", enHint: "Setting, rules, factions, limits, and constraints." },
+  { id: "style", zh: "风格偏好", en: "Style", zhHint: "叙述节奏、文风禁忌和修辞偏好。", enHint: "Pacing, prose preferences, and style boundaries." },
+  { id: "goals", zh: "写作目标", en: "Goals", zhHint: "本书目标、读者感受和当前创作重点。", enHint: "Book goals, reader effect, and current writing priorities." },
 ];
 const writingToolModules = [
   { id: "punctuation", labelKey: "workspace.modulePunctuation" },
@@ -836,6 +836,8 @@ let suppressHistory = false;
 let draggedChapterId = null;
 let draggedLibrarySectionId = null;
 let outlineResizeState = null;
+let sidebarResizeState = null;
+let sidebarResizeFrame = null;
 let globalEventsBound = false;
 
 init();
@@ -1113,6 +1115,8 @@ function createSeedState() {
       replaceOpen: false,
       leftSidebarCollapsed: false,
       rightSidebarCollapsed: false,
+      leftSidebarWidth: 340,
+      rightSidebarWidth: 360,
       sidebarSection: "home",
       selectionVisible: false,
       selectionStart: 0,
@@ -1130,7 +1134,7 @@ function createSeedState() {
       librarySearch: "",
       libraryFullTextSearch: "",
       librarySort: "updated-desc",
-      librarySectionOrder: ["global-search", "recent", "browser"],
+      librarySectionOrder: ["browser", "recent", "global-search"],
       libraryWorkViewId: "work-1",
       libraryExpandedFolders: [],
       language: "zh",
@@ -1142,7 +1146,8 @@ function createSeedState() {
       inspirationComposeOpen: false,
       inspirationComposeTags: ["待补充"],
       inspirationEditingId: null,
-      inspirationCategoryManagerExpanded: false,
+      collapsedInspirationIds: [],
+      selectedInspirationIds: [],
       aiDraftsByChapter: {},
       aiReviewMode: false,
       aiGenerationPending: false,
@@ -1230,6 +1235,8 @@ function ensureStateIntegrity() {
   state.activeTab = ["writing", "inspiration", "settings"].includes(state.activeTab) ? state.activeTab : "writing";
   state.ui.leftSidebarCollapsed ??= false;
   state.ui.rightSidebarCollapsed ??= false;
+  state.ui.leftSidebarWidth = clampSidebarWidth(Number(state.ui.leftSidebarWidth) || 340);
+  state.ui.rightSidebarWidth = clampSidebarWidth(Number(state.ui.rightSidebarWidth) || 360);
   state.ui.sidebarSection = ["home", "notes", "outline", "materials"].includes(state.ui.sidebarSection) ? state.ui.sidebarSection : "home";
   state.ui.libraryScrollTop ??= 0;
   state.ui.libraryCreateOpen ??= false;
@@ -1240,7 +1247,10 @@ function ensureStateIntegrity() {
   state.ui.librarySort ??= "updated-desc";
   state.ui.librarySectionOrder = Array.isArray(state.ui.librarySectionOrder)
     ? state.ui.librarySectionOrder.map((id) => String(id)).filter((id) => ["global-search", "recent", "browser"].includes(id))
-    : ["global-search", "recent", "browser"];
+    : ["browser", "recent", "global-search"];
+  if (state.ui.librarySectionOrder.join(",") === "global-search,recent,browser") {
+    state.ui.librarySectionOrder = ["browser", "recent", "global-search"];
+  }
   state.ui.libraryWorkViewId ??= null;
   state.ui.libraryExpandedFolders = Array.isArray(state.ui.libraryExpandedFolders)
     ? state.ui.libraryExpandedFolders.map((id) => String(id))
@@ -1254,7 +1264,12 @@ function ensureStateIntegrity() {
   state.ui.inspirationComposeOpen ??= false;
   state.ui.inspirationComposeTags ??= ["待补充"];
   state.ui.inspirationEditingId ??= null;
-  state.ui.inspirationCategoryManagerExpanded ??= false;
+  state.ui.collapsedInspirationIds = Array.isArray(state.ui.collapsedInspirationIds)
+    ? state.ui.collapsedInspirationIds.map((id) => String(id))
+    : [];
+  state.ui.selectedInspirationIds = Array.isArray(state.ui.selectedInspirationIds)
+    ? state.ui.selectedInspirationIds.map((id) => String(id))
+    : [];
   state.ui.aiDraftsByChapter = state.ui.aiDraftsByChapter && typeof state.ui.aiDraftsByChapter === "object" ? state.ui.aiDraftsByChapter : {};
   state.ui.aiReviewMode = Boolean(state.ui.aiReviewMode);
   state.ui.aiGenerationPending = false;
@@ -1780,7 +1795,6 @@ function FileManagerPage() {
             <p>${t("library.description")}</p>
           </div>
         <div class="library-header-actions">
-          <button class="ghost-button" data-library-action="import-txt">${t("library.importTxt")}</button>
           <label class="language-switcher">
             <span>${t("language.label")}</span>
             <select id="language-select">
@@ -1789,14 +1803,7 @@ function FileManagerPage() {
             </select>
           </label>
           <button class="ghost-button" id="folder-up-button">${t("library.up")}</button>
-          <div class="menu-wrap">
-            <button class="primary-button" id="create-entry-button">${t("library.create")}</button>
-            <div class="dropdown-menu hidden" id="create-entry-menu">
-                <button data-library-action="open-create-folder">${t("library.createFolder")}</button>
-                <button data-library-action="open-create-work">${t("library.createWork")}</button>
-              </div>
-            </div>
-          </div>
+        </div>
         </div>
         <div class="library-breadcrumb" id="library-breadcrumb"></div>
         <div class="library-toolbar">
@@ -1877,11 +1884,13 @@ function EditorPage() {
             ${ProjectMaterialsPanel()}
           </div>
         </aside>
+        <button class="sidebar-resize-handle sidebar-resize-left" id="left-sidebar-resize-handle" title="${escapeAttribute(getLanguage() === "en" ? "Resize chapter sidebar" : "调整章节侧栏宽度")}" aria-label="${escapeAttribute(getLanguage() === "en" ? "Resize chapter sidebar" : "调整章节侧栏宽度")}"></button>
         <button class="edge-toggle edge-toggle-left hidden" id="left-sidebar-reopen-button" title="${escapeAttribute(t("editor.openSidebarTitle"))}">></button>
         <div class="editor-column" id="editor-column">
           ${DocumentEditor()}
         </div>
         <button class="edge-toggle edge-toggle-right hidden" id="right-sidebar-reopen-button" title="${escapeAttribute(t("editor.openWorkspaceTitle"))}"><</button>
+        <button class="sidebar-resize-handle sidebar-resize-right" id="right-sidebar-resize-handle" title="${escapeAttribute(getLanguage() === "en" ? "Resize workspace sidebar" : "调整工作区侧栏宽度")}" aria-label="${escapeAttribute(getLanguage() === "en" ? "Resize workspace sidebar" : "调整工作区侧栏宽度")}"></button>
         ${BottomWorkspaceTabs()}
       </div>
     </section>
@@ -1918,6 +1927,7 @@ function TopBar() {
       <div class="top-bar-actions">
         <span class="status-pill" id="save-status-pill"></span>
         <button class="ghost-button" id="word-count-button"></button>
+        <button class="ghost-button compact-button top-import-button" data-menu-action="import-text">${getLanguage() === "en" ? "Import TXT" : "导入 TXT"}</button>
         <div class="menu-wrap">
           <button class="icon-button" id="more-menu-button">⋯</button>
           <div class="dropdown-menu hidden" id="more-menu">
@@ -1955,12 +1965,6 @@ function DocumentEditor() {
       <div class="editor-stack" id="editor-stack">
         <div class="editor-primary-pane" id="editor-primary-pane">
           <div class="editor-pane-shell">
-            <div class="editor-pane-head">
-              <div>
-                <strong>${t("editor.bodyEditor")}</strong>
-                <small id="document-editor-status">${t("editor.bodyStatusDefault")}</small>
-              </div>
-            </div>
             <div class="editor-pane-body">
               <textarea id="document-editor" class="document-editor" spellcheck="false" placeholder="${escapeAttribute(t("editor.placeholder"))}"></textarea>
             </div>
@@ -2096,19 +2100,36 @@ function renderWritingToolModule(moduleId) {
     return `
       <section class="tool-card writing-ai-card" data-writing-tool-module="ai-agent">
         <div class="section-line">
-          <strong>${t("ai.title")}</strong>
-          <small>${getLanguage() === "en" ? "Use project materials, memory, and the current chapter." : "使用项目资料、记忆和当前章节上下文。"}</small>
+          <div>
+            <span class="section-kicker">${getLanguage() === "en" ? "Current Chapter" : "当前章节"}</span>
+            <strong>${t("ai.title")}</strong>
+          </div>
+          <small>${getLanguage() === "en" ? "Project materials, memory, and this chapter." : "调用项目资料、记忆与当前章节。"}</small>
         </div>
         <small class="agent-target-hint" id="agent-target-hint"></small>
-        <div class="agent-action-grid">
-          <button class="ghost-button" data-agent-action="generate-outline">${t("ai.generateOutline")}</button>
-          <button class="ghost-button" data-agent-action="write-chapter">${t("ai.writeChapter")}</button>
-          <button class="ghost-button" data-agent-action="summarize-chapter">${t("ai.summarizeChapter")}</button>
-          <button class="ghost-button" data-agent-action="check-consistency">${t("ai.checkConsistency")}</button>
-        </div>
-        <div class="ai-review-actions">
-          <button class="primary-button" data-ai-action="open-review">${getLanguage() === "en" ? "Review with AI" : "AI 改稿"}</button>
-          <button class="ghost-button" data-ai-action="generate-mock">${t("ai.generateRevision")}</button>
+        <div class="agent-stage-list">
+          <div class="agent-stage-row">
+            <span>${getLanguage() === "en" ? "Plan" : "规划"}</span>
+            <button class="ghost-button" data-agent-action="generate-outline">${t("ai.generateOutline")}</button>
+          </div>
+          <div class="agent-stage-row">
+            <span>${getLanguage() === "en" ? "Draft" : "起草"}</span>
+            <button class="ghost-button" data-agent-action="write-chapter">${t("ai.writeChapter")}</button>
+          </div>
+          <div class="agent-stage-row">
+            <span>${getLanguage() === "en" ? "Revise" : "改稿"}</span>
+            <div class="agent-stage-actions">
+              <button class="primary-button" data-ai-action="open-review">${getLanguage() === "en" ? "Compare" : "对比改稿"}</button>
+              <button class="ghost-button" data-ai-action="generate-mock">${t("ai.generateRevision")}</button>
+            </div>
+          </div>
+          <div class="agent-stage-row">
+            <span>${getLanguage() === "en" ? "Maintain" : "维护"}</span>
+            <div class="agent-stage-actions">
+              <button class="ghost-button" data-agent-action="summarize-chapter">${t("ai.summarizeChapter")}</button>
+              <button class="ghost-button" data-agent-action="check-consistency">${t("ai.checkConsistency")}</button>
+            </div>
+          </div>
         </div>
         <div class="agent-status" id="agent-status"></div>
       </section>
@@ -2128,19 +2149,6 @@ function InspirationPanel() {
         <div class="inspiration-toolbar-row inspiration-toolbar-row-filter">
           <input id="inspiration-search-input" type="search" placeholder="${escapeAttribute(getLanguage() === "en" ? "Search ideas" : "搜索灵感内容")}" />
           <button class="ghost-button subtle-button" id="inspiration-sort-button">${getLanguage() === "en" ? "Sort: Newest" : "排序：最新"}</button>
-        </div>
-      </div>
-      <div class="inspiration-category-manager tool-card">
-        <button class="section-line accordion-trigger" id="inspiration-category-manager-button">
-          <strong>${getLanguage() === "en" ? "Category Management" : "分类管理"}</strong>
-          <small id="inspiration-category-manager-hint">${getLanguage() === "en" ? "Click to expand category management" : "点击展开分类管理"}</small>
-        </button>
-        <div class="inspiration-category-manager-body hidden" id="inspiration-category-manager-body">
-          <div class="inspiration-category-create-row">
-            <input id="inspiration-category-create-input" type="text" placeholder="${escapeAttribute(getLanguage() === "en" ? "New category name" : "新建分类名称")}" />
-            <button class="ghost-button" id="create-inspiration-category-button">${getLanguage() === "en" ? "New Category" : "新建分类"}</button>
-          </div>
-          <div class="inspiration-category-list" id="inspiration-category-list"></div>
         </div>
       </div>
       <div class="inspiration-compose hidden" id="inspiration-compose">
@@ -2171,14 +2179,10 @@ function ProjectMaterialsPanel() {
       <section class="tool-card project-materials-card">
         <div class="section-line">
           <strong>${getLanguage() === "en" ? "Project Materials" : "项目资料"}</strong>
-          <small>${getLanguage() === "en" ? "Edit local project files for this novel." : "编辑当前作品的本地资料文件。"}</small>
+          <small>${getLanguage() === "en" ? "Agent context for this novel." : "AI 写作助手会优先读取这些资料。"}</small>
         </div>
-        <label>${getLanguage() === "en" ? "Material" : "资料类型"}</label>
-        <select id="project-material-type-select">
-          ${projectMaterialTypes
-            .map((item) => `<option value="${escapeAttribute(item.id)}">${escapeHtml(getLanguage() === "en" ? item.en : item.zh)}</option>`)
-            .join("")}
-        </select>
+        <div class="project-material-overview" id="project-material-overview"></div>
+        <small class="project-material-helper" id="project-material-helper"></small>
         <textarea id="project-material-editor" class="project-material-editor" spellcheck="false"></textarea>
         <div class="project-materials-footer">
           <small id="project-material-status"></small>
@@ -2321,9 +2325,9 @@ function collectRefs() {
   refs.editorStack = document.getElementById("editor-stack");
   refs.editorPrimaryPane = document.getElementById("editor-primary-pane");
   refs.aiReviewSurface = document.getElementById("ai-review-surface");
-  refs.documentEditorStatus = document.getElementById("document-editor-status");
   refs.documentEditor = document.getElementById("document-editor");
   refs.chapterSidebar = document.getElementById("chapter-sidebar");
+  refs.leftSidebarResizeHandle = document.getElementById("left-sidebar-resize-handle");
   refs.editorColumn = document.getElementById("editor-column");
   refs.chapterNotesInput = document.getElementById("chapter-notes-input");
   refs.chapterOutlineInput = document.getElementById("chapter-outline-input");
@@ -2340,6 +2344,7 @@ function collectRefs() {
   refs.leftSidebarNav = document.getElementById("left-sidebar-nav");
   refs.sidebarDetails = [...document.querySelectorAll("[data-sidebar-detail]")];
   refs.workspaceSidebar = document.getElementById("workspace-sidebar");
+  refs.rightSidebarResizeHandle = document.getElementById("right-sidebar-resize-handle");
   refs.rightSidebarToggleButton = document.getElementById("right-sidebar-toggle-button");
   refs.rightSidebarReopenButton = document.getElementById("right-sidebar-reopen-button");
   refs.workspacePanels = [...document.querySelectorAll(".workspace-panel")];
@@ -2358,12 +2363,6 @@ function collectRefs() {
   refs.inspirationCategoryFilter = document.getElementById("inspiration-category-filter");
   refs.inspirationSearchInput = document.getElementById("inspiration-search-input");
   refs.inspirationSortButton = document.getElementById("inspiration-sort-button");
-  refs.inspirationCategoryManagerButton = document.getElementById("inspiration-category-manager-button");
-  refs.inspirationCategoryManagerHint = document.getElementById("inspiration-category-manager-hint");
-  refs.inspirationCategoryManagerBody = document.getElementById("inspiration-category-manager-body");
-  refs.inspirationCategoryCreateInput = document.getElementById("inspiration-category-create-input");
-  refs.createInspirationCategoryButton = document.getElementById("create-inspiration-category-button");
-  refs.inspirationCategoryList = document.getElementById("inspiration-category-list");
   refs.inspirationCompose = document.getElementById("inspiration-compose");
   refs.inspirationComposeTitle = document.getElementById("inspiration-compose-title");
   refs.inspirationComposeHint = document.getElementById("inspiration-compose-hint");
@@ -2375,7 +2374,8 @@ function collectRefs() {
   refs.saveInspirationButton = document.getElementById("save-inspiration-button");
   refs.cancelInspirationButton = document.getElementById("cancel-inspiration-button");
   refs.inspirationChatList = document.getElementById("inspiration-chat-list");
-  refs.projectMaterialTypeSelect = document.getElementById("project-material-type-select");
+  refs.projectMaterialOverview = document.getElementById("project-material-overview");
+  refs.projectMaterialHelper = document.getElementById("project-material-helper");
   refs.projectMaterialEditor = document.getElementById("project-material-editor");
   refs.projectMaterialStatus = document.getElementById("project-material-status");
   refs.saveProjectMaterialButton = document.getElementById("save-project-material-button");
@@ -2402,7 +2402,7 @@ function collectRefs() {
 function bindEvents() {
   refs.languageSelect.addEventListener("change", (event) => setLanguage(event.target.value));
   refs.folderUpButton.addEventListener("click", handleFolderUp);
-  refs.createEntryButton.addEventListener("click", () => {
+  refs.createEntryButton?.addEventListener("click", () => {
     state.ui.libraryCreateOpen = !state.ui.libraryCreateOpen;
     updateLibraryHeader();
     persist();
@@ -2474,8 +2474,10 @@ function bindEvents() {
   refs.outlinePanelResizeHandle.addEventListener("mousedown", beginOutlineResize);
   refs.leftSidebarToggleButton.addEventListener("click", toggleLeftSidebar);
   refs.leftSidebarReopenButton.addEventListener("click", toggleLeftSidebar);
+  refs.leftSidebarResizeHandle.addEventListener("mousedown", (event) => beginSidebarResize(event, "left"));
   refs.rightSidebarToggleButton.addEventListener("click", toggleRightSidebar);
   refs.rightSidebarReopenButton.addEventListener("click", toggleRightSidebar);
+  refs.rightSidebarResizeHandle.addEventListener("mousedown", (event) => beginSidebarResize(event, "right"));
   refs.wordGoalInput?.addEventListener("input", handleWordGoalInput);
   refs.inspirationCategoryFilter.addEventListener("change", (event) => {
     state.inspirations.activeCategory = event.target.value;
@@ -2488,17 +2490,10 @@ function bindEvents() {
     persist();
   });
   refs.inspirationSortButton.addEventListener("click", toggleInspirationSort);
-  refs.inspirationCategoryManagerButton.addEventListener("click", toggleInspirationCategoryManager);
-  refs.createInspirationCategoryButton.addEventListener("click", handleCreateInspirationCategory);
-  refs.inspirationCategoryCreateInput.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter") return;
-    event.preventDefault();
-    handleCreateInspirationCategory();
-  });
   refs.addInspirationCategoryButton.addEventListener("click", addSelectedInspirationCategory);
   refs.saveInspirationButton.addEventListener("click", saveComposedInspiration);
   refs.cancelInspirationButton.addEventListener("click", closeInspirationComposer);
-  refs.projectMaterialTypeSelect.addEventListener("change", handleProjectMaterialTypeChange);
+  refs.projectMaterialOverview.addEventListener("click", handleProjectMaterialOverviewClick);
   refs.projectMaterialEditor.addEventListener("input", handleProjectMaterialInput);
   refs.saveProjectMaterialButton.addEventListener("click", () => void saveCurrentProjectMaterial());
   refs.aiProviderSelect.addEventListener("change", handleAiProviderChange);
@@ -2575,6 +2570,8 @@ function bindEvents() {
   if (!globalEventsBound) {
     window.addEventListener("mousemove", handleOutlineResizeMove);
     window.addEventListener("mouseup", endOutlineResize);
+    window.addEventListener("mousemove", handleSidebarResizeMove);
+    window.addEventListener("mouseup", endSidebarResize);
     window.addEventListener("resize", syncOutlinePanelLayout);
     globalEventsBound = true;
   }
@@ -2735,7 +2732,10 @@ async function handleDelegatedClick(event) {
 
   const inspirationAction = event.target.closest("[data-inspiration-action]");
   if (inspirationAction) {
-    await handleInspirationAction(inspirationAction.dataset.inspirationAction, inspirationAction.dataset.id);
+    await handleInspirationAction(
+      inspirationAction.dataset.inspirationAction,
+      inspirationAction.dataset.id,
+    );
     return;
   }
 
@@ -2832,7 +2832,7 @@ function updateRoute() {
 function updateLibraryHeader() {
   const path = getFolderPath(state.activeFolderId);
   refs.folderUpButton.disabled = state.activeFolderId == null;
-  refs.createEntryMenu.classList.toggle("hidden", !state.ui.libraryCreateOpen);
+  refs.createEntryMenu?.classList.toggle("hidden", !state.ui.libraryCreateOpen);
   refs.librarySearchInput.value = state.ui.librarySearch;
   refs.libraryFullTextSearchInput.value = state.ui.libraryFullTextSearch;
   refs.librarySortSelect.value = state.ui.librarySort;
@@ -2845,18 +2845,20 @@ function updateLibraryHeader() {
 }
 
 function getOrderedLibrarySectionIds() {
+  const hasFullTextQuery = state.ui.libraryFullTextSearch.trim().length > 0;
+  const allowedIds = ["browser", "recent"];
   const next = [];
   const seen = new Set();
   for (const id of state.ui.librarySectionOrder ?? []) {
-    if (["global-search", "recent", "browser"].includes(id) && !seen.has(id)) {
+    if (allowedIds.includes(id) && !seen.has(id)) {
       next.push(id);
       seen.add(id);
     }
   }
-  for (const id of ["global-search", "recent", "browser"]) {
+  for (const id of allowedIds) {
     if (!seen.has(id)) next.push(id);
   }
-  return next;
+  return hasFullTextQuery ? ["global-search", ...next] : next;
 }
 
 function renderLibraryPage() {
@@ -2888,12 +2890,19 @@ function renderLibraryPage() {
 }
 
 function renderLibraryBrowserSection(currentFolder, contents, searchLabel) {
+  const folderCount = contents.filter((entry) => entry.type === "folder").length;
+  const workCount = contents.filter((entry) => entry.type === "work").length;
   return `
     <section class="library-browser surface" data-library-section="browser">
       <div class="library-browser-head">
-        <div>
+        <div class="library-browser-title">
           <strong>${currentFolder ? escapeHtml(currentFolder.name) : t("library.allWorks")}</strong>
-          <small>${t("library.itemCount", { count: contents.length })}${searchLabel}</small>
+          <small>${getLanguage() === "en" ? `${folderCount} folders · ${workCount} works` : `${folderCount} 个文件夹 · ${workCount} 个作品`}${searchLabel}</small>
+        </div>
+        <div class="library-browser-actions">
+          <button class="ghost-button compact-button" data-library-action="open-create-folder">${t("library.createFolder")}</button>
+          <button class="primary-button compact-button" data-library-action="open-create-work">${t("library.createWork")}</button>
+          <button class="ghost-button compact-button" data-library-action="import-txt">${t("library.importTxt")}</button>
         </div>
         <button
           class="section-drag-handle"
@@ -2923,7 +2932,7 @@ function renderGlobalSearchSection() {
   return `
     <section class="global-search-section surface" data-library-section="global-search">
       <div class="library-browser-head">
-        <div>
+        <div class="library-browser-title">
           <strong>${t("library.globalSearch")}</strong>
           <small>${query ? escapeHtml(query) : t("library.globalSearchHint")}</small>
         </div>
@@ -2972,7 +2981,7 @@ function renderRecentChaptersSection() {
     return `
       <section class="recent-section surface" data-library-section="recent">
         <div class="library-browser-head">
-          <div>
+          <div class="library-browser-title">
             <strong>${t("library.recent")}</strong>
             <small>${t("library.recentEmpty")}</small>
           </div>
@@ -2992,7 +3001,7 @@ function renderRecentChaptersSection() {
   return `
     <section class="recent-section surface" data-library-section="recent">
       <div class="library-browser-head">
-        <div>
+        <div class="library-browser-title">
           <strong>${t("library.recent")}</strong>
           <small>${t("library.recentHint")}</small>
         </div>
@@ -3070,6 +3079,7 @@ function renderFolderItem(folder) {
       <button class="library-item-main" data-open-folder="${folder.id}">
         ${renderLibraryIcon("folder", "library-item-icon")}
         <span class="library-item-text">
+          <em>${getLanguage() === "en" ? "Folder" : "文件夹"}</em>
           <strong>${escapeHtml(folder.name)}</strong>
           <small>${t("library.subfolderCount", { folders: getFoldersInFolder(folder.id).length, works: getWorksInFolder(folder.id).length })}</small>
         </span>
@@ -3087,8 +3097,9 @@ function renderWorkItem(work) {
       <button class="library-item-main" data-open-work="${work.id}">
         ${renderLibraryIcon("work", "library-item-icon")}
         <span class="library-item-text">
+          <em>${getLanguage() === "en" ? "Work" : "作品"}</em>
           <strong>${escapeHtml(work.title)}</strong>
-          <small>${t("library.chapterCount", { count: work.chapterIds.length })} · ${formatRelativeTime(work.updatedAt)}</small>
+          <small>${t("library.chapterCount", { count: work.chapterIds.length })} · ${t("library.wordCount", { count: getWorkWordCount(work.id) })} · ${formatRelativeTime(work.updatedAt)}</small>
         </span>
       </button>
       <div class="entity-menu-wrap">
@@ -3296,7 +3307,9 @@ function renderEditorChapterPanelRow(work, chapter, index) {
 
 function updateSidebar() {
   const chapter = getCurrentChapter();
+  refs.editorPage.style.setProperty("--left-sidebar-width", `${state.ui.leftSidebarWidth}px`);
   refs.chapterSidebar.classList.toggle("sidebar-collapsed", state.ui.leftSidebarCollapsed);
+  refs.leftSidebarResizeHandle.classList.toggle("hidden", state.ui.leftSidebarCollapsed);
   refs.leftSidebarReopenButton.classList.toggle("hidden", !state.ui.leftSidebarCollapsed);
   refs.leftSidebarToggleButton.textContent = state.ui.leftSidebarCollapsed ? t("editor.expand") : t("editor.collapse");
   const activeSection = ["home", "notes", "outline", "materials"].includes(state.ui.sidebarSection) ? state.ui.sidebarSection : "home";
@@ -3309,10 +3322,12 @@ function updateSidebar() {
 function updateWorkspace() {
   const chapter = getCurrentChapter();
   const isAiReviewMode = Boolean(state.ui.aiReviewMode && chapter);
+  refs.editorPage.style.setProperty("--right-sidebar-width", `${state.ui.rightSidebarWidth}px`);
   refs.editorPage.classList.toggle("ai-review-mode", isAiReviewMode);
   refs.editorStack.classList.toggle("hidden", isAiReviewMode);
   refs.aiReviewSurface.classList.toggle("hidden", !isAiReviewMode);
   refs.workspaceSidebar.classList.toggle("sidebar-collapsed", state.ui.rightSidebarCollapsed);
+  refs.rightSidebarResizeHandle.classList.toggle("hidden", state.ui.rightSidebarCollapsed || isAiReviewMode);
   refs.rightSidebarReopenButton.classList.toggle("hidden", !state.ui.rightSidebarCollapsed || isAiReviewMode);
   refs.workspaceTabs.forEach((button) => {
     button.classList.toggle("active", button.dataset.tab === state.activeTab);
@@ -3330,9 +3345,6 @@ function updateWorkspace() {
   refs.outlinePanel.classList.toggle("hidden", !state.outlinePanelOpen || !chapter || isAiReviewMode);
   refs.outlineExpandButton.disabled = !chapter;
   refs.outlinePanelStatus.textContent = getOutlineStatusText();
-  refs.documentEditorStatus.textContent = chapter
-    ? t("editor.bodyStatus", { status: translateSaveStatus(chapter.saveStatus), time: translateSaveTime(chapter.saveTime) })
-    : t("editor.bodyStatusDefault");
   updateAiReviewSurface(chapter);
   updateProjectMaterialsPanel(getCurrentWork());
   syncOutlinePanelLayout();
@@ -3368,7 +3380,8 @@ function updateAiReviewSurface(chapter = getCurrentChapter()) {
     return;
   }
   const originalContent = chapter.content.trim();
-  const aiDraft = state.ui.aiDraftsByChapter?.[chapter.id]?.content ?? "";
+  const aiDraftRecord = state.ui.aiDraftsByChapter?.[chapter.id] ?? null;
+  const aiDraft = aiDraftRecord?.content ?? "";
   const isGenerating = Boolean(state.ui.aiGenerationPending);
   refs.aiReviewSurface.innerHTML = `
     <div class="ai-review-mode-shell">
@@ -3381,10 +3394,11 @@ function updateAiReviewSurface(chapter = getCurrentChapter()) {
         <div class="ai-review-actions">
           <button class="ghost-button" data-ai-action="close-review">${getLanguage() === "en" ? "Exit" : "退出改稿模式"}</button>
           <button class="ghost-button" data-ai-action="generate-mock" ${isGenerating ? "disabled" : ""}>${isGenerating ? (getLanguage() === "en" ? "Generating..." : "生成中……") : (getLanguage() === "en" ? "Regenerate" : "重新生成")}</button>
+          ${aiDraft ? `<button class="ghost-button" data-ai-action="copy-draft" ${isGenerating ? "disabled" : ""}>${getLanguage() === "en" ? "Copy AI Version" : "复制 AI 版本"}</button>` : ""}
           ${aiDraft ? `<button class="primary-button" data-ai-action="apply-draft" ${isGenerating ? "disabled" : ""}>${t("ai.applyDraft")}</button>` : ""}
         </div>
       </header>
-      ${renderAiCompareGrid(chapter, originalContent, aiDraft)}
+      ${renderAiCompareGrid(chapter, originalContent, aiDraft, aiDraftRecord)}
     </div>
   `;
 }
@@ -3392,10 +3406,10 @@ function updateAiReviewSurface(chapter = getCurrentChapter()) {
 function updateProjectMaterialsPanel(work = getCurrentWork()) {
   if (!refs.projectMaterialEditor) return;
   const hasWork = Boolean(work);
-  refs.projectMaterialTypeSelect.disabled = !hasWork || projectMaterialsState.loading || projectMaterialsState.saving;
   refs.projectMaterialEditor.disabled = !hasWork || projectMaterialsState.loading || projectMaterialsState.saving;
   refs.saveProjectMaterialButton.disabled = !hasWork || projectMaterialsState.loading || projectMaterialsState.saving || !projectMaterialsState.dirty;
-  refs.projectMaterialTypeSelect.value = state.ui.projectMaterialType;
+  refs.projectMaterialOverview.innerHTML = renderProjectMaterialOverview(hasWork);
+  refs.projectMaterialHelper.textContent = getProjectMaterialHelperText(state.ui.projectMaterialType);
 
   if (!hasWork) {
     projectMaterialsState.workId = null;
@@ -3423,6 +3437,35 @@ function updateProjectMaterialsPanel(work = getCurrentWork()) {
     projectMaterialsState.chapters.length > 0
       ? projectMaterialsState.chapters.map((fileName) => `<span class="project-material-chapter-file">${escapeHtml(fileName)}</span>`).join("")
       : `<span class="empty-inline">${getLanguage() === "en" ? "No material chapter files yet" : "暂无资料章节文件"}</span>`;
+}
+
+function renderProjectMaterialOverview(hasWork = true) {
+  return projectMaterialTypes
+    .map((item) => {
+      const content = projectMaterialsState.materials[item.id] ?? "";
+      const filled = content.trim().length > 0;
+      const isActive = item.id === state.ui.projectMaterialType;
+      const label = getLanguage() === "en" ? item.en : item.zh;
+      const status = filled ? (getLanguage() === "en" ? "Filled" : "已填写") : (getLanguage() === "en" ? "Blank" : "空白");
+      const wordText = filled ? t("library.wordCount", { count: countWords(content) }) : status;
+      return `
+        <button
+          class="project-material-pill ${isActive ? "active" : ""} ${filled ? "is-filled" : "is-empty"}"
+          type="button"
+          data-project-material-type="${escapeAttribute(item.id)}"
+          ${hasWork ? "" : "disabled"}
+        >
+          <strong>${escapeHtml(label)}</strong>
+          <small>${escapeHtml(wordText)}</small>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function getProjectMaterialHelperText(type) {
+  const item = projectMaterialTypes.find((material) => material.id === type) ?? projectMaterialTypes[0];
+  return getLanguage() === "en" ? item.enHint : item.zhHint;
 }
 
 function getProjectMaterialStatusText() {
@@ -3460,8 +3503,14 @@ async function loadProjectMaterials(workId) {
   }
 }
 
-function handleProjectMaterialTypeChange(event) {
-  const nextType = projectMaterialTypes.some((item) => item.id === event.target.value) ? event.target.value : "outline";
+function handleProjectMaterialOverviewClick(event) {
+  const button = event.target.closest("[data-project-material-type]");
+  if (!button || button.disabled) return;
+  switchProjectMaterialType(button.dataset.projectMaterialType);
+}
+
+function switchProjectMaterialType(value) {
+  const nextType = projectMaterialTypes.some((item) => item.id === value) ? value : "outline";
   if (projectMaterialsState.dirty) {
     projectMaterialsState.materials[state.ui.projectMaterialType] = refs.projectMaterialEditor.value;
   }
@@ -3499,20 +3548,27 @@ async function saveCurrentProjectMaterial() {
   }
 }
 
-function renderAiCompareGrid(chapter, originalContent = chapter?.content?.trim() ?? "", aiDraft = "") {
+function renderAiCompareGrid(chapter, originalContent = chapter?.content?.trim() ?? "", aiDraft = "", aiDraftRecord = null) {
+  const originalWords = countWords(chapter?.content ?? "");
+  const generatedMeta = aiDraft
+    ? [
+        aiDraftRecord?.provider ? String(aiDraftRecord.provider) : "",
+        aiDraftRecord?.generatedAt ? formatRelativeTime(aiDraftRecord.generatedAt) : "",
+      ].filter(Boolean).join(" · ")
+    : (getLanguage() === "en" ? "Pending" : "待生成");
   return `
     <div class="ai-compare-grid">
       <section class="ai-compare-pane">
         <div class="ai-compare-head">
           <strong>${t("ai.originalVersion")}</strong>
-          <small>${t("library.wordCount", { count: countWords(chapter?.content ?? "") })}</small>
+          <small>${t("library.wordCount", { count: originalWords })}</small>
         </div>
         <pre>${originalContent ? escapeHtml(originalContent) : escapeHtml(t("ai.originalEmpty"))}</pre>
       </section>
-      <section class="ai-compare-pane ${aiDraft ? "" : "is-pending"}">
+      <section class="ai-compare-pane ${aiDraft ? "is-generated" : "is-pending"}">
         <div class="ai-compare-head">
           <strong>${t("ai.generatedVersion")}</strong>
-          <small>${aiDraft ? t("ai.generatedMock") : (getLanguage() === "en" ? "Pending" : "待生成")}</small>
+          <small>${escapeHtml(generatedMeta)}</small>
         </div>
         <pre>${escapeHtml(aiDraft || t("ai.generatedPending"))}</pre>
       </section>
@@ -3563,6 +3619,15 @@ async function handleAiAction(action) {
     const aiDraft = state.ui.aiDraftsByChapter?.[chapter.id]?.content ?? "";
     if (!aiDraft) return;
     applyAiDraftToCurrentChapter(chapter, aiDraft);
+    return;
+  }
+  if (action === "copy-draft") {
+    const aiDraft = state.ui.aiDraftsByChapter?.[chapter.id]?.content ?? "";
+    if (!aiDraft) return;
+    await copyTextToClipboard(aiDraft);
+    state.ui.agentStatus = getLanguage() === "en" ? "AI version copied." : "AI 新版已复制。";
+    updateWorkspace();
+    persist();
   }
 }
 
@@ -3677,6 +3742,28 @@ async function runWritingAgentForChapter(chapter) {
     provider: "browser-mock",
     generatedAt: new Date().toISOString(),
   };
+}
+
+async function copyTextToClipboard(text) {
+  const value = String(text ?? "");
+  if (!value) return;
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return;
+    } catch (_error) {
+      // Use the fallback below when the embedded browser denies clipboard access.
+    }
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
 }
 
 function createWritingAgentPayload(chapter) {
@@ -4014,6 +4101,66 @@ function clampOutlinePanelRatio(value) {
   return Math.min(0.6, Math.max(0.05, value));
 }
 
+function beginSidebarResize(event, side) {
+  if (side === "left" && state.ui.leftSidebarCollapsed) return;
+  if (side === "right" && state.ui.rightSidebarCollapsed) return;
+  event.preventDefault();
+  sidebarResizeState = {
+    side,
+    startX: event.clientX,
+    startWidth: side === "left" ? state.ui.leftSidebarWidth : state.ui.rightSidebarWidth,
+  };
+  document.body.classList.add("is-resizing-sidebar");
+  refs.editorPage.classList.add("sidebar-resizing");
+}
+
+function handleSidebarResizeMove(event) {
+  if (!sidebarResizeState) return;
+  const deltaX = event.clientX - sidebarResizeState.startX;
+  const nextWidth = sidebarResizeState.side === "left"
+    ? sidebarResizeState.startWidth + deltaX
+    : sidebarResizeState.startWidth - deltaX;
+  sidebarResizeState.nextWidth = clampSidebarWidth(nextWidth);
+  if (sidebarResizeFrame) return;
+  sidebarResizeFrame = requestAnimationFrame(() => {
+    sidebarResizeFrame = null;
+    if (!sidebarResizeState) return;
+    if (sidebarResizeState.side === "left") {
+      state.ui.leftSidebarWidth = sidebarResizeState.nextWidth;
+      refs.editorPage.style.setProperty("--left-sidebar-width", `${state.ui.leftSidebarWidth}px`);
+    } else {
+      state.ui.rightSidebarWidth = sidebarResizeState.nextWidth;
+      refs.editorPage.style.setProperty("--right-sidebar-width", `${state.ui.rightSidebarWidth}px`);
+    }
+  });
+}
+
+function endSidebarResize() {
+  if (!sidebarResizeState) return;
+  if (sidebarResizeFrame) {
+    cancelAnimationFrame(sidebarResizeFrame);
+    sidebarResizeFrame = null;
+  }
+  if (Number.isFinite(sidebarResizeState.nextWidth)) {
+    if (sidebarResizeState.side === "left") {
+      state.ui.leftSidebarWidth = sidebarResizeState.nextWidth;
+      updateSidebar();
+    } else {
+      state.ui.rightSidebarWidth = sidebarResizeState.nextWidth;
+      updateWorkspace();
+    }
+  }
+  sidebarResizeState = null;
+  document.body.classList.remove("is-resizing-sidebar");
+  refs.editorPage.classList.remove("sidebar-resizing");
+  persist();
+}
+
+function clampSidebarWidth(value) {
+  if (!Number.isFinite(value)) return 340;
+  return Math.round(Math.min(560, Math.max(240, value)));
+}
+
 function updateSettingsPanel() {
   refs.accountCard.innerHTML = `
     <div class="account-main">
@@ -4093,10 +4240,6 @@ function renderInspirationList() {
     .join("");
   refs.inspirationCategoryFilter.value = state.inspirations.activeCategory;
   refs.inspirationSearchInput.value = state.inspirations.search;
-  refs.inspirationCategoryManagerHint.textContent = state.ui.inspirationCategoryManagerExpanded
-    ? (getLanguage() === "en" ? "Click to collapse category management" : "点击收起分类管理")
-    : (getLanguage() === "en" ? "Click to expand category management" : "点击展开分类管理");
-  refs.inspirationCategoryManagerBody.classList.toggle("hidden", !state.ui.inspirationCategoryManagerExpanded);
   refs.inspirationComposeTitle.textContent = editingItem ? (getLanguage() === "en" ? "Edit Idea" : "编辑灵感") : (getLanguage() === "en" ? "New Idea" : "新建灵感");
   refs.inspirationComposeHint.textContent = editingItem
     ? (getLanguage() === "en" ? "Changes update the current idea directly." : "修改后会直接更新当前灵感条目。")
@@ -4105,20 +4248,8 @@ function renderInspirationList() {
     .filter((item) => item !== "all")
     .map((item) => `<option value="${item}">${escapeHtml(item)}</option>`)
     .join("");
-  refs.inspirationComposeCategory.value = refs.inspirationComposeCategory.value || state.ui.inspirationComposeTags[0] || "待补充";
-  refs.inspirationCategoryList.innerHTML = categories
-    .filter((item) => item !== "all")
-    .map((item, index, items) => `
-        <div class="inspiration-category-row">
-          <span class="tag">${escapeHtml(item)}</span>
-          <div class="inline-actions inspiration-category-actions">
-            <button class="ghost-button compact-button" data-inspiration-category-action="move-up" data-category-name="${escapeAttribute(item)}" ${index === 0 ? "disabled" : ""}>${getLanguage() === "en" ? "Up" : "上移"}</button>
-            <button class="ghost-button compact-button" data-inspiration-category-action="move-down" data-category-name="${escapeAttribute(item)}" ${index === items.length - 1 ? "disabled" : ""}>${getLanguage() === "en" ? "Down" : "下移"}</button>
-            <button class="ghost-button compact-button" data-inspiration-category-action="rename" data-category-name="${escapeAttribute(item)}">${t("library.rename")}</button>
-            <button class="ghost-button compact-button" data-inspiration-category-action="delete" data-category-name="${escapeAttribute(item)}">${t("library.delete")}</button>
-          </div>
-        </div>`)
-    .join("");
+  const selectedComposeTag = state.ui.inspirationComposeTags[0] || "待补充";
+  refs.inspirationComposeCategory.value = categories.includes(selectedComposeTag) ? selectedComposeTag : "待补充";
   refs.inspirationSelectedTags.innerHTML = state.ui.inspirationComposeTags
     .map(
       (tag) =>
@@ -4130,21 +4261,56 @@ function renderInspirationList() {
     : `排序：${state.inspirations.sort === "newest" ? "最新" : state.inspirations.sort === "oldest" ? "最早" : "收藏优先"}`;
   refs.saveInspirationButton.textContent = editingItem ? (getLanguage() === "en" ? "Save Changes" : "保存修改") : (getLanguage() === "en" ? "Save Idea" : "保存灵感");
   const items = getVisibleInspirations();
+  const selectedItems = getSelectedInspirationsForWork(work?.id);
+  const selectedCount = selectedItems.length;
+  const bulkActionBar = work && selectedCount > 0
+    ? `
+      <div class="inspiration-bulk-bar">
+        <span>${getLanguage() === "en" ? `${selectedCount} selected` : `已选择 ${selectedCount} 条灵感`}</span>
+        <div>
+          <button
+            class="primary-button"
+            data-inspiration-action="develop-selected-project-materials"
+            ${state.ui.ideaProjectMaterialsPendingId ? "disabled" : ""}
+          >${getLanguage() === "en" ? "Merge into Project Materials" : "整合发展成项目资料"}</button>
+          <button class="ghost-button" data-inspiration-action="clear-selection">${getLanguage() === "en" ? "Clear" : "清空选择"}</button>
+        </div>
+      </div>
+    `
+    : "";
   refs.inspirationChatList.innerHTML =
     !work
       ? `<div class="empty-state">${getLanguage() === "en" ? "Open a work before viewing its ideas." : "请先打开一个作品，再查看该作品的灵感。"}</div>`
       : items.length === 0
       ? `<div class="empty-state">${getLanguage() === "en" ? "No matching ideas." : "没有符合条件的灵感。"}</div>`
-      : items
+      : `${bulkActionBar}${items
           .map(
-            (item) => `
-              <article class="inspiration-bubble ${item.isPinned ? "pinned" : ""}">
+            (item) => {
+              const collapsed = state.ui.collapsedInspirationIds.includes(item.id);
+              const selected = state.ui.selectedInspirationIds.includes(item.id);
+              return `
+              <article class="inspiration-card ${item.isPinned ? "pinned" : ""} ${collapsed ? "is-collapsed" : ""} ${selected ? "is-selected" : ""}">
                 <header>
+                  <span class="inspiration-select-toggle">
+                    <input
+                      id="inspiration-select-${escapeAttribute(item.id)}"
+                      type="checkbox"
+                      data-inspiration-action="toggle-select"
+                      data-id="${item.id}"
+                      ${selected ? "checked" : ""}
+                    />
+                    <label for="inspiration-select-${escapeAttribute(item.id)}">${getLanguage() === "en" ? "Select" : "选择"}</label>
+                  </span>
                   <span class="inspiration-tag-row">${getInspirationItemCategories(item).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</span>
-                  <time>${escapeHtml(formatInspirationTime(item.updatedAt || item.createdAt))}</time>
+                  <div class="inspiration-card-meta">
+                    ${item.isPinned ? `<span>${getLanguage() === "en" ? "Pinned" : "置顶"}</span>` : ""}
+                    ${item.isFavorite ? `<span>${getLanguage() === "en" ? "Favorite" : "收藏"}</span>` : ""}
+                    <time>${escapeHtml(formatInspirationTime(item.updatedAt || item.createdAt))}</time>
+                  </div>
                 </header>
                 <p>${escapeHtml(item.content)}</p>
                 <footer>
+                  <button data-inspiration-action="toggle-collapse" data-id="${item.id}">${collapsed ? (getLanguage() === "en" ? "Expand" : "展开") : (getLanguage() === "en" ? "Collapse" : "收起")}</button>
                   <button data-inspiration-action="favorite" data-id="${item.id}">${item.isFavorite ? (getLanguage() === "en" ? "Unfavorite" : "取消收藏") : (getLanguage() === "en" ? "Favorite" : "收藏")}</button>
                   <button data-inspiration-action="pin" data-id="${item.id}">${item.isPinned ? (getLanguage() === "en" ? "Unpin" : "取消置顶") : (getLanguage() === "en" ? "Pin" : "置顶")}</button>
                   <button
@@ -4158,9 +4324,10 @@ function renderInspirationList() {
                   <button data-inspiration-action="delete" data-id="${item.id}">${t("library.delete")}</button>
                 </footer>
               </article>
-            `,
+            `;
+            },
           )
-          .join("");
+          .join("")}`;
 }
 
 function updateModal() {
@@ -4173,7 +4340,7 @@ function updateModal() {
 
   refs.modalRoot.innerHTML = `
     <div class="modal-backdrop">
-      <div class="modal-card surface ${modal.type === "shortcuts" ? "shortcut-modal" : ""} ${modal.type === "export-preview" || modal.type === "import-project-conflict" || modal.type === "idea-project-materials-preview" ? "preview-modal" : ""}">
+      <div class="modal-card surface ${modal.type === "shortcuts" ? "shortcut-modal" : ""} ${modal.type === "export-preview" || modal.type === "import-project-conflict" || modal.type === "idea-project-materials-preview" || modal.type === "import-txt-preview" ? "preview-modal" : ""}">
         <strong>${escapeHtml(modal.title)}</strong>
         ${modal.message ? `<pre class="modal-message">${escapeHtml(modal.message)}</pre>` : ""}
         ${modal.body ?? ""}
@@ -4452,6 +4619,64 @@ function openImportTextConflictModal(importedText) {
       { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
       { id: "append-imported-text", label: getLanguage() === "en" ? "Append" : "追加到末尾", primary: false },
       { id: "replace-with-imported-text", label: getLanguage() === "en" ? "Replace" : "覆盖正文", primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function openImportTxtPreviewModal(payload) {
+  const { parsed, sourceFileName, workTitle } = payload;
+  const chapters = Array.isArray(parsed?.chapters) ? parsed.chapters : [];
+  const recognized = Number(parsed?.recognizedCount || 0);
+  const previewChapters = chapters.slice(0, 8);
+  const appendWork = payload.appendWorkId ? getWork(payload.appendWorkId) : null;
+  const ruleText = getLanguage() === "en"
+    ? "Chapter headings: 第...章 / 第...卷 / 序章 / 1. Title / 一、Title / Chapter 1"
+    : "章节标题：第...章 / 第...卷 / 序章 / 1. 标题 / 一、标题 / Chapter 1";
+  state.ui.modal = {
+    type: "import-txt-preview",
+    payload,
+    title: getLanguage() === "en" ? "Import TXT" : "导入 TXT",
+    body: `
+      <div class="import-preview-summary">
+        <div>
+          <span>${getLanguage() === "en" ? "Source" : "来源文件"}</span>
+          <strong>${escapeHtml(sourceFileName)}</strong>
+        </div>
+        <div>
+          <span>${getLanguage() === "en" ? "New work" : "新作品"}</span>
+          <strong>${escapeHtml(workTitle)}</strong>
+        </div>
+        <div>
+          <span>${getLanguage() === "en" ? "Chapter split" : "分章结果"}</span>
+          <strong>${recognized > 0 ? (getLanguage() === "en" ? `${chapters.length} chapters` : `${chapters.length} 章`) : (getLanguage() === "en" ? "1 chapter" : "1 章")}</strong>
+        </div>
+      </div>
+      <div class="import-preview-rule">
+        <span>${getLanguage() === "en" ? "Primary rule" : "优先规则"}</span>
+        <code>${escapeHtml(ruleText)}</code>
+        <small>${recognized > 0
+          ? (getLanguage() === "en" ? "The file will be split before each matched chapter heading." : "将按匹配到的章节标题自动分章。")
+          : (getLanguage() === "en" ? "No chapter headings were found. The file will be imported as one chapter." : "未识别到章节标题，将作为单章导入。")
+        }</small>
+      </div>
+      <div class="import-preview-list">
+        ${previewChapters
+          .map((chapter, index) => `
+            <div class="import-preview-row">
+              <span>${String(index + 1).padStart(2, "0")}</span>
+              <strong>${escapeHtml(chapter.title)}</strong>
+              <small>${t("library.wordCount", { count: countWords(chapter.content) })}</small>
+            </div>
+          `)
+          .join("")}
+        ${chapters.length > previewChapters.length ? `<small class="empty-inline">${getLanguage() === "en" ? `${chapters.length - previewChapters.length} more chapters` : `还有 ${chapters.length - previewChapters.length} 章`}</small>` : ""}
+      </div>
+    `,
+    actions: [
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      ...(appendWork ? [{ id: "confirm-import-txt-append-work", label: getLanguage() === "en" ? `Append to ${appendWork.title}` : `追加到《${appendWork.title}》`, primary: false }] : []),
+      { id: "confirm-import-txt-new-work", label: getLanguage() === "en" ? "Import as New Work" : "导入为新作品", primary: true },
     ],
   };
   updateModal();
@@ -4910,6 +5135,22 @@ async function handleModalAction(action) {
     state.ui.modal = null;
     applyImportedTextToCurrentChapter(importedText, action === "append-imported-text" ? "append" : "replace");
     updateModal();
+    return;
+  }
+
+  if (action === "confirm-import-txt-new-work") {
+    const payload = state.ui.modal?.payload;
+    state.ui.modal = null;
+    updateModal();
+    await createImportedTxtWorkFromPreview(payload);
+    return;
+  }
+
+  if (action === "confirm-import-txt-append-work") {
+    const payload = state.ui.modal?.payload;
+    state.ui.modal = null;
+    updateModal();
+    await appendImportedTxtToCurrentWorkFromPreview(payload);
     return;
   }
 
@@ -5583,8 +5824,32 @@ async function handleInspirationAction(action, id) {
   }
   const work = getCurrentWork();
   if (!work) return;
+  if (action === "toggle-select") {
+    toggleSelectedInspiration(id);
+    return;
+  }
+  if (action === "clear-selection") {
+    clearSelectedInspirations();
+    return;
+  }
+  if (action === "develop-selected-project-materials") {
+    await generateProjectMaterialsFromSelectedInspirations(work);
+    return;
+  }
   const item = getInspirationById(work.id, id);
   if (!item) return;
+  if (action === "toggle-collapse") {
+    const collapsed = new Set(state.ui.collapsedInspirationIds);
+    if (collapsed.has(id)) {
+      collapsed.delete(id);
+    } else {
+      collapsed.add(id);
+    }
+    state.ui.collapsedInspirationIds = [...collapsed];
+    renderInspirationList();
+    persist();
+    return;
+  }
   if (action === "favorite") item.isFavorite = !item.isFavorite;
   if (action === "pin") item.isPinned = !item.isPinned;
   if (action === "insert") insertAtCursor(item.content);
@@ -5601,6 +5866,8 @@ async function handleInspirationAction(action, id) {
       work.id,
       getInspirationsForWork(work.id).filter((entry) => entry.id !== id),
     );
+    state.ui.collapsedInspirationIds = state.ui.collapsedInspirationIds.filter((entryId) => entryId !== id);
+    state.ui.selectedInspirationIds = state.ui.selectedInspirationIds.filter((entryId) => entryId !== id);
     if (state.ui.inspirationEditingId === id) closeInspirationComposer(false);
   } else {
     item.updatedAt = new Date().toISOString();
@@ -5665,22 +5932,12 @@ function toggleThemeAccordion() {
   persist();
 }
 
-function toggleInspirationCategoryManager() {
-  state.ui.inspirationCategoryManagerExpanded = !state.ui.inspirationCategoryManagerExpanded;
-  renderInspirationList();
-  persist();
-}
-
 function openInspirationComposer(editingId = null) {
   const work = getCurrentWork();
   const editingItem = editingId && work ? getInspirationById(work.id, editingId) ?? null : null;
   state.ui.inspirationComposeOpen = true;
   state.ui.inspirationEditingId = editingItem?.id ?? null;
-  state.ui.inspirationComposeTags = editingItem
-    ? getInspirationItemCategories(editingItem)
-    : state.ui.inspirationComposeTags.length > 0
-      ? state.ui.inspirationComposeTags
-      : ["待补充"];
+  state.ui.inspirationComposeTags = editingItem ? getInspirationItemCategories(editingItem) : ["待补充"];
   updateWorkspace();
   renderInspirationList();
   requestAnimationFrame(() => {
@@ -5717,19 +5974,6 @@ function addSelectedInspirationCategory() {
   state.ui.inspirationComposeTags = [...nextTags];
   ensureInspirationCategoriesInOrder(state.ui.inspirationComposeTags);
   refs.inspirationCustomCategoryInput.value = "";
-  renderInspirationList();
-  persist();
-}
-
-function handleCreateInspirationCategory() {
-  const name = refs.inspirationCategoryCreateInput.value.trim();
-  if (!name) return;
-  if (!createInspirationCategory(name)) {
-    openInspirationCategoryDuplicateModal(name);
-    return;
-  }
-  refs.inspirationCategoryCreateInput.value = "";
-  state.ui.inspirationCategoryManagerExpanded = true;
   renderInspirationList();
   persist();
 }
@@ -5791,6 +6035,43 @@ function hasDuplicateInspirationCategoryName(currentName, nextName) {
 
 function getInspirationCategoryUsageCount(categoryName) {
   return getInspirationsForWork(state.activeWorkId).filter((item) => getInspirationItemCategories(item).includes(categoryName)).length;
+}
+
+function getSelectedInspirationsForWork(workId) {
+  if (!workId) return [];
+  const selected = new Set(state.ui.selectedInspirationIds);
+  return getInspirationsForWork(workId).filter((item) => selected.has(item.id));
+}
+
+function toggleSelectedInspiration(inspirationId) {
+  if (!inspirationId) return;
+  const selected = new Set(state.ui.selectedInspirationIds);
+  if (selected.has(inspirationId)) {
+    selected.delete(inspirationId);
+  } else {
+    selected.add(inspirationId);
+  }
+  state.ui.selectedInspirationIds = [...selected];
+  renderInspirationList();
+  persist();
+}
+
+function clearSelectedInspirations() {
+  state.ui.selectedInspirationIds = [];
+  renderInspirationList();
+  persist();
+}
+
+function buildCombinedIdeaFromInspirations(items = []) {
+  return items
+    .map((item, index) => {
+      const tags = getInspirationItemCategories(item).join("、");
+      return [
+        `【灵感 ${index + 1}${tags ? `｜${tags}` : ""}】`,
+        String(item.content || "").trim(),
+      ].filter(Boolean).join("\n");
+    })
+    .join("\n\n");
 }
 
 function normalizeInspirationCategoryName(name) {
@@ -6006,6 +6287,22 @@ async function generateProjectMaterialsFromInspiration(work, inspiration) {
     renderInspirationList();
     updateWorkspace();
   }
+}
+
+async function generateProjectMaterialsFromSelectedInspirations(work) {
+  const selectedItems = getSelectedInspirationsForWork(work.id);
+  if (selectedItems.length === 0) return;
+  const combinedIdea = buildCombinedIdeaFromInspirations(selectedItems);
+  await generateProjectMaterialsFromInspiration(work, {
+    id: "selected-inspirations",
+    content: [
+      getLanguage() === "en"
+        ? "Please merge and reconcile the selected ideas, then develop them into project materials."
+        : "请整合并消化以下多条灵感，把它们发展成统一的项目资料。",
+      "",
+      combinedIdea,
+    ].join("\n"),
+  });
 }
 
 function normalizeProjectMaterialsFromAgent(materials = {}) {
@@ -6674,6 +6971,7 @@ function resetInspirationViewState() {
   state.ui.inspirationComposeOpen = false;
   state.ui.inspirationEditingId = null;
   state.ui.inspirationComposeTags = ["待补充"];
+  state.ui.selectedInspirationIds = [];
 }
 
 function handleInspirationWorkChange(nextWorkId, previousWorkId = state.activeWorkId) {
@@ -6740,14 +7038,23 @@ function cleanTxtChapterSuffix(value) {
     .trim();
 }
 
+function isLikelyImportedTxtTitleLine(value) {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed || trimmed.length > 90) return false;
+  return !/[。！？!?；;]$/.test(trimmed);
+}
+
 function matchImportedTxtChapterHeading(line) {
   const trimmed = normalizeImportedTxtHeadingLine(line);
   if (!trimmed) return null;
 
-  const chapterMatch = trimmed.match(/^第\s*([0-9０-９零一二三四五六七八九十百千万两〇○\s]+)\s*章(.*)$/);
+  const titleNumberPattern = "([0-9０-９零一二三四五六七八九十百千万两〇○壹贰叁肆伍陆柒捌玖拾佰仟\\s]+)";
+  const titleSeparatorPattern = "[\\s:：\\-—~·,，、]+";
+  const chapterMatch = trimmed.match(new RegExp(`^第\\s*${titleNumberPattern}\\s*章(?:${titleSeparatorPattern}(.*))?$`));
   if (chapterMatch) {
     const number = normalizeFullwidthDigits(chapterMatch[1]).replace(/\s+/g, "");
     const suffix = cleanTxtChapterSuffix(chapterMatch[2] ?? "");
+    if (suffix && !isLikelyImportedTxtTitleLine(suffix)) return null;
     return { title: buildImportedTxtChapterTitle(number, suffix, "章") };
   }
 
@@ -6755,21 +7062,41 @@ function matchImportedTxtChapterHeading(line) {
   if (specialMatch) {
     const prefix = specialMatch[1].replace(/\s+/g, "");
     const suffix = cleanTxtChapterSuffix(specialMatch[2] ?? "");
+    if (suffix && !isLikelyImportedTxtTitleLine(suffix)) return null;
     return { title: suffix ? `${prefix} ${suffix}` : prefix };
   }
 
-  const match = trimmed.match(/^第\s*([0-9０-９零一二三四五六七八九十百千万两〇○\s]+)\s*(回|节|卷|部|篇)(?:\s*(.*))?$/);
+  const match = trimmed.match(new RegExp(`^第\\s*${titleNumberPattern}\\s*(回|节|卷|部|篇)(?:${titleSeparatorPattern}(.*))?$`));
   if (match) {
     const number = normalizeFullwidthDigits(match[1]).replace(/\s+/g, "");
     const marker = match[2];
     const suffix = cleanTxtChapterSuffix(match[3] ?? "");
+    if (suffix && !isLikelyImportedTxtTitleLine(suffix)) return null;
     return { title: buildImportedTxtChapterTitle(number, suffix, marker) };
+  }
+
+  const markerFirstMatch = trimmed.match(new RegExp(`^(卷|部|篇|集)\\s*${titleNumberPattern}(?:${titleSeparatorPattern}(.*))?$`));
+  if (markerFirstMatch) {
+    const marker = markerFirstMatch[1];
+    const number = normalizeFullwidthDigits(markerFirstMatch[2]).replace(/\s+/g, "");
+    const suffix = cleanTxtChapterSuffix(markerFirstMatch[3] ?? "");
+    if (suffix && !isLikelyImportedTxtTitleLine(suffix)) return null;
+    return { title: suffix ? `${marker}${number} ${suffix}` : `${marker}${number}` };
+  }
+
+  const orderedTitleMatch = trimmed.match(/^([0-9０-９]{1,4}|[零一二三四五六七八九十百千万两〇○壹贰叁肆伍陆柒捌玖拾佰仟]{1,8})\s*[.．、)]\s*(.{1,80})$/);
+  if (orderedTitleMatch) {
+    const number = normalizeFullwidthDigits(orderedTitleMatch[1]).replace(/\s+/g, "");
+    const suffix = cleanTxtChapterSuffix(orderedTitleMatch[2] ?? "");
+    if (!suffix || !isLikelyImportedTxtTitleLine(suffix)) return null;
+    return { title: buildImportedTxtChapterTitle(number, suffix, "章") };
   }
 
   const englishMatch = trimmed.match(/^chapter\s*([0-9０-９]+|[ivxlcdm]+)(?:[\s:：\-—~·,，。.!！?？、]+(.+))?$/i);
   if (!englishMatch) return null;
   const number = normalizeFullwidthDigits(englishMatch[1]).replace(/\s+/g, "");
   const suffix = cleanTxtChapterSuffix(englishMatch[2] ?? "");
+  if (suffix && !isLikelyImportedTxtTitleLine(suffix)) return null;
   return { title: suffix ? `Chapter ${number} ${suffix}` : `Chapter ${number}` };
 }
 
@@ -6846,9 +7173,22 @@ async function importTxtToNewWork() {
   const parsed = parseImportedTxtChapters(result.content);
   const sourceFileName = getFileNameFromPath(result.filePath) || "imported.txt";
   const workTitle = getFileStem(sourceFileName) || (getLanguage() === "en" ? "Imported TXT" : "TXT 导入");
+  openImportTxtPreviewModal({
+    result,
+    parsed,
+    sourceFileName,
+    workTitle,
+    targetFolderId: state.activeFolderId ?? null,
+    appendWorkId: state.route === "editor" && getCurrentWork() ? state.activeWorkId : null,
+  });
+}
+
+async function createImportedTxtWorkFromPreview(payload) {
+  if (!payload?.parsed || !payload?.result) return;
+  const { result, parsed, sourceFileName, workTitle } = payload;
   const workId = uid("work");
   const now = new Date().toISOString();
-  const targetFolderId = state.activeFolderId ?? null;
+  const targetFolderId = payload.targetFolderId ?? state.activeFolderId ?? null;
   const createdChapters = parsed.chapters.map((chapterData) =>
     createChapterForWork(workId, chapterData.title, {
       content: chapterData.content,
@@ -6888,6 +7228,59 @@ async function importTxtToNewWork() {
     return;
   }
 
+  const copySucceeded = await copyImportedTxtToWork(result, workId, sourceFileName);
+  const message = getImportedTxtResultMessage(sourceFileName, parsed, "new-work");
+  openInfoModal(
+    t("importTxt.successTitle"),
+    copySucceeded ? message : `${message} ${t("importTxt.copyFailed")}`,
+  );
+}
+
+async function appendImportedTxtToCurrentWorkFromPreview(payload) {
+  if (!payload?.parsed || !payload?.result) return;
+  const { result, parsed, sourceFileName } = payload;
+  const work = getWork(payload.appendWorkId) || getCurrentWork();
+  if (!work) return;
+  const now = new Date().toISOString();
+  const createdChapters = parsed.chapters.map((chapterData) =>
+    createChapterForWork(work.id, chapterData.title, {
+      content: chapterData.content,
+      notes: "",
+      outline: "",
+    }),
+  );
+  work.chapterIds.push(...createdChapters.map((chapter) => chapter.id));
+  work.updatedAt = now;
+  work.lastOpenedChapterId = createdChapters[0]?.id ?? work.lastOpenedChapterId;
+  state.ui.libraryWorkViewId = work.id;
+  state.activeWorkId = work.id;
+  state.activeChapterId = createdChapters[0]?.id ?? state.activeChapterId;
+  state.route = "editor";
+  state.ui.chapterPanelOpen = false;
+  state.ui.chapterPanelFocusedId = state.activeChapterId;
+  persist();
+  updateAll();
+
+  const synced = await syncLibraryToDesktop();
+  if (!synced) {
+    openInfoModal(
+      t("importTxt.successTitle"),
+      getLanguage() === "en"
+        ? "TXT chapters were added in the app, but saving them to the work folder failed."
+        : "TXT 章节已在应用中追加，但保存到作品文件夹失败。",
+    );
+    return;
+  }
+
+  const copySucceeded = await copyImportedTxtToWork(result, work.id, sourceFileName);
+  const message = getImportedTxtResultMessage(sourceFileName, parsed, "append-work", work.title);
+  openInfoModal(
+    t("importTxt.successTitle"),
+    copySucceeded ? message : `${message} ${t("importTxt.copyFailed")}`,
+  );
+}
+
+async function copyImportedTxtToWork(result, workId, sourceFileName) {
   let copySucceeded = Boolean(desktopApi?.storeImportedTextFile);
   try {
     if (desktopApi?.storeImportedTextFile) {
@@ -6901,18 +7294,27 @@ async function importTxtToNewWork() {
     copySucceeded = false;
     console.error("Failed to copy imported TXT", error);
   }
+  return copySucceeded;
+}
 
-  const message = parsed.recognizedCount > 0
+function getImportedTxtResultMessage(sourceFileName, parsed, mode, workTitle = "") {
+  const chapterCount = parsed.chapters.length;
+  if (mode === "append-work") {
+    return parsed.recognizedCount > 0
+      ? (getLanguage() === "en"
+          ? `Imported from “${sourceFileName}”. Added ${chapterCount} chapters to “${workTitle}”, and copied the original TXT into the work folder.`
+          : `已从“${sourceFileName}”导入，向《${workTitle}》追加 ${chapterCount} 章，原始 TXT 已复制到该作品文件夹。`)
+      : (getLanguage() === "en"
+          ? `Imported from “${sourceFileName}”. No chapter headings were found, so one chapter was added to “${workTitle}”. The original TXT was copied into the work folder.`
+          : `已从“${sourceFileName}”导入，未识别到章节标题，已向《${workTitle}》追加 1 章，原始 TXT 已复制到该作品文件夹。`);
+  }
+  return parsed.recognizedCount > 0
     ? (getLanguage() === "en"
-        ? `Imported from “${sourceFileName}”. Recognized ${parsed.chapters.length} chapters, and the original TXT was copied into the work folder.`
-        : `已从“${sourceFileName}”导入，共识别到 ${parsed.chapters.length} 章，原始 TXT 已复制到该作品文件夹。`)
+        ? `Imported from “${sourceFileName}”. Recognized ${chapterCount} chapters, and the original TXT was copied into the work folder.`
+        : `已从“${sourceFileName}”导入，共识别到 ${chapterCount} 章，原始 TXT 已复制到该作品文件夹。`)
     : (getLanguage() === "en"
         ? `Imported from “${sourceFileName}”. No chapter headings were found, so the file was imported as one chapter. The original TXT was copied into the work folder.`
         : `已从“${sourceFileName}”导入，未识别到章节标题，已作为 1 章导入，原始 TXT 已复制到该作品文件夹。`);
-  openInfoModal(
-    t("importTxt.successTitle"),
-    copySucceeded ? message : `${message} ${t("importTxt.copyFailed")}`,
-  );
 }
 
 function exportCurrentChapter() {

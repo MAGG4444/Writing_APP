@@ -14,6 +14,9 @@ const requiredUiActions = [
   'data-agent-action="check-consistency"',
   'data-selection-action="ai-rewrite"',
   'data-inspiration-action="develop-project-materials"',
+  'data-inspiration-action="toggle-select"',
+  'data-inspiration-action="develop-selected-project-materials"',
+  'data-inspiration-action="clear-selection"',
 ];
 
 for (const marker of requiredUiActions) {
@@ -45,6 +48,9 @@ assert.ok(appSource.includes("openIdeaProjectMaterialsPreviewModal"), "Idea-to-p
 assert.ok(appSource.includes("confirm-write-idea-project-materials"), "Idea-to-project-materials should require confirmation");
 assert.ok(appSource.includes("desktopApi.generateProjectMaterialsFromIdea"), "Idea-to-project-materials should call the desktop bridge");
 assert.ok(appSource.includes("desktopApi.saveProjectMaterial"), "Confirmed idea materials should reuse project material saving");
+assert.ok(appSource.includes("selectedInspirationIds"), "Idea-to-project-materials should persist selected ideas");
+assert.ok(appSource.includes("buildCombinedIdeaFromInspirations"), "Selected ideas should be merged before developing project materials");
+assert.ok(appSource.includes("generateProjectMaterialsFromSelectedInspirations"), "Selected ideas should support one-click project material generation");
 
 const requiredDesktopCalls = [
   "desktopApi.generateChapterOutline",

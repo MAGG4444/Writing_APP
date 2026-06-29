@@ -5,8 +5,21 @@ const rootDir = path.resolve(__dirname, "..");
 const buildDir = path.join(rootDir, ".app-build");
 const buildAssetsDir = path.join(buildDir, "assets");
 
-const runtimeFiles = ["app.js", "index.html", "main.js", "preload.js", "styles.css"];
+const runtimeFiles = [
+  "agent-prompts.js",
+  "app.js",
+  "index.html",
+  "main.js",
+  "memory-manager.js",
+  "novel-writing-agent.js",
+  "preload.js",
+  "project-manager.js",
+  "skill-manager.js",
+  "styles.css",
+  "tool-manager.js",
+];
 const runtimeImages = ["fold_image.png", "file_image.png"];
+const runtimeDirectories = ["agent-skills"];
 
 async function main() {
   await fs.rm(buildDir, { recursive: true, force: true });
@@ -19,6 +32,12 @@ async function main() {
 
   for (const file of runtimeImages) {
     await fs.copyFile(path.join(rootDir, file), path.join(buildDir, file));
+  }
+
+  for (const directory of runtimeDirectories) {
+    await fs.cp(path.join(rootDir, directory), path.join(buildDir, directory), {
+      recursive: true,
+    });
   }
 
   await fs.cp(path.join(rootDir, "assets", "fonts"), path.join(buildAssetsDir, "fonts"), {

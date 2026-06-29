@@ -269,6 +269,7 @@ function createNovelWritingAgent({ projectManager, memoryManager, tools, llmClie
   async function generate_project_materials_from_idea(input = {}) {
     const projectId = normalizeProjectId(input.project_id ?? input.projectId);
     const idea = String(input.idea ?? input.inspiration ?? "").trim();
+    const materialTypes = normalizeProjectMaterialTypes(input.material_types ?? input.materialTypes);
     if (!idea) throw new Error("idea is required");
     const steps = [];
     let rawMaterials = "";
@@ -289,12 +290,12 @@ function createNovelWritingAgent({ projectManager, memoryManager, tools, llmClie
             writing_skills: writingSkills,
             memory: context.memory || {},
             previous_summaries: [],
-            user_instruction: buildProjectMaterialsInstruction(idea),
+            user_instruction: buildProjectMaterialsInstruction(idea, materialTypes),
           }),
         ),
       );
       const materials = await runStep(steps, "normalize_project_materials", () =>
-        Promise.resolve(normalizeProjectMaterialsDraft(rawMaterials)),
+        Promise.resolve(normalizeProjectMaterialsDraft(rawMaterials, materialTypes)),
       );
       return { ok: true, project_id: projectId, materials, raw_materials: rawMaterials, steps };
     } catch (error) {
@@ -517,22 +518,27 @@ function buildConsistencyInstruction(chapterNumber, chapterContent) {
   ].join("\n");
 }
 
-function buildProjectMaterialsInstruction(idea) {
+function buildProjectMaterialsInstruction(idea, materialTypes = null) {
+  const selectedTypes = normalizeProjectMaterialTypes(materialTypes);
+  const selectedText = selectedTypes.join(", ");
   return [
     "请把以下灵感发展成项目资料草稿。",
     "只输出严格 JSON，不要 Markdown 代码块。",
-    "JSON 必须包含 outline, characters, world, style, goals 五个字符串字段。",
-    "内容要适合直接写入 outline.md、characters.md、world.md、style.md、goals.md。",
+    `JSON 必须包含这些字符串字段：${selectedText}。不要输出未被要求的字段。`,
+    `内容要适合直接写入这些项目资料文件：${selectedTypes.map((type) => `${type}.md`).join(", ")}。`,
     "如果已有项目资料已提供，必须在此基础上补充和细化，不要从零重写。",
     "已有 goals 中的目标章节数、每章目标字数、节奏规则优先级最高，除非原始灵感明确要求修改。",
     "如果原始灵感与已有资料冲突，保留已有资料，并在对应字段里写明“待确认冲突”。",
-    "outline 要包含阶段目标、主要矛盾链和前 3-5 章的具体落地点。",
-    "goals 必须包含目标章节数、每章目标字数、单章推进密度和慢速展开规则。",
+    selectedTypes.includes("outline") ? "outline 要包含阶段目标、主要矛盾链和前 3-5 章的具体落地点。" : "",
+    selectedTypes.includes("characters") ? "characters 要写人物欲望、阻碍和关系变化。" : "",
+    selectedTypes.includes("world") ? "world 要写规则、限制和代价。" : "",
+    selectedTypes.includes("style") ? "style 要写叙事视角、节奏和语言禁忌。" : "",
+    selectedTypes.includes("goals") ? "goals 必须包含目标章节数、每章目标字数、单章推进密度和慢速展开规则。" : "",
     "每个字段控制在 300 到 600 个中文字符以内，先给作者可继续扩展的第一版，不要追求完整长篇设定。",
     "",
     "【原始灵感】",
     idea,
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 const PROJECT_MATERIAL_SECTION_ALIASES = {
@@ -543,7 +549,16 @@ const PROJECT_MATERIAL_SECTION_ALIASES = {
   goals: ["goals", "goal", "写作目标", "写作规格", "目标", "篇幅", "规格"],
 };
 
-function normalizeProjectMaterialsDraft(rawMaterials) {
+function normalizeProjectMaterialTypes(value) {
+  const keys = Object.keys(PROJECT_MATERIAL_SECTION_ALIASES);
+  const selected = Array.isArray(value)
+    ? [...new Set(value.map((item) => String(item)).filter((item) => keys.includes(item)))]
+    : [];
+  return selected.length > 0 ? selected : keys;
+}
+
+function normalizeProjectMaterialsDraft(rawMaterials, materialTypes = null) {
+  const selectedTypes = normalizeProjectMaterialTypes(materialTypes);
   const parsed = parseJsonObject(rawMaterials);
   const source =
     parsed && typeof parsed === "object" && !Array.isArray(parsed)
@@ -555,7 +570,7 @@ function normalizeProjectMaterialsDraft(rawMaterials) {
   if (!source || typeof source !== "object" || Array.isArray(source)) {
     throw new Error("project_materials_prompt must return JSON or Markdown sections");
   }
-  const materials = normalizeProjectMaterialFields(source);
+  const materials = normalizeProjectMaterialFields(source, selectedTypes);
   const missing = Object.entries(materials)
     .filter(([, value]) => !value)
     .map(([key]) => key);
@@ -565,12 +580,13 @@ function normalizeProjectMaterialsDraft(rawMaterials) {
   return materials;
 }
 
-function normalizeProjectMaterialFields(source) {
+function normalizeProjectMaterialFields(source, materialTypes = null) {
   const object = source && typeof source === "object" && !Array.isArray(source) ? source : {};
   const nested = object.materials && typeof object.materials === "object" && !Array.isArray(object.materials) ? object.materials : null;
   const target = nested || object;
+  const selectedTypes = normalizeProjectMaterialTypes(materialTypes);
   return Object.fromEntries(
-    Object.keys(PROJECT_MATERIAL_SECTION_ALIASES).map((key) => [key, getProjectMaterialValue(target, key)]),
+    selectedTypes.map((key) => [key, getProjectMaterialValue(target, key)]),
   );
 }
 
