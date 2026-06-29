@@ -316,7 +316,6 @@ const fontChoices = [
 
 const inspirationCategories = ["all", "人物", "剧情", "对白", "设定", "场景", "待补充"];
 const punctuationChoices = ["，", "。", "？", "！", "“”", "（）", "——", "……"];
-const phraseChoices = ["转场提示", "冲突升级", "伏笔回收", "环境描写", "情绪推进"];
 const supportedLanguages = ["zh", "en"];
 const LIBRARY_FOLDER_ICON = getRuntimeAssetUrl("fold_image.png");
 const LIBRARY_WORK_ICON = getRuntimeAssetUrl("file_image.png");
@@ -402,8 +401,6 @@ const translations = {
     "editor.outline": "章节大纲",
     "editor.outlineExpand": "拓展",
     "editor.outlinePlaceholder": "记录本章大纲与推进节点",
-    "editor.bookmarks": "书签",
-    "editor.addBookmark": "添加书签",
     "editor.openSidebarTitle": "展开章节辅助",
     "editor.openWorkspaceTitle": "展开工作侧栏",
     "editor.bodyEditor": "正文编辑器",
@@ -422,7 +419,6 @@ const translations = {
     "editor.replace": "替换",
     "editor.quote": "引用",
     "editor.divider": "插入分隔",
-    "editor.bookmarkSelection": "设为书签",
     "editor.outlineResize": "拖动调整大纲高度",
     "editor.save": "保存",
     "editor.closeOutline": "关闭大纲面板",
@@ -444,8 +440,33 @@ const translations = {
     "ai.generatedMock": "本地模拟生成",
     "ai.applyDraft": "覆盖旧版本",
     "ai.beforeApplyVersion": "AI 覆盖前版本",
+    "ai.generateOutline": "生成章节小纲",
+    "ai.writeChapter": "按大纲起草",
+    "ai.summarizeChapter": "总结并更新记忆",
+    "ai.checkConsistency": "检查一致性",
+    "ai.generateRevision": "基于正文改稿",
+    "ai.rewriteSelection": "改写选中文本",
+    "ai.running": "AI 处理中……",
+    "ai.idleStatus": "选择一个 AI 操作开始。",
+    "ai.outlineUpdated": "章节小纲已写入大纲。",
+    "ai.chapterDraftReady": "章节正文已生成，可在改稿模式中查看。",
+    "ai.summaryUpdated": "章节记忆已总结并更新。",
+    "ai.consistencyReady": "一致性检查报告已生成。",
+    "ai.latestResult": "最近结果",
+    "ai.outlineResult": "章节小纲",
+    "ai.summaryResult": "章节总结",
+    "ai.draftResult": "章节草稿",
+    "ai.consistencyResult": "一致性报告",
+    "ai.resultSavedToMemory": "已写入项目记忆。",
+    "ai.resultReviewHint": "已生成草稿，可在左右对照改稿模式中查看。",
+    "ai.developIdea": "发展成项目资料",
+    "ai.ideaMaterialsTitle": "项目资料草稿",
+    "ai.ideaMaterialsMessage": "AI 已根据这条灵感生成项目资料草稿。确认后会写入当前作品的项目资料。",
+    "ai.writeProjectMaterials": "写入项目资料",
+    "ai.projectMaterialsWritten": "项目资料已写入。",
+    "ai.selectionRewritten": "选中文本已改写。",
+    "ai.desktopRequired": "AI Agent 需要在桌面应用中使用。",
     "workspace.punctuation": "快捷标点",
-    "workspace.phrases": "常用短语",
     "workspace.wordGoal": "字数目标",
     "workspace.chapterProgress": "章节进度",
     "workspace.wordGoalRemaining": "还差 {count} 字",
@@ -455,10 +476,21 @@ const translations = {
     "workspace.workWords": "作品总字数",
     "workspace.workGoalTotal": "作品目标 {count} 字",
     "workspace.focusTimer": "专注计时",
-    "workspace.focusTimerHint": "仅在编辑器获得焦点时计时",
+    "workspace.focusToday": "本次累计",
     "workspace.resume": "断点续写",
     "workspace.resumeButton": "回到上次光标",
     "workspace.resumeHint": "保存上一次编辑位置",
+    "workspace.toolbarSettings": "工具设置",
+    "workspace.toolbarSettingsHint": "开关和排序右侧写作工具。",
+    "workspace.quickActions": "快捷操作",
+    "workspace.modulePunctuation": "快捷标点",
+    "workspace.moduleQuickActions": "快捷操作",
+    "workspace.moduleWordGoal": "字数目标",
+    "workspace.moduleChapterTools": "章节入口",
+    "workspace.moduleAiAgent": "AI 写作助手",
+    "workspace.showModule": "显示",
+    "workspace.moveUp": "上移",
+    "workspace.moveDown": "下移",
     "workspace.lastPosition": "上次位置：{position}",
     "workspace.wordGoalProgress": "当前 {count} / 目标 {goal}",
     "workspace.selectChapter": "请先选择章节",
@@ -466,8 +498,6 @@ const translations = {
     "workspace.notesEntryHint": "展开左侧备注面板",
     "workspace.outlineEntry": "章节大纲入口",
     "workspace.outlineEntryHint": "查看并编辑本章大纲",
-    "workspace.bookmarkEntry": "书签入口",
-    "workspace.bookmarkEntryHint": "查看并管理书签",
     "menu.renameChapter": "重命名章节",
     "menu.moveChapter": "移动章节",
     "menu.deleteChapter": "删除章节",
@@ -594,8 +624,6 @@ const translations = {
     "editor.outline": "Chapter Outline",
     "editor.outlineExpand": "Expand",
     "editor.outlinePlaceholder": "Record this chapter's outline and beats",
-    "editor.bookmarks": "Bookmarks",
-    "editor.addBookmark": "Add Bookmark",
     "editor.openSidebarTitle": "Open chapter tools",
     "editor.openWorkspaceTitle": "Open workspace sidebar",
     "editor.bodyEditor": "Body Editor",
@@ -614,7 +642,6 @@ const translations = {
     "editor.replace": "Replace",
     "editor.quote": "Quote",
     "editor.divider": "Insert Divider",
-    "editor.bookmarkSelection": "Bookmark",
     "editor.outlineResize": "Drag to resize outline",
     "editor.save": "Save",
     "editor.closeOutline": "Close outline panel",
@@ -636,8 +663,33 @@ const translations = {
     "ai.generatedMock": "Local mock result",
     "ai.applyDraft": "Replace Original",
     "ai.beforeApplyVersion": "Before AI replacement",
+    "ai.generateOutline": "Generate Outline",
+    "ai.writeChapter": "Draft from Outline",
+    "ai.summarizeChapter": "Summarize to Memory",
+    "ai.checkConsistency": "Check Consistency",
+    "ai.generateRevision": "Revise Current Body",
+    "ai.rewriteSelection": "Rewrite Selection",
+    "ai.running": "AI is working...",
+    "ai.idleStatus": "Choose an AI action to start.",
+    "ai.outlineUpdated": "Chapter outline updated.",
+    "ai.chapterDraftReady": "Chapter draft generated. Review it side by side.",
+    "ai.summaryUpdated": "Chapter memory summarized and updated.",
+    "ai.consistencyReady": "Consistency report generated.",
+    "ai.latestResult": "Latest Result",
+    "ai.outlineResult": "Chapter Outline",
+    "ai.summaryResult": "Chapter Summary",
+    "ai.draftResult": "Chapter Draft",
+    "ai.consistencyResult": "Consistency Report",
+    "ai.resultSavedToMemory": "Saved to project memory.",
+    "ai.resultReviewHint": "Draft generated. Review it in the side-by-side revision mode.",
+    "ai.developIdea": "Develop Project Materials",
+    "ai.ideaMaterialsTitle": "Project Materials Draft",
+    "ai.ideaMaterialsMessage": "AI generated project material drafts from this idea. Confirm to write them to the current work.",
+    "ai.writeProjectMaterials": "Write Project Materials",
+    "ai.projectMaterialsWritten": "Project materials written.",
+    "ai.selectionRewritten": "Selected text rewritten.",
+    "ai.desktopRequired": "AI Agent is available in the desktop app.",
     "workspace.punctuation": "Quick Punctuation",
-    "workspace.phrases": "Common Phrases",
     "workspace.wordGoal": "Word Goal",
     "workspace.chapterProgress": "Chapter Progress",
     "workspace.wordGoalRemaining": "{count} words left",
@@ -647,10 +699,21 @@ const translations = {
     "workspace.workWords": "Work Total",
     "workspace.workGoalTotal": "Work goal {count} words",
     "workspace.focusTimer": "Focus Timer",
-    "workspace.focusTimerHint": "Counts only while the editor is focused",
+    "workspace.focusToday": "Session Total",
     "workspace.resume": "Resume Point",
     "workspace.resumeButton": "Return to Cursor",
     "workspace.resumeHint": "Save the previous cursor position",
+    "workspace.toolbarSettings": "Tool Settings",
+    "workspace.toolbarSettingsHint": "Toggle and reorder writing tools.",
+    "workspace.quickActions": "Quick Actions",
+    "workspace.modulePunctuation": "Quick Punctuation",
+    "workspace.moduleQuickActions": "Quick Actions",
+    "workspace.moduleWordGoal": "Word Goal",
+    "workspace.moduleChapterTools": "Chapter Entries",
+    "workspace.moduleAiAgent": "AI Writing Agent",
+    "workspace.showModule": "Show",
+    "workspace.moveUp": "Up",
+    "workspace.moveDown": "Down",
     "workspace.lastPosition": "Last position: {position}",
     "workspace.wordGoalProgress": "Current {count} / Goal {goal}",
     "workspace.selectChapter": "Select a chapter first",
@@ -658,8 +721,6 @@ const translations = {
     "workspace.notesEntryHint": "Open the notes panel",
     "workspace.outlineEntry": "Chapter Outline",
     "workspace.outlineEntryHint": "View and edit this outline",
-    "workspace.bookmarkEntry": "Bookmarks",
-    "workspace.bookmarkEntryHint": "View and manage bookmarks",
     "menu.renameChapter": "Rename Chapter",
     "menu.moveChapter": "Move Chapter",
     "menu.deleteChapter": "Delete Chapter",
@@ -735,15 +796,42 @@ const aiProviderDefaults = {
   deepseek: "deepseek-v4-flash",
   custom: "",
 };
+const projectMaterialTypes = [
+  { id: "outline", zh: "项目大纲", en: "Outline" },
+  { id: "characters", zh: "角色设定", en: "Characters" },
+  { id: "world", zh: "世界观", en: "World" },
+  { id: "style", zh: "风格偏好", en: "Style" },
+  { id: "goals", zh: "写作目标", en: "Goals" },
+];
+const writingToolModules = [
+  { id: "punctuation", labelKey: "workspace.modulePunctuation" },
+  { id: "quick-actions", labelKey: "workspace.moduleQuickActions" },
+  { id: "word-goal", labelKey: "workspace.moduleWordGoal" },
+  { id: "chapter-tools", labelKey: "workspace.moduleChapterTools" },
+  { id: "ai-agent", labelKey: "workspace.moduleAiAgent" },
+];
 const state = loadState();
 const refs = {};
 const desktopApi = window.storyForgeDesktop ?? null;
+const projectMaterialsState = {
+  workId: null,
+  currentType: "outline",
+  materials: {},
+  chapters: [],
+  loading: false,
+  saving: false,
+  dirty: false,
+  status: "",
+};
 let appVersion = "";
 let autosaveTimer = null;
 let librarySyncTimer = null;
 let librarySyncSequence = 0;
 let librarySyncPending = false;
 let focusTimer = null;
+let focusTimerLongPressTimer = null;
+let focusTimerLongPressTriggered = false;
+const focusTimerLongPressMs = 650;
 let suppressHistory = false;
 let draggedChapterId = null;
 let draggedLibrarySectionId = null;
@@ -1025,7 +1113,7 @@ function createSeedState() {
       replaceOpen: false,
       leftSidebarCollapsed: false,
       rightSidebarCollapsed: false,
-      sidebarSection: "notes",
+      sidebarSection: "home",
       selectionVisible: false,
       selectionStart: 0,
       selectionEnd: 0,
@@ -1058,6 +1146,11 @@ function createSeedState() {
       aiDraftsByChapter: {},
       aiReviewMode: false,
       aiGenerationPending: false,
+      agentActionPending: "",
+      agentStatus: "",
+      ideaProjectMaterialsPendingId: null,
+      writingToolOrder: writingToolModules.map((item) => item.id),
+      writingToolVisibility: Object.fromEntries(writingToolModules.map((item) => [item.id, true])),
       settingsThemeExpanded: false,
       modal: null,
     },
@@ -1137,6 +1230,7 @@ function ensureStateIntegrity() {
   state.activeTab = ["writing", "inspiration", "settings"].includes(state.activeTab) ? state.activeTab : "writing";
   state.ui.leftSidebarCollapsed ??= false;
   state.ui.rightSidebarCollapsed ??= false;
+  state.ui.sidebarSection = ["home", "notes", "outline", "materials"].includes(state.ui.sidebarSection) ? state.ui.sidebarSection : "home";
   state.ui.libraryScrollTop ??= 0;
   state.ui.libraryCreateOpen ??= false;
   state.ui.libraryEntityMenu ??= null;
@@ -1164,6 +1258,13 @@ function ensureStateIntegrity() {
   state.ui.aiDraftsByChapter = state.ui.aiDraftsByChapter && typeof state.ui.aiDraftsByChapter === "object" ? state.ui.aiDraftsByChapter : {};
   state.ui.aiReviewMode = Boolean(state.ui.aiReviewMode);
   state.ui.aiGenerationPending = false;
+  state.ui.agentActionPending = "";
+  state.ui.agentStatus = String(state.ui.agentStatus || "");
+  state.ui.ideaProjectMaterialsPendingId ??= null;
+  normalizeWritingToolLayout();
+  state.ui.projectMaterialType = projectMaterialTypes.some((item) => item.id === state.ui.projectMaterialType)
+    ? state.ui.projectMaterialType
+    : "outline";
   state.ui.settingsThemeExpanded ??= false;
   state.ui.focusTarget = ["document", "outline"].includes(state.ui.focusTarget) ? state.ui.focusTarget : "document";
   state.theme ??= {};
@@ -1281,6 +1382,27 @@ function ensureStateIntegrity() {
   normalizeActiveSelection();
   syncOutlineStateWithCurrentChapter();
   persist();
+}
+
+function normalizeWritingToolLayout() {
+  const knownIds = writingToolModules.map((item) => item.id);
+  const sourceOrder = Array.isArray(state.ui.writingToolOrder) ? state.ui.writingToolOrder.map(String) : [];
+  state.ui.writingToolOrder = [
+    ...sourceOrder.filter((id, index, items) => knownIds.includes(id) && items.indexOf(id) === index),
+    ...knownIds.filter((id) => !sourceOrder.includes(id)),
+  ];
+  const sourceVisibility =
+    state.ui.writingToolVisibility && typeof state.ui.writingToolVisibility === "object"
+      ? state.ui.writingToolVisibility
+      : {};
+  state.ui.writingToolVisibility = Object.fromEntries(
+    knownIds.map((id) => [id, sourceVisibility[id] !== false]),
+  );
+}
+
+function getVisibleWritingToolModuleIds() {
+  normalizeWritingToolLayout();
+  return state.ui.writingToolOrder.filter((id) => state.ui.writingToolVisibility[id] !== false);
 }
 
 function normalizeInspirationState(workIdMap = null) {
@@ -1716,26 +1838,43 @@ function EditorPage() {
             <strong>${t("editor.sidebarTitle")}</strong>
             <button class="ghost-button compact-button" id="left-sidebar-toggle-button">${t("editor.collapse")}</button>
           </div>
-          <div class="sidebar-section">
+          <div class="sidebar-nav" id="left-sidebar-nav">
+            <button class="sidebar-nav-card" data-open-side="notes">
+              <strong>${t("editor.notes")}</strong>
+              <small>${getLanguage() === "en" ? "Chapter notes and temporary ideas" : "本章备注与临时想法"}</small>
+            </button>
+            <button class="sidebar-nav-card" data-open-side="outline">
+              <strong>${t("editor.outline")}</strong>
+              <small>${getLanguage() === "en" ? "Chapter outline and beats" : "本章大纲与节拍"}</small>
+            </button>
+            <button class="sidebar-nav-card" data-open-side="materials">
+              <strong>${getLanguage() === "en" ? "Project Materials" : "项目资料"}</strong>
+              <small>${getLanguage() === "en" ? "Novel outline, characters, world, and style" : "项目大纲、角色、世界观与风格"}</small>
+            </button>
+          </div>
+          <div class="sidebar-section sidebar-detail" data-sidebar-detail="notes">
             <div class="sidebar-section-head">
               <strong>${t("editor.notes")}</strong>
-              <button class="ghost-button compact-button" data-open-side="notes">${t("editor.locate")}</button>
+              <button class="ghost-button compact-button" data-open-side="home">${getLanguage() === "en" ? "Back" : "返回"}</button>
             </div>
             <textarea id="chapter-notes-input" placeholder="${escapeAttribute(t("editor.notesPlaceholder"))}"></textarea>
           </div>
-          <div class="sidebar-section">
+          <div class="sidebar-section sidebar-detail" data-sidebar-detail="outline">
             <div class="sidebar-section-head">
               <strong>${t("editor.outline")}</strong>
-              <button class="ghost-button compact-button" id="outline-expand-button">${t("editor.outlineExpand")}</button>
+              <div class="sidebar-head-actions">
+                <button class="ghost-button compact-button" id="outline-expand-button">${t("editor.outlineExpand")}</button>
+                <button class="ghost-button compact-button" data-open-side="home">${getLanguage() === "en" ? "Back" : "返回"}</button>
+              </div>
             </div>
             <textarea id="chapter-outline-input" class="chapter-outline-input" placeholder="${escapeAttribute(t("editor.outlinePlaceholder"))}"></textarea>
           </div>
-          <div class="sidebar-section">
+          <div class="sidebar-section sidebar-detail" data-sidebar-detail="materials">
             <div class="sidebar-section-head">
-              <strong>${t("editor.bookmarks")}</strong>
-              <button class="ghost-button compact-button" id="add-bookmark-button">${t("editor.addBookmark")}</button>
+              <strong>${getLanguage() === "en" ? "Project Materials" : "项目资料"}</strong>
+              <button class="ghost-button compact-button" data-open-side="home">${getLanguage() === "en" ? "Back" : "返回"}</button>
             </div>
-            <div class="bookmark-list" id="bookmark-list"></div>
+            ${ProjectMaterialsPanel()}
           </div>
         </aside>
         <button class="edge-toggle edge-toggle-left hidden" id="left-sidebar-reopen-button" title="${escapeAttribute(t("editor.openSidebarTitle"))}">></button>
@@ -1806,11 +1945,12 @@ function DocumentEditor() {
         <input id="replace-query-input" type="text" placeholder="${escapeAttribute(t("editor.replacePlaceholder"))}" />
         <button class="ghost-button" id="find-next-button">${t("editor.findNext")}</button>
         <button class="ghost-button" id="replace-button">${t("editor.replace")}</button>
+        <button class="icon-button" id="close-find-button" title="${escapeAttribute(getLanguage() === "en" ? "Close find" : "关闭查找")}">×</button>
       </div>
       <div class="selection-toolbar hidden" id="selection-toolbar">
         <button class="ghost-button compact-button" data-selection-action="quote">${t("editor.quote")}</button>
         <button class="ghost-button compact-button" data-selection-action="divider">${t("editor.divider")}</button>
-        <button class="ghost-button compact-button" data-selection-action="bookmark">${t("editor.bookmarkSelection")}</button>
+        <button class="ghost-button compact-button" data-selection-action="ai-rewrite">${t("ai.rewriteSelection")}</button>
       </div>
       <div class="editor-stack" id="editor-stack">
         <div class="editor-primary-pane" id="editor-primary-pane">
@@ -1876,56 +2016,71 @@ function BottomWorkspaceTabs() {
 function WritingPanel() {
   return `
     <div class="writing-panel" id="writing-panel">
-      <div class="tool-group">
+      <div class="writing-toolbar-top">
+        <button class="focus-timer-chip" id="focus-timer-compact-button" type="button" title="${getLanguage() === "en" ? "Place the cursor in the editor to start. Click to pause. Hold to reset." : "将光标放入编辑区开始计时，点击暂停，长按重置"}">
+          <span>${t("workspace.focusTimer")}</span>
+          <strong id="focus-timer-value">0h 0m 0s</strong>
+        </button>
+        <button class="primary-button" data-writing-action="toolbar-settings">${t("workspace.toolbarSettings")}</button>
+      </div>
+      ${getVisibleWritingToolModuleIds().map(renderWritingToolModule).join("")}
+    </div>
+  `;
+}
+
+function renderWritingToolModule(moduleId) {
+  if (moduleId === "punctuation") {
+    return `
+      <section class="tool-group" data-writing-tool-module="punctuation">
         <label>${t("workspace.punctuation")}</label>
         <div class="chip-row">
           ${punctuationChoices.map((item) => `<button class="chip" data-insert-text="${escapeAttribute(item)}">${escapeHtml(item)}</button>`).join("")}
         </div>
-      </div>
-      <div class="tool-group">
-        <label>${t("workspace.phrases")}</label>
-        <div class="chip-row">
-          ${phraseChoices.map((item) => `<button class="chip" data-insert-text="${escapeAttribute(item)}">${escapeHtml(item)}</button>`).join("")}
-        </div>
-      </div>
-      <div class="tool-grid two-col">
-        <button class="ghost-button" data-writing-action="divider">${t("editor.divider")}</button>
-        <button class="ghost-button" data-writing-action="toggle-find">${getLanguage() === "en" ? "Find/Replace" : "查找替换"}</button>
-        <button class="ghost-button" data-writing-action="undo">${getLanguage() === "en" ? "Undo" : "撤销"}</button>
-        <button class="ghost-button" data-writing-action="redo">${getLanguage() === "en" ? "Redo" : "重做"}</button>
-        <button class="ghost-button" data-writing-action="prev">${getLanguage() === "en" ? "Previous Chapter" : "上一章节"}</button>
-        <button class="ghost-button" data-writing-action="next">${getLanguage() === "en" ? "Next Chapter" : "下一章节"}</button>
-      </div>
-      <div class="tool-grid three-col">
-        <div class="tool-card stat-card word-goal-card">
-          <label>${t("workspace.wordGoal")}</label>
-          <input id="word-goal-input" type="number" min="0" />
-          <div class="word-goal-meter" aria-hidden="true">
-            <span id="word-goal-progress-bar"></span>
-          </div>
-          <small id="word-goal-progress"></small>
-          <div class="word-goal-stats">
-            <span>${t("workspace.chapterProgress")}</span>
-            <strong id="word-goal-balance">--</strong>
-          </div>
-          <div class="word-goal-stats">
-            <span>${t("workspace.workWords")}</span>
-            <strong id="work-word-total">--</strong>
-          </div>
-          <small id="work-goal-total"></small>
-        </div>
-        <div class="tool-card stat-card">
-          <label>${t("workspace.focusTimer")}</label>
-          <strong id="focus-timer-value">0h 0m 0s</strong>
-          <small>${t("workspace.focusTimerHint")}</small>
-        </div>
-        <div class="tool-card stat-card">
-          <label>${t("workspace.resume")}</label>
-          <button class="ghost-button" data-writing-action="resume">${t("workspace.resumeButton")}</button>
+      </section>
+    `;
+  }
+  if (moduleId === "quick-actions") {
+    return `
+      <section class="tool-card quick-actions-card" data-writing-tool-module="quick-actions">
+        <div class="section-line">
+          <strong>${t("workspace.quickActions")}</strong>
           <small id="resume-hint">${t("workspace.resumeHint")}</small>
         </div>
-      </div>
-      <div class="tool-grid two-col">
+        <div class="tool-grid two-col">
+          <button class="ghost-button" data-writing-action="divider">${t("editor.divider")}</button>
+          <button class="ghost-button" data-writing-action="undo">${getLanguage() === "en" ? "Undo" : "撤销"}</button>
+          <button class="ghost-button" data-writing-action="redo">${getLanguage() === "en" ? "Redo" : "重做"}</button>
+          <button class="ghost-button" data-writing-action="resume">${t("workspace.resumeButton")}</button>
+          <button class="ghost-button" data-writing-action="prev">${getLanguage() === "en" ? "Previous Chapter" : "上一章节"}</button>
+          <button class="ghost-button" data-writing-action="next">${getLanguage() === "en" ? "Next Chapter" : "下一章节"}</button>
+        </div>
+      </section>
+    `;
+  }
+  if (moduleId === "word-goal") {
+    return `
+      <section class="tool-card stat-card word-goal-card" data-writing-tool-module="word-goal">
+        <label>${t("workspace.wordGoal")}</label>
+        <input id="word-goal-input" type="number" min="0" />
+        <div class="word-goal-meter" aria-hidden="true">
+          <span id="word-goal-progress-bar"></span>
+        </div>
+        <small id="word-goal-progress"></small>
+        <div class="word-goal-stats">
+          <span>${t("workspace.chapterProgress")}</span>
+          <strong id="word-goal-balance">--</strong>
+        </div>
+        <div class="word-goal-stats">
+          <span>${t("workspace.workWords")}</span>
+          <strong id="work-word-total">--</strong>
+        </div>
+        <small id="work-goal-total"></small>
+      </section>
+    `;
+  }
+  if (moduleId === "chapter-tools") {
+    return `
+      <section class="tool-grid two-col" data-writing-tool-module="chapter-tools">
         <button class="tool-card action-card" data-writing-action="open-notes">
           <strong>${t("workspace.notesEntry")}</strong>
           <small>${t("workspace.notesEntryHint")}</small>
@@ -1934,25 +2089,32 @@ function WritingPanel() {
           <strong>${t("workspace.outlineEntry")}</strong>
           <small>${t("workspace.outlineEntryHint")}</small>
         </button>
-      </div>
-      <div class="tool-grid two-col">
-        <button class="tool-card action-card" data-writing-action="open-bookmarks">
-          <strong>${t("workspace.bookmarkEntry")}</strong>
-          <small>${t("workspace.bookmarkEntryHint")}</small>
-        </button>
-      </div>
-      <section class="tool-card writing-ai-card">
+      </section>
+    `;
+  }
+  if (moduleId === "ai-agent") {
+    return `
+      <section class="tool-card writing-ai-card" data-writing-tool-module="ai-agent">
         <div class="section-line">
           <strong>${t("ai.title")}</strong>
-          <small>${getLanguage() === "en" ? "Open a side-by-side revision view for the current chapter." : "进入当前章节的左右对照改稿界面。"}</small>
+          <small>${getLanguage() === "en" ? "Use project materials, memory, and the current chapter." : "使用项目资料、记忆和当前章节上下文。"}</small>
+        </div>
+        <small class="agent-target-hint" id="agent-target-hint"></small>
+        <div class="agent-action-grid">
+          <button class="ghost-button" data-agent-action="generate-outline">${t("ai.generateOutline")}</button>
+          <button class="ghost-button" data-agent-action="write-chapter">${t("ai.writeChapter")}</button>
+          <button class="ghost-button" data-agent-action="summarize-chapter">${t("ai.summarizeChapter")}</button>
+          <button class="ghost-button" data-agent-action="check-consistency">${t("ai.checkConsistency")}</button>
         </div>
         <div class="ai-review-actions">
           <button class="primary-button" data-ai-action="open-review">${getLanguage() === "en" ? "Review with AI" : "AI 改稿"}</button>
-          <button class="ghost-button" data-ai-action="generate-mock">${getLanguage() === "en" ? "Generate AI Version" : "生成 AI 新版"}</button>
+          <button class="ghost-button" data-ai-action="generate-mock">${t("ai.generateRevision")}</button>
         </div>
+        <div class="agent-status" id="agent-status"></div>
       </section>
-    </div>
-  `;
+    `;
+  }
+  return "";
 }
 
 function InspirationPanel() {
@@ -1999,6 +2161,37 @@ function InspirationPanel() {
         </div>
       </div>
       <div class="inspiration-chat-list" id="inspiration-chat-list"></div>
+    </div>
+  `;
+}
+
+function ProjectMaterialsPanel() {
+  return `
+    <div class="project-materials-panel" id="project-materials-panel">
+      <section class="tool-card project-materials-card">
+        <div class="section-line">
+          <strong>${getLanguage() === "en" ? "Project Materials" : "项目资料"}</strong>
+          <small>${getLanguage() === "en" ? "Edit local project files for this novel." : "编辑当前作品的本地资料文件。"}</small>
+        </div>
+        <label>${getLanguage() === "en" ? "Material" : "资料类型"}</label>
+        <select id="project-material-type-select">
+          ${projectMaterialTypes
+            .map((item) => `<option value="${escapeAttribute(item.id)}">${escapeHtml(getLanguage() === "en" ? item.en : item.zh)}</option>`)
+            .join("")}
+        </select>
+        <textarea id="project-material-editor" class="project-material-editor" spellcheck="false"></textarea>
+        <div class="project-materials-footer">
+          <small id="project-material-status"></small>
+          <button class="primary-button" id="save-project-material-button">${getLanguage() === "en" ? "Save Material" : "保存资料"}</button>
+        </div>
+      </section>
+      <section class="tool-card project-materials-card">
+        <div class="section-line">
+          <strong>${getLanguage() === "en" ? "Material Chapter Files" : "资料章节文件"}</strong>
+          <small>${getLanguage() === "en" ? "Files stored in the project materials chapters folder." : "项目资料 chapters 文件夹中的文件。"}</small>
+        </div>
+        <div class="project-material-chapter-list" id="project-material-chapter-list"></div>
+      </section>
     </div>
   `;
 }
@@ -2122,6 +2315,7 @@ function collectRefs() {
   refs.replaceQueryInput = document.getElementById("replace-query-input");
   refs.findNextButton = document.getElementById("find-next-button");
   refs.replaceButton = document.getElementById("replace-button");
+  refs.closeFindButton = document.getElementById("close-find-button");
   refs.selectionToolbar = document.getElementById("selection-toolbar");
   refs.editorMain = document.getElementById("editor-main");
   refs.editorStack = document.getElementById("editor-stack");
@@ -2141,10 +2335,10 @@ function collectRefs() {
   refs.outlinePanelSaveButton = document.getElementById("outline-panel-save-button");
   refs.outlinePanelCloseButton = document.getElementById("outline-panel-close-button");
   refs.outlinePanelResizeHandle = document.getElementById("outline-panel-resize-handle");
-  refs.bookmarkList = document.getElementById("bookmark-list");
   refs.leftSidebarToggleButton = document.getElementById("left-sidebar-toggle-button");
   refs.leftSidebarReopenButton = document.getElementById("left-sidebar-reopen-button");
-  refs.addBookmarkButton = document.getElementById("add-bookmark-button");
+  refs.leftSidebarNav = document.getElementById("left-sidebar-nav");
+  refs.sidebarDetails = [...document.querySelectorAll("[data-sidebar-detail]")];
   refs.workspaceSidebar = document.getElementById("workspace-sidebar");
   refs.rightSidebarToggleButton = document.getElementById("right-sidebar-toggle-button");
   refs.rightSidebarReopenButton = document.getElementById("right-sidebar-reopen-button");
@@ -2156,8 +2350,11 @@ function collectRefs() {
   refs.wordGoalBalance = document.getElementById("word-goal-balance");
   refs.workWordTotal = document.getElementById("work-word-total");
   refs.workGoalTotal = document.getElementById("work-goal-total");
+  refs.focusTimerCompactButton = document.getElementById("focus-timer-compact-button");
   refs.focusTimerValue = document.getElementById("focus-timer-value");
   refs.resumeHint = document.getElementById("resume-hint");
+  refs.agentStatus = document.getElementById("agent-status");
+  refs.agentTargetHint = document.getElementById("agent-target-hint");
   refs.inspirationCategoryFilter = document.getElementById("inspiration-category-filter");
   refs.inspirationSearchInput = document.getElementById("inspiration-search-input");
   refs.inspirationSortButton = document.getElementById("inspiration-sort-button");
@@ -2178,6 +2375,11 @@ function collectRefs() {
   refs.saveInspirationButton = document.getElementById("save-inspiration-button");
   refs.cancelInspirationButton = document.getElementById("cancel-inspiration-button");
   refs.inspirationChatList = document.getElementById("inspiration-chat-list");
+  refs.projectMaterialTypeSelect = document.getElementById("project-material-type-select");
+  refs.projectMaterialEditor = document.getElementById("project-material-editor");
+  refs.projectMaterialStatus = document.getElementById("project-material-status");
+  refs.saveProjectMaterialButton = document.getElementById("save-project-material-button");
+  refs.projectMaterialChapterList = document.getElementById("project-material-chapter-list");
   refs.accountCard = document.getElementById("account-card");
   refs.aiProviderSelect = document.getElementById("ai-provider-select");
   refs.aiModelInput = document.getElementById("ai-model-input");
@@ -2237,8 +2439,10 @@ function bindEvents() {
   refs.chapterPanelList.addEventListener("dragend", handleChapterDragEnd);
   refs.moreMenuButton.addEventListener("click", () => refs.moreMenu.classList.toggle("hidden"));
   refs.wordCountButton.addEventListener("click", () => switchTab("writing"));
+  bindFocusTimerButton();
   refs.findNextButton.addEventListener("click", findNext);
   refs.replaceButton.addEventListener("click", replaceCurrent);
+  refs.closeFindButton.addEventListener("click", closeFindReplace);
   refs.findQueryInput.addEventListener("input", (event) => {
     state.ui.findQuery = event.target.value;
     persist();
@@ -2270,10 +2474,9 @@ function bindEvents() {
   refs.outlinePanelResizeHandle.addEventListener("mousedown", beginOutlineResize);
   refs.leftSidebarToggleButton.addEventListener("click", toggleLeftSidebar);
   refs.leftSidebarReopenButton.addEventListener("click", toggleLeftSidebar);
-  refs.addBookmarkButton.addEventListener("click", () => addBookmarkFromSelection());
   refs.rightSidebarToggleButton.addEventListener("click", toggleRightSidebar);
   refs.rightSidebarReopenButton.addEventListener("click", toggleRightSidebar);
-  refs.wordGoalInput.addEventListener("input", handleWordGoalInput);
+  refs.wordGoalInput?.addEventListener("input", handleWordGoalInput);
   refs.inspirationCategoryFilter.addEventListener("change", (event) => {
     state.inspirations.activeCategory = event.target.value;
     renderInspirationList();
@@ -2295,6 +2498,9 @@ function bindEvents() {
   refs.addInspirationCategoryButton.addEventListener("click", addSelectedInspirationCategory);
   refs.saveInspirationButton.addEventListener("click", saveComposedInspiration);
   refs.cancelInspirationButton.addEventListener("click", closeInspirationComposer);
+  refs.projectMaterialTypeSelect.addEventListener("change", handleProjectMaterialTypeChange);
+  refs.projectMaterialEditor.addEventListener("input", handleProjectMaterialInput);
+  refs.saveProjectMaterialButton.addEventListener("click", () => void saveCurrentProjectMaterial());
   refs.aiProviderSelect.addEventListener("change", handleAiProviderChange);
   refs.saveAiSettingsButton.addEventListener("click", () => void saveAiSettingsFromForm());
   refs.themeAccordionButton.addEventListener("click", toggleThemeAccordion);
@@ -2333,6 +2539,17 @@ function bindEvents() {
   });
   refs.app.addEventListener("click", handleDelegatedClick);
   refs.app.addEventListener("keydown", (event) => {
+    const key = event.key.toLowerCase();
+    if (!state.ui.modal && (event.metaKey || event.ctrlKey) && key === "f" && state.route === "editor") {
+      event.preventDefault();
+      openFindReplace();
+      return;
+    }
+    if (!state.ui.modal && event.key === "Escape" && state.ui.replaceOpen) {
+      event.preventDefault();
+      closeFindReplace();
+      return;
+    }
     if (!state.ui.modal || event.key !== "Enter") return;
     if (event.shiftKey || event.isComposing) return;
     const target = event.target;
@@ -2361,6 +2578,35 @@ function bindEvents() {
     window.addEventListener("resize", syncOutlinePanelLayout);
     globalEventsBound = true;
   }
+}
+
+function bindFocusTimerButton() {
+  if (!refs.focusTimerCompactButton) return;
+
+  const clearLongPress = () => {
+    clearTimeout(focusTimerLongPressTimer);
+    focusTimerLongPressTimer = null;
+  };
+
+  refs.focusTimerCompactButton.addEventListener("pointerdown", () => {
+    focusTimerLongPressTriggered = false;
+    clearLongPress();
+    focusTimerLongPressTimer = setTimeout(() => {
+      focusTimerLongPressTriggered = true;
+      resetFocusTimer();
+    }, focusTimerLongPressMs);
+  });
+  ["pointerup", "pointerleave", "pointercancel"].forEach((eventName) => {
+    refs.focusTimerCompactButton.addEventListener(eventName, clearLongPress);
+  });
+  refs.focusTimerCompactButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    if (focusTimerLongPressTriggered) {
+      focusTimerLongPressTriggered = false;
+      return;
+    }
+    stopFocusTimer();
+  });
 }
 
 async function handleDelegatedClick(event) {
@@ -2481,9 +2727,15 @@ async function handleDelegatedClick(event) {
     return;
   }
 
+  const agentAction = event.target.closest("[data-agent-action]");
+  if (agentAction) {
+    await handleAgentAction(agentAction.dataset.agentAction);
+    return;
+  }
+
   const inspirationAction = event.target.closest("[data-inspiration-action]");
   if (inspirationAction) {
-    handleInspirationAction(inspirationAction.dataset.inspirationAction, inspirationAction.dataset.id);
+    await handleInspirationAction(inspirationAction.dataset.inspirationAction, inspirationAction.dataset.id);
     return;
   }
 
@@ -2498,7 +2750,7 @@ async function handleDelegatedClick(event) {
 
   const selectionAction = event.target.closest("[data-selection-action]");
   if (selectionAction) {
-    applySelectionAction(selectionAction.dataset.selectionAction);
+    await applySelectionAction(selectionAction.dataset.selectionAction);
     return;
   }
 
@@ -2509,12 +2761,6 @@ async function handleDelegatedClick(event) {
     applyTheme();
     updateSettingsPanel();
     persist();
-    return;
-  }
-
-  const bookmarkChip = event.target.closest("[data-bookmark-index]");
-  if (bookmarkChip) {
-    insertAtCursor(bookmarkChip.dataset.bookmarkText);
     return;
   }
 
@@ -2951,13 +3197,13 @@ function hydrateEditor() {
   refs.chapterNotesInput.disabled = !chapter;
   refs.chapterOutlineInput.disabled = !chapter;
   refs.outlinePanelEditor.disabled = !chapter;
-  refs.wordGoalInput.disabled = !chapter;
+  if (refs.wordGoalInput) refs.wordGoalInput.disabled = !chapter;
   if (!chapter) {
     refs.documentEditor.value = "";
     refs.chapterNotesInput.value = "";
     refs.chapterOutlineInput.value = "";
     refs.outlinePanelEditor.value = "";
-    refs.wordGoalInput.value = "0";
+    if (refs.wordGoalInput) refs.wordGoalInput.value = "0";
     refs.documentEditor.placeholder = t("editor.emptyPlaceholder");
     refs.findQueryInput.value = state.ui.findQuery;
     refs.replaceQueryInput.value = state.ui.replaceQuery;
@@ -2972,7 +3218,7 @@ function hydrateEditor() {
   refs.outlinePanelEditor.value = state.currentChapterOutline;
   refs.findQueryInput.value = state.ui.findQuery;
   refs.replaceQueryInput.value = state.ui.replaceQuery;
-  refs.wordGoalInput.value = String(chapter.wordGoal);
+  if (refs.wordGoalInput) refs.wordGoalInput.value = String(chapter.wordGoal);
 }
 
 function updateTopBar() {
@@ -3053,19 +3299,11 @@ function updateSidebar() {
   refs.chapterSidebar.classList.toggle("sidebar-collapsed", state.ui.leftSidebarCollapsed);
   refs.leftSidebarReopenButton.classList.toggle("hidden", !state.ui.leftSidebarCollapsed);
   refs.leftSidebarToggleButton.textContent = state.ui.leftSidebarCollapsed ? t("editor.expand") : t("editor.collapse");
-  refs.chapterNotesInput.parentElement.classList.toggle("muted-section", state.ui.sidebarSection !== "notes");
-  refs.chapterOutlineInput.parentElement.classList.toggle("muted-section", state.ui.sidebarSection !== "outline");
-  refs.bookmarkList.parentElement.classList.toggle("muted-section", state.ui.sidebarSection !== "bookmarks");
-  if (!chapter) {
-    refs.bookmarkList.innerHTML = `<span class="empty-inline">${t("status.noChapter")}</span>`;
-    return;
-  }
-  refs.bookmarkList.innerHTML =
-    chapter.bookmarks.length > 0
-      ? chapter.bookmarks
-          .map((item, index) => `<button class="bookmark-pill" data-bookmark-index="${index}" data-bookmark-text="${escapeAttribute(item)}">${escapeHtml(item)}</button>`)
-          .join("")
-      : `<span class="empty-inline">${getLanguage() === "en" ? "No bookmarks yet" : "还没有书签"}</span>`;
+  const activeSection = ["home", "notes", "outline", "materials"].includes(state.ui.sidebarSection) ? state.ui.sidebarSection : "home";
+  refs.leftSidebarNav.classList.toggle("hidden", activeSection !== "home");
+  refs.sidebarDetails.forEach((section) => {
+    section.classList.toggle("hidden", section.dataset.sidebarDetail !== activeSection);
+  });
 }
 
 function updateWorkspace() {
@@ -3084,9 +3322,10 @@ function updateWorkspace() {
   });
   refs.findReplaceBar.classList.toggle("hidden", !state.ui.replaceOpen || isAiReviewMode);
   refs.selectionToolbar.classList.toggle("hidden", !state.ui.selectionVisible || isAiReviewMode);
-  refs.resumeHint.textContent = t("workspace.lastPosition", { position: state.ui.selectionStart });
+  if (refs.resumeHint) refs.resumeHint.textContent = t("workspace.lastPosition", { position: state.ui.selectionStart });
   updateWordGoalPanel(chapter);
-  refs.focusTimerValue.textContent = formatDuration(getFocusSeconds());
+  updateFocusTimerPanel();
+  updateAgentPanel(chapter);
   refs.inspirationCompose.classList.toggle("hidden", !state.ui.inspirationComposeOpen);
   refs.outlinePanel.classList.toggle("hidden", !state.outlinePanelOpen || !chapter || isAiReviewMode);
   refs.outlineExpandButton.disabled = !chapter;
@@ -3095,7 +3334,30 @@ function updateWorkspace() {
     ? t("editor.bodyStatus", { status: translateSaveStatus(chapter.saveStatus), time: translateSaveTime(chapter.saveTime) })
     : t("editor.bodyStatusDefault");
   updateAiReviewSurface(chapter);
+  updateProjectMaterialsPanel(getCurrentWork());
   syncOutlinePanelLayout();
+}
+
+function updateAgentPanel(chapter = getCurrentChapter()) {
+  if (!refs.agentStatus) return;
+  if (refs.agentTargetHint) {
+    refs.agentTargetHint.textContent = chapter
+      ? (getLanguage() === "en"
+          ? `Target: Chapter ${getCurrentChapterNumber(chapter)} · ${chapter.title}`
+          : `当前目标：第 ${getCurrentChapterNumber(chapter)} 章 · ${chapter.title}`)
+      : (getLanguage() === "en" ? "Target: no chapter selected" : "当前目标：未选择章节");
+  }
+  const agentPending = Boolean(state.ui.agentActionPending);
+  const reviewPending = Boolean(state.ui.aiGenerationPending);
+  const pending = agentPending || reviewPending;
+  refs.app.querySelectorAll("[data-agent-action], [data-selection-action='ai-rewrite'], [data-ai-action='generate-mock']").forEach((button) => {
+    button.disabled = pending || !chapter;
+    const action = button.dataset.agentAction || button.dataset.selectionAction;
+    const isActiveAgentButton = agentPending && action === state.ui.agentActionPending;
+    const isActiveReviewButton = reviewPending && button.dataset.aiAction === "generate-mock";
+    button.classList.toggle("is-loading", isActiveAgentButton || isActiveReviewButton);
+  });
+  refs.agentStatus.textContent = pending ? t("ai.running") : state.ui.agentStatus || t("ai.idleStatus");
 }
 
 function updateAiReviewSurface(chapter = getCurrentChapter()) {
@@ -3125,6 +3387,116 @@ function updateAiReviewSurface(chapter = getCurrentChapter()) {
       ${renderAiCompareGrid(chapter, originalContent, aiDraft)}
     </div>
   `;
+}
+
+function updateProjectMaterialsPanel(work = getCurrentWork()) {
+  if (!refs.projectMaterialEditor) return;
+  const hasWork = Boolean(work);
+  refs.projectMaterialTypeSelect.disabled = !hasWork || projectMaterialsState.loading || projectMaterialsState.saving;
+  refs.projectMaterialEditor.disabled = !hasWork || projectMaterialsState.loading || projectMaterialsState.saving;
+  refs.saveProjectMaterialButton.disabled = !hasWork || projectMaterialsState.loading || projectMaterialsState.saving || !projectMaterialsState.dirty;
+  refs.projectMaterialTypeSelect.value = state.ui.projectMaterialType;
+
+  if (!hasWork) {
+    projectMaterialsState.workId = null;
+    projectMaterialsState.materials = {};
+    projectMaterialsState.chapters = [];
+    refs.projectMaterialEditor.value = "";
+    refs.projectMaterialEditor.placeholder = getLanguage() === "en" ? "Open a work first." : "请先打开一个作品。";
+    refs.projectMaterialStatus.textContent = getLanguage() === "en" ? "No work selected." : "未选择作品。";
+    refs.projectMaterialChapterList.innerHTML = `<span class="empty-inline">${getLanguage() === "en" ? "No project open" : "尚未打开作品"}</span>`;
+    return;
+  }
+
+  if (projectMaterialsState.workId !== work.id && !projectMaterialsState.loading) {
+    void loadProjectMaterials(work.id);
+  }
+
+  const content = projectMaterialsState.materials[state.ui.projectMaterialType] ?? "";
+  if (!projectMaterialsState.dirty && refs.projectMaterialEditor.value !== content) {
+    refs.projectMaterialEditor.value = content;
+  }
+  refs.projectMaterialEditor.placeholder =
+    getLanguage() === "en" ? "Write project material here..." : "在这里记录项目资料……";
+  refs.projectMaterialStatus.textContent = getProjectMaterialStatusText();
+  refs.projectMaterialChapterList.innerHTML =
+    projectMaterialsState.chapters.length > 0
+      ? projectMaterialsState.chapters.map((fileName) => `<span class="project-material-chapter-file">${escapeHtml(fileName)}</span>`).join("")
+      : `<span class="empty-inline">${getLanguage() === "en" ? "No material chapter files yet" : "暂无资料章节文件"}</span>`;
+}
+
+function getProjectMaterialStatusText() {
+  if (projectMaterialsState.loading) return getLanguage() === "en" ? "Loading materials..." : "正在读取资料……";
+  if (projectMaterialsState.saving) return getLanguage() === "en" ? "Saving..." : "保存中……";
+  if (projectMaterialsState.status) return projectMaterialsState.status;
+  if (projectMaterialsState.dirty) return getLanguage() === "en" ? "Unsaved changes." : "有未保存修改。";
+  return getLanguage() === "en" ? "Saved locally." : "已保存到本地资料文件。";
+}
+
+async function loadProjectMaterials(workId) {
+  if (!desktopApi?.readProjectMaterials) {
+    projectMaterialsState.workId = workId;
+    projectMaterialsState.status = getLanguage() === "en" ? "Project materials are only available in the desktop app." : "项目资料仅在桌面应用中可用。";
+    updateProjectMaterialsPanel(getCurrentWork());
+    return;
+  }
+  projectMaterialsState.loading = true;
+  projectMaterialsState.dirty = false;
+  projectMaterialsState.workId = workId;
+  updateProjectMaterialsPanel(getCurrentWork());
+  try {
+    const project = await desktopApi.readProjectMaterials(workId);
+    projectMaterialsState.materials = project?.materials && typeof project.materials === "object" ? project.materials : {};
+    projectMaterialsState.chapters = Array.isArray(project?.chapters) ? project.chapters : [];
+    projectMaterialsState.status = getLanguage() === "en" ? "Materials loaded." : "资料已读取。";
+  } catch (error) {
+    console.error("Failed to load project materials", error);
+    projectMaterialsState.materials = {};
+    projectMaterialsState.chapters = [];
+    projectMaterialsState.status = error?.message || (getLanguage() === "en" ? "Failed to load materials." : "资料读取失败。");
+  } finally {
+    projectMaterialsState.loading = false;
+    updateProjectMaterialsPanel(getCurrentWork());
+  }
+}
+
+function handleProjectMaterialTypeChange(event) {
+  const nextType = projectMaterialTypes.some((item) => item.id === event.target.value) ? event.target.value : "outline";
+  if (projectMaterialsState.dirty) {
+    projectMaterialsState.materials[state.ui.projectMaterialType] = refs.projectMaterialEditor.value;
+  }
+  state.ui.projectMaterialType = nextType;
+  projectMaterialsState.currentType = nextType;
+  persist();
+  updateProjectMaterialsPanel(getCurrentWork());
+}
+
+function handleProjectMaterialInput(event) {
+  projectMaterialsState.dirty = true;
+  projectMaterialsState.materials[state.ui.projectMaterialType] = event.target.value;
+  updateProjectMaterialsPanel(getCurrentWork());
+}
+
+async function saveCurrentProjectMaterial() {
+  const work = getCurrentWork();
+  if (!work || !desktopApi?.saveProjectMaterial) return;
+  const material = state.ui.projectMaterialType;
+  const content = refs.projectMaterialEditor.value;
+  projectMaterialsState.saving = true;
+  projectMaterialsState.status = "";
+  updateProjectMaterialsPanel(work);
+  try {
+    await desktopApi.saveProjectMaterial({ workId: work.id, material, content });
+    projectMaterialsState.materials[material] = content;
+    projectMaterialsState.dirty = false;
+    projectMaterialsState.status = getLanguage() === "en" ? "Material saved." : "资料已保存。";
+  } catch (error) {
+    console.error("Failed to save project material", error);
+    projectMaterialsState.status = error?.message || (getLanguage() === "en" ? "Failed to save material." : "资料保存失败。");
+  } finally {
+    projectMaterialsState.saving = false;
+    updateProjectMaterialsPanel(getCurrentWork());
+  }
 }
 
 function renderAiCompareGrid(chapter, originalContent = chapter?.content?.trim() ?? "", aiDraft = "") {
@@ -3166,7 +3538,7 @@ async function handleAiAction(action) {
   if (action === "generate-mock") {
     if (state.ui.aiGenerationPending) return;
     state.ui.aiGenerationPending = true;
-    updateAiReviewSurface(chapter);
+    updateWorkspace();
     try {
       const result = await runWritingAgentForChapter(chapter);
       state.ui.aiDraftsByChapter[chapter.id] = {
@@ -3183,7 +3555,7 @@ async function handleAiAction(action) {
       );
     } finally {
       state.ui.aiGenerationPending = false;
-      updateAiReviewSurface(chapter);
+      updateWorkspace();
     }
     return;
   }
@@ -3192,6 +3564,100 @@ async function handleAiAction(action) {
     if (!aiDraft) return;
     applyAiDraftToCurrentChapter(chapter, aiDraft);
   }
+}
+
+async function handleAgentAction(action) {
+  const chapter = getCurrentChapter();
+  const work = getCurrentWork();
+  if (!chapter || !work) return;
+  if (!desktopApi) {
+    openInfoModal(t("ai.title"), t("ai.desktopRequired"));
+    return;
+  }
+  state.ui.agentActionPending = action;
+  state.ui.agentStatus = "";
+  updateWorkspace();
+  try {
+    if (action === "generate-outline") {
+      const result = await requireAgentResult(
+        desktopApi.generateChapterOutline?.(createNovelAgentPayload(chapter, {
+          user_instruction: getLanguage() === "en" ? "Generate a chapter outline for the current chapter." : "为当前章节生成章节小纲。",
+        })),
+      );
+      applyGeneratedOutline(chapter, result.outline);
+      state.ui.agentStatus = t("ai.outlineUpdated");
+    }
+    if (action === "write-chapter") {
+      const result = await requireAgentResult(
+        desktopApi.writeChapterWithNovelAgent?.(createNovelAgentPayload(chapter, {
+          user_instruction: chapter.outline || chapter.notes || (getLanguage() === "en" ? "Write the current chapter." : "写当前章节正文。"),
+        })),
+      );
+      state.ui.aiDraftsByChapter[chapter.id] = {
+        content: String(result.content || ""),
+        provider: "novel-agent",
+        generatedAt: new Date().toISOString(),
+      };
+      state.ui.aiReviewMode = true;
+      state.ui.agentStatus = t("ai.chapterDraftReady");
+    }
+    if (action === "summarize-chapter") {
+      const result = await requireAgentResult(
+        desktopApi.summarizeCurrentChapter?.(createNovelAgentPayload(chapter, { content: chapter.content })),
+      );
+      state.ui.agentStatus = t("ai.summaryUpdated");
+    }
+    if (action === "check-consistency") {
+      const result = await requireAgentResult(
+        desktopApi.checkChapterConsistency?.(createNovelAgentPayload(chapter, { content: chapter.content })),
+      );
+      state.ui.agentStatus = t("ai.consistencyReady");
+    }
+    persist();
+  } catch (error) {
+    console.error("Agent action failed", error);
+    state.ui.agentStatus = error?.message || (getLanguage() === "en" ? "AI action failed." : "AI 操作失败。");
+    openInfoModal(t("ai.title"), state.ui.agentStatus);
+  } finally {
+    state.ui.agentActionPending = "";
+    updateWorkspace();
+  }
+}
+
+async function requireAgentResult(promise) {
+  if (!promise) throw new Error(t("ai.desktopRequired"));
+  const result = await promise;
+  if (!result?.ok) {
+    const error = new Error(result?.error || (getLanguage() === "en" ? "AI action failed." : "AI 操作失败。"));
+    error.result = result;
+    throw error;
+  }
+  return result;
+}
+
+function createNovelAgentPayload(chapter, extra = {}) {
+  const work = getCurrentWork();
+  return {
+    project_id: work?.id || "",
+    chapter_number: getCurrentChapterNumber(chapter),
+    title: chapter?.title || "",
+    content: chapter?.content || "",
+    ...extra,
+  };
+}
+
+function getCurrentChapterNumber(chapter = getCurrentChapter()) {
+  const work = getCurrentWork();
+  if (!work || !chapter) return 1;
+  const index = getWorkChapters(work.id).findIndex((item) => item.id === chapter.id);
+  return index >= 0 ? index + 1 : 1;
+}
+
+function applyGeneratedOutline(chapter, outline) {
+  const nextOutline = String(outline || "").trim();
+  if (!chapter || !nextOutline) return;
+  openOutlinePanel();
+  handleOutlineChange(nextOutline, "agent");
 }
 
 async function runWritingAgentForChapter(chapter) {
@@ -3343,6 +3809,16 @@ function getOutlineStatusText() {
 }
 
 function updateWordGoalPanel(chapter) {
+  if (
+    !refs.wordGoalInput ||
+    !refs.wordGoalProgress ||
+    !refs.wordGoalProgressBar ||
+    !refs.wordGoalBalance ||
+    !refs.workWordTotal ||
+    !refs.workGoalTotal
+  ) {
+    return;
+  }
   if (!chapter) {
     refs.wordGoalProgress.textContent = t("workspace.selectChapter");
     refs.wordGoalProgressBar.style.width = "0%";
@@ -3358,6 +3834,19 @@ function updateWordGoalPanel(chapter) {
   refs.wordGoalBalance.textContent = getWordGoalBalanceText(stats);
   refs.workWordTotal.textContent = t("library.wordCount", { count: stats.workWords });
   refs.workGoalTotal.textContent = t("workspace.workGoalTotal", { count: stats.workGoal });
+}
+
+function updateFocusTimerPanel() {
+  if (refs.focusTimerValue) refs.focusTimerValue.textContent = formatDuration(getFocusSeconds());
+  if (refs.focusTimerCompactButton) {
+    const running = Boolean(state.ui.focusStartedAt);
+    const title = running
+      ? (getLanguage() === "en" ? "Click to pause. Hold to reset." : "点击暂停，长按重置")
+      : (getLanguage() === "en" ? "Place the cursor in the editor to start. Hold to reset." : "将光标放入编辑区开始计时，长按重置");
+    refs.focusTimerCompactButton.classList.toggle("is-running", running);
+    refs.focusTimerCompactButton.title = title;
+    refs.focusTimerCompactButton.setAttribute("aria-label", title);
+  }
 }
 
 function getWordGoalStats(chapter) {
@@ -3658,6 +4147,12 @@ function renderInspirationList() {
                 <footer>
                   <button data-inspiration-action="favorite" data-id="${item.id}">${item.isFavorite ? (getLanguage() === "en" ? "Unfavorite" : "取消收藏") : (getLanguage() === "en" ? "Favorite" : "收藏")}</button>
                   <button data-inspiration-action="pin" data-id="${item.id}">${item.isPinned ? (getLanguage() === "en" ? "Unpin" : "取消置顶") : (getLanguage() === "en" ? "Pin" : "置顶")}</button>
+                  <button
+                    class="${state.ui.ideaProjectMaterialsPendingId === item.id ? "is-loading" : ""}"
+                    data-inspiration-action="develop-project-materials"
+                    data-id="${item.id}"
+                    ${state.ui.ideaProjectMaterialsPendingId ? "disabled" : ""}
+                  >${t("ai.developIdea")}</button>
                   <button data-inspiration-action="insert" data-id="${item.id}">${getLanguage() === "en" ? "Insert" : "插入正文"}</button>
                   <button data-inspiration-action="edit" data-id="${item.id}">${getLanguage() === "en" ? "Edit" : "编辑"}</button>
                   <button data-inspiration-action="delete" data-id="${item.id}">${t("library.delete")}</button>
@@ -3678,9 +4173,9 @@ function updateModal() {
 
   refs.modalRoot.innerHTML = `
     <div class="modal-backdrop">
-      <div class="modal-card surface ${modal.type === "shortcuts" ? "shortcut-modal" : ""} ${modal.type === "export-preview" || modal.type === "import-project-conflict" ? "preview-modal" : ""}">
+      <div class="modal-card surface ${modal.type === "shortcuts" ? "shortcut-modal" : ""} ${modal.type === "export-preview" || modal.type === "import-project-conflict" || modal.type === "idea-project-materials-preview" ? "preview-modal" : ""}">
         <strong>${escapeHtml(modal.title)}</strong>
-        ${modal.message ? `<p>${escapeHtml(modal.message)}</p>` : ""}
+        ${modal.message ? `<pre class="modal-message">${escapeHtml(modal.message)}</pre>` : ""}
         ${modal.body ?? ""}
         <div class="modal-actions">
           ${modal.actions
@@ -3972,6 +4467,45 @@ function openInfoModal(title, message) {
   updateModal();
 }
 
+function openWritingToolbarSettingsModal() {
+  normalizeWritingToolLayout();
+  state.ui.modal = {
+    type: "writing-toolbar-settings",
+    title: t("workspace.toolbarSettings"),
+    message: t("workspace.toolbarSettingsHint"),
+    body: renderWritingToolbarSettingsBody(),
+    actions: [{ id: "close-modal", label: getLanguage() === "en" ? "Done" : "完成", primary: true }],
+  };
+  updateModal();
+}
+
+function renderWritingToolbarSettingsBody() {
+  const moduleMap = new Map(writingToolModules.map((item) => [item.id, item]));
+  return `
+    <div class="toolbar-settings-list">
+      ${state.ui.writingToolOrder
+        .map((id, index, items) => {
+          const module = moduleMap.get(id);
+          if (!module) return "";
+          const visible = state.ui.writingToolVisibility[id] !== false;
+          return `
+            <div class="toolbar-settings-row">
+              <label>
+                <input type="checkbox" ${visible ? "checked" : ""} data-modal-action="toggle-writing-tool:${escapeAttribute(id)}" />
+                <span>${escapeHtml(t(module.labelKey))}</span>
+              </label>
+              <div class="inline-actions">
+                <button class="ghost-button compact-button" data-modal-action="move-writing-tool-up:${escapeAttribute(id)}" ${index === 0 ? "disabled" : ""}>${t("workspace.moveUp")}</button>
+                <button class="ghost-button compact-button" data-modal-action="move-writing-tool-down:${escapeAttribute(id)}" ${index === items.length - 1 ? "disabled" : ""}>${t("workspace.moveDown")}</button>
+              </div>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
 function openEmptyWorkModal(workId) {
   state.ui.modal = {
     type: "empty-work",
@@ -4203,7 +4737,63 @@ function openInspirationCategoryDuplicateModal(categoryName) {
   updateModal();
 }
 
+function openIdeaProjectMaterialsPreviewModal(inspiration, materials) {
+  state.ui.modal = {
+    type: "idea-project-materials-preview",
+    payload: {
+      inspirationId: inspiration.id,
+      materials,
+    },
+    title: t("ai.ideaMaterialsTitle"),
+    message: t("ai.ideaMaterialsMessage"),
+    body: renderProjectMaterialsDraftPreview(materials),
+    actions: [
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "confirm-write-idea-project-materials", label: t("ai.writeProjectMaterials"), primary: true },
+    ],
+  };
+  updateModal();
+}
+
+function renderProjectMaterialsDraftPreview(materials = {}) {
+  return `
+    <div class="project-materials-preview-grid">
+      ${projectMaterialTypes
+        .map((item) => {
+          const label = getLanguage() === "en" ? item.en : item.zh;
+          return `
+            <section class="project-materials-preview-card">
+              <strong>${escapeHtml(label)}</strong>
+              <pre>${escapeHtml(materials[item.id] || "")}</pre>
+            </section>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
 async function handleModalAction(action) {
+  if (action.startsWith("toggle-writing-tool:")) {
+    const moduleId = action.split(":")[1];
+    toggleWritingToolModule(moduleId);
+    openWritingToolbarSettingsModal();
+    persist();
+    renderAppShell();
+    updateAll();
+    return;
+  }
+
+  if (action.startsWith("move-writing-tool-up:") || action.startsWith("move-writing-tool-down:")) {
+    const [operation, moduleId] = action.split(":");
+    moveWritingToolModule(moduleId, operation.endsWith("up") ? -1 : 1);
+    openWritingToolbarSettingsModal();
+    persist();
+    renderAppShell();
+    updateAll();
+    return;
+  }
+
   if (action === "cancel-modal" || action === "close-modal" || action === "cancel-back") {
     state.ui.modal = null;
     updateModal();
@@ -4386,6 +4976,14 @@ async function handleModalAction(action) {
     return;
   }
 
+  if (action === "confirm-write-idea-project-materials") {
+    const materials = state.ui.modal?.payload?.materials;
+    state.ui.modal = null;
+    updateModal();
+    await writeProjectMaterialsDraft(materials);
+    return;
+  }
+
   if (action === "save-and-back") {
     await saveCurrentChapter();
     state.route = "library";
@@ -4410,6 +5008,24 @@ async function handleModalAction(action) {
     state.ui.modal = null;
     updateAll();
   }
+}
+
+function toggleWritingToolModule(moduleId) {
+  normalizeWritingToolLayout();
+  if (!state.ui.writingToolOrder.includes(moduleId)) return;
+  state.ui.writingToolVisibility[moduleId] = state.ui.writingToolVisibility[moduleId] === false;
+}
+
+function moveWritingToolModule(moduleId, direction) {
+  normalizeWritingToolLayout();
+  const index = state.ui.writingToolOrder.indexOf(moduleId);
+  if (index < 0) return;
+  const nextIndex = Math.max(0, Math.min(state.ui.writingToolOrder.length - 1, index + direction));
+  if (nextIndex === index) return;
+  const nextOrder = [...state.ui.writingToolOrder];
+  const [item] = nextOrder.splice(index, 1);
+  nextOrder.splice(nextIndex, 0, item);
+  state.ui.writingToolOrder = nextOrder;
 }
 
 function createWorkWithInitialChapter({ title, description, folderId, templateId }) {
@@ -4678,9 +5294,7 @@ function handleEditorKeydown(event) {
   }
   if ((event.metaKey || event.ctrlKey) && key === "f") {
     event.preventDefault();
-    state.ui.replaceOpen = true;
-    updateWorkspace();
-    refs.findQueryInput.focus();
+    openFindReplace();
     return;
   }
   if (event.altKey && !event.metaKey && !event.ctrlKey && !event.shiftKey && event.key === "ArrowUp") {
@@ -4784,11 +5398,11 @@ function handleWordGoalInput(event) {
 }
 
 function handleWritingAction(action) {
-  if (action === "divider") insertAtCursor("\n\n——\n\n");
-  if (action === "toggle-find") {
-    state.ui.replaceOpen = !state.ui.replaceOpen;
-    updateWorkspace();
+  if (action === "toolbar-settings") {
+    openWritingToolbarSettingsModal();
+    return;
   }
+  if (action === "divider") insertAtCursor("\n\n——\n\n");
   if (action === "undo") undoEditor();
   if (action === "redo") redoEditor();
   if (action === "prev") jumpChapter(-1);
@@ -4805,12 +5419,6 @@ function handleWritingAction(action) {
     state.ui.sidebarSection = "outline";
     updateSidebar();
     openOutlinePanel({ focus: true });
-  }
-  if (action === "open-bookmarks") {
-    state.ui.leftSidebarCollapsed = false;
-    state.ui.sidebarSection = "bookmarks";
-    updateSidebar();
-    persist();
   }
 }
 
@@ -4965,7 +5573,7 @@ function renderShortcutHelpBody() {
   `;
 }
 
-function handleInspirationAction(action, id) {
+async function handleInspirationAction(action, id) {
   if (action === "remove-tag") {
     state.ui.inspirationComposeTags = state.ui.inspirationComposeTags.filter((tag) => tag !== id);
     if (state.ui.inspirationComposeTags.length === 0) state.ui.inspirationComposeTags = ["待补充"];
@@ -4980,6 +5588,10 @@ function handleInspirationAction(action, id) {
   if (action === "favorite") item.isFavorite = !item.isFavorite;
   if (action === "pin") item.isPinned = !item.isPinned;
   if (action === "insert") insertAtCursor(item.content);
+  if (action === "develop-project-materials") {
+    await generateProjectMaterialsFromInspiration(work, item);
+    return;
+  }
   if (action === "edit") {
     openInspirationComposer(item.id);
     return;
@@ -5304,13 +5916,17 @@ function insertPair(left, right) {
   captureSelection();
 }
 
-function applySelectionAction(action) {
+async function applySelectionAction(action) {
   const chapter = getCurrentChapter();
   if (!chapter) return;
   const start = refs.documentEditor.selectionStart;
   const end = refs.documentEditor.selectionEnd;
   if (start === end) return;
   const selected = refs.documentEditor.value.slice(start, end);
+  if (action === "ai-rewrite") {
+    await rewriteSelectedTextWithAgent(chapter, selected, start, end);
+    return;
+  }
   if (action === "quote") {
     insertAtCursor(`“${selected}”`);
     return;
@@ -5319,26 +5935,115 @@ function applySelectionAction(action) {
     insertAtCursor(`\n\n—— ${selected} ——\n\n`);
     return;
   }
-  if (action === "bookmark") {
-    chapter.bookmarks.unshift(selected.slice(0, 18));
-    updateSidebar();
+}
+
+async function rewriteSelectedTextWithAgent(chapter, selected, start, end) {
+  if (!desktopApi?.rewriteSelectedText) {
+    openInfoModal(t("ai.title"), t("ai.desktopRequired"));
+    return;
+  }
+  state.ui.agentActionPending = "rewrite-selection";
+  state.ui.agentStatus = "";
+  updateWorkspace();
+  try {
+    const result = await requireAgentResult(
+      desktopApi.rewriteSelectedText(
+        createNovelAgentPayload(chapter, {
+          text: selected,
+          user_instruction: getLanguage() === "en" ? "Rewrite the selected text and preserve its meaning." : "改写选中文本，保留原意并提升表达。",
+        }),
+      ),
+    );
+    const rewritten = String(result.rewritten_text || "").trim();
+    if (!rewritten) throw new Error(getLanguage() === "en" ? "The rewrite result is empty." : "改写结果为空。");
+    refs.documentEditor.focus();
+    pushUndoSnapshot(chapter, refs.documentEditor.value, start, end);
+    refs.documentEditor.setSelectionRange(start, end);
+    refs.documentEditor.setRangeText(rewritten, start, end, "end");
+    handleEditorInput();
+    state.ui.agentStatus = t("ai.selectionRewritten");
     persist();
-    queueLibrarySyncToDesktop();
-    state.ui.selectionVisible = false;
-    refs.selectionToolbar.classList.add("hidden");
+  } catch (error) {
+    console.error("Rewrite selected text failed", error);
+    state.ui.agentStatus = error?.message || (getLanguage() === "en" ? "Rewrite failed." : "改写失败。");
+    openInfoModal(t("ai.title"), state.ui.agentStatus);
+  } finally {
+    state.ui.agentActionPending = "";
+    updateWorkspace();
   }
 }
 
-function addBookmarkFromSelection() {
-  const chapter = getCurrentChapter();
-  if (!chapter) return;
-  const start = refs.documentEditor.selectionStart;
-  const end = refs.documentEditor.selectionEnd;
-  const source = start !== end ? refs.documentEditor.value.slice(start, end) : `书签 ${chapter.bookmarks.length + 1}`;
-  chapter.bookmarks.unshift(source.slice(0, 18));
-  updateSidebar();
-  persist();
-  queueLibrarySyncToDesktop();
+async function generateProjectMaterialsFromInspiration(work, inspiration) {
+  if (!desktopApi?.generateProjectMaterialsFromIdea) {
+    openInfoModal(t("ai.title"), t("ai.desktopRequired"));
+    return;
+  }
+  state.ui.agentActionPending = "idea-project-materials";
+  state.ui.ideaProjectMaterialsPendingId = inspiration.id;
+  renderInspirationList();
+  updateWorkspace();
+  try {
+    const result = await requireAgentResult(
+      desktopApi.generateProjectMaterialsFromIdea({
+        project_id: work.id,
+        idea: inspiration.content,
+      }),
+    );
+    openIdeaProjectMaterialsPreviewModal(inspiration, normalizeProjectMaterialsFromAgent(result.materials));
+  } catch (error) {
+    console.error("Generate project materials from idea failed", error);
+    const rawPreview = String(error?.result?.raw_materials_preview || "").trim();
+    const message = [
+      error?.message || (getLanguage() === "en" ? "Failed to develop idea." : "灵感发展失败。"),
+      rawPreview
+        ? (getLanguage() === "en" ? `\n\nModel output preview:\n${rawPreview}` : `\n\n模型返回预览：\n${rawPreview}`)
+        : "",
+    ].join("");
+    openInfoModal(t("ai.title"), message);
+  } finally {
+    state.ui.agentActionPending = "";
+    state.ui.ideaProjectMaterialsPendingId = null;
+    renderInspirationList();
+    updateWorkspace();
+  }
+}
+
+function normalizeProjectMaterialsFromAgent(materials = {}) {
+  return Object.fromEntries(projectMaterialTypes.map((item) => [item.id, String(materials[item.id] || "").trim()]));
+}
+
+async function writeProjectMaterialsDraft(materials) {
+  const work = getCurrentWork();
+  if (!work || !desktopApi?.saveProjectMaterial) {
+    openInfoModal(t("ai.title"), t("ai.desktopRequired"));
+    return;
+  }
+  const normalized = normalizeProjectMaterialsFromAgent(materials);
+  const entries = projectMaterialTypes.filter((item) => normalized[item.id]);
+  if (entries.length === 0) return;
+  projectMaterialsState.saving = true;
+  projectMaterialsState.status = getLanguage() === "en" ? "Writing project materials..." : "正在写入项目资料…";
+  updateProjectMaterialsPanel(work);
+  try {
+    for (const item of entries) {
+      await desktopApi.saveProjectMaterial({ workId: work.id, material: item.id, content: normalized[item.id] });
+      projectMaterialsState.materials[item.id] = normalized[item.id];
+    }
+    projectMaterialsState.dirty = false;
+    projectMaterialsState.status = t("ai.projectMaterialsWritten");
+    state.ui.sidebarSection = "materials";
+    state.activeTab = "writing";
+    state.ui.leftSidebarCollapsed = false;
+    updateAll();
+    persist();
+  } catch (error) {
+    console.error("Write project materials draft failed", error);
+    projectMaterialsState.status = error?.message || (getLanguage() === "en" ? "Failed to write project materials." : "项目资料写入失败。");
+    openInfoModal(t("ai.title"), projectMaterialsState.status);
+  } finally {
+    projectMaterialsState.saving = false;
+    updateProjectMaterialsPanel(getCurrentWork());
+  }
 }
 
 function pushUndoSnapshot(chapter, content, selectionStart, selectionEnd) {
@@ -5395,6 +6100,21 @@ function findNext() {
   if (index === -1) index = content.indexOf(query, 0);
   if (index === -1) return;
   restoreSelection(index, index + query.length);
+}
+
+function openFindReplace() {
+  state.ui.replaceOpen = true;
+  updateWorkspace();
+  requestAnimationFrame(() => {
+    refs.findQueryInput.focus();
+    refs.findQueryInput.select();
+  });
+}
+
+function closeFindReplace() {
+  state.ui.replaceOpen = false;
+  updateWorkspace();
+  refs.documentEditor?.focus();
 }
 
 function focusEditorSearchMatch(query) {
@@ -5484,8 +6204,10 @@ function startFocusTimer() {
   if (focusTimer) return;
   state.ui.focusStartedAt ??= Date.now();
   focusTimer = setInterval(() => {
-    refs.focusTimerValue.textContent = formatDuration(getFocusSeconds());
+    updateFocusTimerPanel();
   }, 1000);
+  updateFocusTimerPanel();
+  persist();
 }
 
 function stopFocusTimer() {
@@ -5495,6 +6217,15 @@ function stopFocusTimer() {
   }
   clearInterval(focusTimer);
   focusTimer = null;
+  updateWorkspace();
+  persist();
+}
+
+function resetFocusTimer() {
+  clearInterval(focusTimer);
+  focusTimer = null;
+  state.ui.focusStartedAt = null;
+  state.ui.focusAccumulated = 0;
   updateWorkspace();
   persist();
 }

@@ -3,6 +3,9 @@ const { app, BrowserWindow, Menu, dialog, ipcMain } = require("electron");
 const fs = require("node:fs/promises");
 const { TextDecoder } = require("node:util");
 const { createProjectManager } = require("./project-manager");
+const { createMemoryManager } = require("./memory-manager");
+const { createToolManager } = require("./tool-manager");
+const { createNovelWritingAgent } = require("./novel-writing-agent");
 
 const isMac = process.platform === "darwin";
 const LIBRARY_DIRNAME = "jian-ji-library-v2";
@@ -143,6 +146,29 @@ function getWorkTextsDirectory(workId) {
 
 function getProjectManager() {
   return createProjectManager({ projectsRoot: getWorksRoot() });
+}
+
+function getMemoryManager() {
+  return createMemoryManager({ projectsRoot: getWorksRoot() });
+}
+
+function getToolManager() {
+  return createToolManager({
+    projectsRoot: getWorksRoot(),
+    loadLibrary,
+    saveLibrary,
+  });
+}
+
+function getNovelWritingAgent() {
+  return createNovelWritingAgent({
+    projectManager: getProjectManager(),
+    memoryManager: getMemoryManager(),
+    tools: getToolManager(),
+    llmClient: {
+      generate: runConfiguredPromptAgent,
+    },
+  });
 }
 
 async function ensureLibraryRoot() {
@@ -490,7 +516,9 @@ const AI_PROVIDER_BASE_URLS = {
   custom: "",
 };
 const AI_REQUEST_TIMEOUT_MS = 60000;
+const AI_PROMPT_REQUEST_TIMEOUT_MS = 120000;
 const AI_MAX_OUTPUT_TOKENS = 4096;
+const AI_PROMPT_MAX_OUTPUT_TOKENS = 4096;
 
 function normalizeAiSettings(value) {
   const source = value && typeof value === "object" ? value : {};
@@ -729,6 +757,64 @@ function extractClaudeOutputText(responseBody) {
     .join("\n");
 }
 
+function normalizePromptAgentRequest(payload) {
+  const source = payload && typeof payload === "object" ? payload : {};
+  const messages = Array.isArray(source.messages)
+    ? source.messages
+        .map((message) => ({
+          role: message?.role === "system" ? "system" : "user",
+          content: String(message?.content || ""),
+        }))
+        .filter((message) => message.content.trim())
+    : [];
+  const system = String(source.system || messages.find((message) => message.role === "system")?.content || "").trim();
+  const user = String(source.user || messages.find((message) => message.role === "user")?.content || "").trim();
+  if (!system) throw new Error("Prompt system message is required.");
+  if (!user) throw new Error("Prompt user message is required.");
+  return {
+    prompt_id: String(source.prompt_id || source.promptId || ""),
+    system,
+    user,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+  };
+}
+
+function buildOpenAiPromptResponseRequest(settings, promptRequest) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  const prompt = normalizePromptAgentRequest(promptRequest);
+  return {
+    model: normalizedSettings.model || AI_PROVIDER_DEFAULTS.openai,
+    instructions: prompt.system,
+    input: prompt.user,
+    max_output_tokens: AI_PROMPT_MAX_OUTPUT_TOKENS,
+  };
+}
+
+function buildOpenAiCompatiblePromptChatRequest(settings, promptRequest) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  const prompt = normalizePromptAgentRequest(promptRequest);
+  return {
+    model: normalizedSettings.model || AI_PROVIDER_DEFAULTS[normalizedSettings.provider] || AI_PROVIDER_DEFAULTS.deepseek,
+    messages: prompt.messages,
+    max_tokens: AI_PROMPT_MAX_OUTPUT_TOKENS,
+    stream: false,
+  };
+}
+
+function buildClaudePromptMessagesRequest(settings, promptRequest) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  const prompt = normalizePromptAgentRequest(promptRequest);
+  return {
+    model: normalizedSettings.model || AI_PROVIDER_DEFAULTS.claude,
+    max_tokens: AI_PROMPT_MAX_OUTPUT_TOKENS,
+    system: prompt.system,
+    messages: [{ role: "user", content: prompt.user }],
+  };
+}
+
 async function fetchJsonWithTimeout(url, options = {}, timeoutMs = AI_REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -738,7 +824,7 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = AI_REQUEST_TI
     return { response, body };
   } catch (error) {
     if (error?.name === "AbortError") {
-      throw new Error("AI request timed out. Please try again.");
+      throw new Error(`AI request timed out after ${Math.round(timeoutMs / 1000)} seconds. Please try again.`);
     }
     throw error;
   } finally {
@@ -831,6 +917,99 @@ async function runClaudeWritingAgent(settings, payload) {
     provider: "claude",
     generatedAt: new Date().toISOString(),
   };
+}
+
+async function runOpenAiPromptAgent(settings, promptRequest, timeoutMs = AI_PROMPT_REQUEST_TIMEOUT_MS) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  if (!normalizedSettings.apiKey) {
+    throw new Error("OpenAI API key is not configured.");
+  }
+  const { response, body } = await fetchJsonWithTimeout(
+    buildProviderEndpoint(normalizedSettings, "responses"),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${normalizedSettings.apiKey}`,
+      },
+      body: JSON.stringify(buildOpenAiPromptResponseRequest(normalizedSettings, promptRequest)),
+    },
+    timeoutMs,
+  );
+  if (!response.ok) {
+    throw new Error(getProviderErrorMessage("OpenAI", body, response.status));
+  }
+  const content = extractOpenAiOutputText(body).trim();
+  if (!content) throw new Error("OpenAI returned an empty response.");
+  return { content, provider: "openai", generatedAt: new Date().toISOString() };
+}
+
+async function runOpenAiCompatiblePromptAgent(settings, promptRequest, providerLabel, timeoutMs = AI_PROMPT_REQUEST_TIMEOUT_MS) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  if (!normalizedSettings.apiKey) {
+    throw new Error(`${providerLabel} API key is not configured.`);
+  }
+  const { response, body } = await fetchJsonWithTimeout(
+    buildProviderEndpoint(normalizedSettings, "chat/completions"),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${normalizedSettings.apiKey}`,
+      },
+      body: JSON.stringify(buildOpenAiCompatiblePromptChatRequest(normalizedSettings, promptRequest)),
+    },
+    timeoutMs,
+  );
+  if (!response.ok) {
+    throw new Error(getProviderErrorMessage(providerLabel, body, response.status));
+  }
+  const content = extractChatCompletionOutputText(body).trim();
+  if (!content) throw new Error(`${providerLabel} returned an empty response.`);
+  return { content, provider: normalizedSettings.provider, generatedAt: new Date().toISOString() };
+}
+
+async function runClaudePromptAgent(settings, promptRequest, timeoutMs = AI_PROMPT_REQUEST_TIMEOUT_MS) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  if (!normalizedSettings.apiKey) {
+    throw new Error("Claude API key is not configured.");
+  }
+  const { response, body } = await fetchJsonWithTimeout(
+    buildProviderEndpoint(normalizedSettings, "messages"),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": normalizedSettings.apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify(buildClaudePromptMessagesRequest(normalizedSettings, promptRequest)),
+    },
+    timeoutMs,
+  );
+  if (!response.ok) {
+    throw new Error(getProviderErrorMessage("Claude", body, response.status));
+  }
+  const content = extractClaudeOutputText(body).trim();
+  if (!content) throw new Error("Claude returned an empty response.");
+  return { content, provider: "claude", generatedAt: new Date().toISOString() };
+}
+
+async function runConfiguredPromptAgent(promptRequest) {
+  const settings = await loadAiSettings();
+  if (settings.provider === "openai") {
+    return runOpenAiPromptAgent(settings, promptRequest);
+  }
+  if (settings.provider === "claude") {
+    return runClaudePromptAgent(settings, promptRequest);
+  }
+  if (settings.provider === "deepseek") {
+    return runOpenAiCompatiblePromptAgent(settings, promptRequest, "DeepSeek");
+  }
+  if (settings.provider === "custom") {
+    return runOpenAiCompatiblePromptAgent(settings, promptRequest, "Custom AI provider");
+  }
+  throw new Error(`Unsupported AI provider: ${settings.provider}`);
 }
 
 async function ensureUniqueFilePath(directory, fileName) {
@@ -948,6 +1127,64 @@ ipcMain.handle("project-materials:save", async (_event, payload) =>
 );
 
 ipcMain.handle("project-materials:list-chapters", async (_event, workId) => getProjectManager().listProjectChapters(workId));
+
+ipcMain.handle("memory:load", async (_event, workId) => getMemoryManager().loadMemory(workId));
+
+ipcMain.handle("memory:save", async (_event, payload) => getMemoryManager().saveMemory(payload?.workId, payload?.memory));
+
+ipcMain.handle("memory:update-chapter-summary", async (_event, payload) =>
+  getMemoryManager().updateChapterSummary(payload?.workId, payload?.chapterId, payload?.summary, payload?.meta),
+);
+
+ipcMain.handle("memory:get-context-for-chapter", async (_event, payload) =>
+  getMemoryManager().getContextForChapter(payload?.workId, payload?.chapterId, payload?.options),
+);
+
+ipcMain.handle("agent-tools:read-project-context", async (_event, projectId) =>
+  getToolManager().read_project_context(projectId),
+);
+
+ipcMain.handle("agent-tools:read-chapter", async (_event, payload) =>
+  getToolManager().read_chapter(payload?.project_id, payload?.chapter_number),
+);
+
+ipcMain.handle("agent-tools:save-chapter", async (_event, payload) =>
+  getToolManager().save_chapter(payload?.project_id, payload?.chapter_number, payload?.content),
+);
+
+ipcMain.handle("agent-tools:list-chapters", async (_event, projectId) => getToolManager().list_chapters(projectId));
+
+ipcMain.handle("agent-tools:search-project-notes", async (_event, payload) =>
+  getToolManager().search_project_notes(payload?.project_id, payload?.keyword),
+);
+
+ipcMain.handle("agent-tools:update-memory", async (_event, payload) =>
+  getToolManager().update_memory(payload?.project_id, payload?.data),
+);
+
+ipcMain.handle("agent-tools:get-previous-chapter-summaries", async (_event, payload) =>
+  getToolManager().get_previous_chapter_summaries(payload?.project_id, payload?.limit),
+);
+
+ipcMain.handle("novel-agent:write-chapter", async (_event, payload) => getNovelWritingAgent().write_chapter(payload));
+
+ipcMain.handle("novel-agent:generate-outline", async (_event, payload) =>
+  getNovelWritingAgent().generate_chapter_outline(payload),
+);
+
+ipcMain.handle("novel-agent:summarize-chapter", async (_event, payload) =>
+  getNovelWritingAgent().summarize_chapter(payload),
+);
+
+ipcMain.handle("novel-agent:rewrite-text", async (_event, payload) => getNovelWritingAgent().rewrite_text(payload));
+
+ipcMain.handle("novel-agent:consistency-check", async (_event, payload) =>
+  getNovelWritingAgent().consistency_check(payload),
+);
+
+ipcMain.handle("novel-agent:generate-project-materials-from-idea", async (_event, payload) =>
+  getNovelWritingAgent().generate_project_materials_from_idea(payload),
+);
 
 ipcMain.handle("library:bootstrap", async (_event, seedLibrary) => {
   const library = await loadLibrary();

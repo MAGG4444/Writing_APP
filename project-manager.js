@@ -1,11 +1,13 @@
 const path = require("node:path");
 const fs = require("node:fs/promises");
+const { DEFAULT_MEMORY, normalizeMemory } = require("./memory-manager");
 
 const PROJECT_MATERIAL_FILES = {
   outline: "outline.md",
   characters: "characters.md",
   world: "world.md",
   style: "style.md",
+  goals: "goals.md",
 };
 
 const DEFAULT_MATERIAL_CONTENT = {
@@ -13,15 +15,7 @@ const DEFAULT_MATERIAL_CONTENT = {
   characters: "# Characters\n\n",
   world: "# World\n\n",
   style: "# Style\n\n",
-};
-
-const DEFAULT_MEMORY = {
-  version: 1,
-  summary: "",
-  characters: [],
-  world: [],
-  preferences: [],
-  updatedAt: "",
+  goals: "# Goals\n\n",
 };
 
 function createProjectManager({ projectsRoot }) {
@@ -51,6 +45,7 @@ function createProjectManager({ projectsRoot }) {
     const directory = getProjectDirectory(workId);
     await fs.mkdir(directory, { recursive: true });
     await fs.mkdir(path.join(directory, "chapters"), { recursive: true });
+    await fs.mkdir(path.join(directory, "reports"), { recursive: true });
 
     await Promise.all(
       Object.entries(PROJECT_MATERIAL_FILES).map(async ([material, fileName]) => {
@@ -84,7 +79,7 @@ function createProjectManager({ projectsRoot }) {
 
     let memory = { ...DEFAULT_MEMORY };
     try {
-      memory = { ...DEFAULT_MEMORY, ...JSON.parse(await fs.readFile(path.join(directory, "memory.json"), "utf8")) };
+      memory = normalizeMemory(JSON.parse(await fs.readFile(path.join(directory, "memory.json"), "utf8")));
     } catch (error) {
       if (error.code !== "ENOENT" && !(error instanceof SyntaxError)) throw error;
     }
@@ -105,6 +100,33 @@ function createProjectManager({ projectsRoot }) {
     return { workId: String(workId), material, fileName: PROJECT_MATERIAL_FILES[material] };
   }
 
+  async function saveProjectChapter(workId, fileName, content) {
+    await ensureProject(workId);
+    const normalizedFileName = sanitizeChapterFileName(fileName);
+    const filePath = path.join(getProjectDirectory(workId), "chapters", normalizedFileName);
+    await fs.writeFile(filePath, String(content ?? ""), "utf8");
+    return { workId: String(workId), fileName: normalizedFileName };
+  }
+
+  async function readProjectChapter(workId, fileName) {
+    await ensureProject(workId);
+    const normalizedFileName = sanitizeChapterFileName(fileName);
+    const filePath = path.join(getProjectDirectory(workId), "chapters", normalizedFileName);
+    return {
+      workId: String(workId),
+      fileName: normalizedFileName,
+      content: await fs.readFile(filePath, "utf8"),
+    };
+  }
+
+  async function saveProjectReport(workId, fileName, content) {
+    await ensureProject(workId);
+    const normalizedFileName = sanitizeReportFileName(fileName);
+    const filePath = path.join(getProjectDirectory(workId), "reports", normalizedFileName);
+    await fs.writeFile(filePath, String(content ?? ""), "utf8");
+    return { workId: String(workId), fileName: normalizedFileName };
+  }
+
   async function listProjectChapters(workId) {
     await ensureProject(workId);
     const chaptersDirectory = path.join(getProjectDirectory(workId), "chapters");
@@ -120,12 +142,42 @@ function createProjectManager({ projectsRoot }) {
     ensureProject,
     readProject,
     saveProjectMaterial,
+    saveProjectChapter,
+    readProjectChapter,
+    saveProjectReport,
     listProjectChapters,
   };
 }
 
+function sanitizeChapterFileName(value) {
+  const raw = String(value || "").trim();
+  if (!raw) throw new Error("chapter fileName is required");
+  if (raw.includes("/") || raw.includes("\\") || raw === "." || raw === "..") {
+    throw new Error("Invalid chapter fileName");
+  }
+  const safe = raw
+    .replace(/[<>:"|?*]+/g, "-")
+    .replace(/\s+/g, "_")
+    .replace(/^-+|-+$/g, "");
+  if (!/\.(md|txt)$/i.test(safe)) throw new Error("chapter fileName must end with .md or .txt");
+  return safe;
+}
+
+function sanitizeReportFileName(value) {
+  const raw = String(value || "").trim();
+  if (!raw) throw new Error("report fileName is required");
+  if (raw.includes("/") || raw.includes("\\") || raw === "." || raw === "..") {
+    throw new Error("Invalid report fileName");
+  }
+  const safe = raw
+    .replace(/[<>:"|?*]+/g, "-")
+    .replace(/\s+/g, "_")
+    .replace(/^-+|-+$/g, "");
+  if (!/\.md$/i.test(safe)) throw new Error("report fileName must end with .md");
+  return safe;
+}
+
 module.exports = {
   PROJECT_MATERIAL_FILES,
-  DEFAULT_MEMORY,
   createProjectManager,
 };
