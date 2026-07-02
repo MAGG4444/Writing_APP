@@ -12,7 +12,8 @@ function extractFunctionFrom(text, name) {
   const start = text.indexOf(`function ${name}`);
   if (start < 0) throw new Error(`Missing function ${name}`);
 
-  const bodyStart = text.indexOf("{", start);
+  const signatureEnd = text.indexOf(") {", start);
+  const bodyStart = signatureEnd >= 0 ? signatureEnd + 2 : text.indexOf("{", start);
   let depth = 0;
   for (let index = bodyStart; index < text.length; index += 1) {
     const char = text[index];
@@ -54,7 +55,8 @@ vm.runInContext(
     extractMainConst("AI_PROVIDER_BASE_URLS"),
     "const AI_MAX_OUTPUT_TOKENS = 4096;",
     "const AI_PROMPT_REQUEST_TIMEOUT_MS = 120000;",
-    "const AI_PROMPT_MAX_OUTPUT_TOKENS = 2048;",
+    "const AI_PROMPT_MAX_OUTPUT_TOKENS = 4096;",
+    "const AI_COMPATIBLE_MIN_PROMPT_OUTPUT_TOKENS = 1536;",
     extractMainFunction("normalizeAiSettings"),
     extractMainFunction("getPublicAiSettings"),
     extractMainFunction("mergeAiSettingsForSave"),
@@ -70,7 +72,11 @@ vm.runInContext(
     extractMainFunction("extractChatCompletionOutputText"),
     extractMainFunction("buildClaudeMessagesRequest"),
     extractMainFunction("extractClaudeOutputText"),
+    extractMainFunction("createAiResponseMetadata"),
+    extractMainFunction("normalizePromptOutputTokenLimit"),
+    extractMainFunction("shouldUseOpenAiCompatiblePromptFloor"),
     extractMainFunction("normalizePromptAgentRequest"),
+    extractMainFunction("getPromptOutputTokenLimit"),
     extractMainFunction("buildOpenAiPromptResponseRequest"),
     extractMainFunction("buildOpenAiCompatiblePromptChatRequest"),
     extractMainFunction("buildClaudePromptMessagesRequest"),
@@ -267,6 +273,40 @@ vm.runInContext(
 }
 
 {
+  const openAiMetadata = mainSandbox.createAiResponseMetadata({
+    provider: "openai",
+    settings: { provider: "openai", model: "gpt-5.5", apiKey: "sk-test" },
+    request: { model: "gpt-5.5", max_output_tokens: 4096 },
+    body: {
+      model: "gpt-5.5",
+      status: "incomplete",
+      incomplete_details: { reason: "max_output_tokens" },
+      usage: { input_tokens: 1200, output_tokens: 4096 },
+    },
+  });
+  assert.equal(openAiMetadata.model, "gpt-5.5");
+  assert.equal(openAiMetadata.max_output_tokens, 4096);
+  assert.equal(openAiMetadata.status, "incomplete");
+  assert.equal(openAiMetadata.incomplete_details.reason, "max_output_tokens");
+  assert.equal(openAiMetadata.input_token_usage, 1200);
+  assert.equal(openAiMetadata.output_token_usage, 4096);
+
+  const chatMetadata = mainSandbox.createAiResponseMetadata({
+    provider: "deepseek",
+    settings: { provider: "deepseek", model: "deepseek-v4-flash", apiKey: "sk-test" },
+    request: { model: "deepseek-v4-flash", max_tokens: 4096 },
+    body: {
+      choices: [{ finish_reason: "length" }],
+      usage: { prompt_tokens: 800, completion_tokens: 4096 },
+    },
+  });
+  assert.equal(chatMetadata.finish_reason, "length");
+  assert.equal(chatMetadata.max_tokens, 4096);
+  assert.equal(chatMetadata.input_token_usage, 800);
+  assert.equal(chatMetadata.output_token_usage, 4096);
+}
+
+{
   const request = mainSandbox.buildClaudeMessagesRequest(
     { provider: "claude", model: "claude-sonnet-4-5", apiKey: "sk-ant-test" },
     {
@@ -307,14 +347,14 @@ vm.runInContext(
   assert.equal(openAiRequest.model, "gpt-5.5");
   assert.equal(openAiRequest.instructions, "系统提示");
   assert.equal(openAiRequest.input, "用户提示");
-  assert.equal(openAiRequest.max_output_tokens, 2048);
+  assert.equal(openAiRequest.max_output_tokens, 4096);
 
   const chatRequest = mainSandbox.buildOpenAiCompatiblePromptChatRequest(
     { provider: "deepseek", model: "deepseek-v4-flash", apiKey: "sk-test" },
     promptRequest,
   );
   assert.equal(chatRequest.model, "deepseek-v4-flash");
-  assert.equal(chatRequest.max_tokens, 2048);
+  assert.equal(chatRequest.max_tokens, 4096);
   assert.equal(chatRequest.stream, false);
   assert.equal(chatRequest.messages[0].role, "system");
   assert.equal(chatRequest.messages[1].role, "user");
@@ -323,7 +363,7 @@ vm.runInContext(
     { provider: "claude", model: "claude-sonnet-4-5", apiKey: "sk-test" },
     promptRequest,
   );
-  assert.equal(claudePromptRequest.max_tokens, 2048);
+  assert.equal(claudePromptRequest.max_tokens, 4096);
   assert.equal(claudePromptRequest.system, "系统提示");
 
   const claudeRequest = mainSandbox.buildClaudePromptMessagesRequest(
@@ -332,6 +372,24 @@ vm.runInContext(
   );
   assert.equal(claudeRequest.system, "系统提示");
   assert.equal(claudeRequest.messages[0].content, "用户提示");
+
+  const plannerRequest = mainSandbox.buildOpenAiPromptResponseRequest(
+    { provider: "openai", model: "gpt-5.5", apiKey: "sk-test" },
+    { prompt_id: "planner_prompt", system: "系统提示", user: "用户提示" },
+  );
+  assert.equal(plannerRequest.max_output_tokens, 4096);
+
+  const limitedRequest = mainSandbox.buildOpenAiPromptResponseRequest(
+    { provider: "openai", model: "gpt-5.5", apiKey: "sk-test" },
+    { prompt_id: "scene_writer_prompt", system: "系统提示", user: "用户提示", max_output_tokens: 900 },
+  );
+  assert.equal(limitedRequest.max_output_tokens, 900);
+
+  const limitedDeepSeekRequest = mainSandbox.buildOpenAiCompatiblePromptChatRequest(
+    { provider: "deepseek", model: "deepseek-v4-flash", apiKey: "sk-test" },
+    { prompt_id: "scene_writer_prompt", system: "系统提示", user: "用户提示", max_output_tokens: 900 },
+  );
+  assert.equal(limitedDeepSeekRequest.max_tokens, 1536);
 }
 
 console.log("AI mock draft tests passed");

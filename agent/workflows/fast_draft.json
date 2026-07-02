@@ -1,0 +1,30 @@
+{
+  "id": "fast_draft",
+  "label": "Fast Draft",
+  "cost_level": "low",
+  "context_level": "minimal",
+  "word_count_strictness": "loose",
+  "reviewer_level": "completion_only",
+  "steps": [
+    { "id": "plan_chapter", "prompt_id": "planner_prompt", "stage": "planning", "required": false, "model_tier": "cheap" },
+    { "id": "outline_scenes", "prompt_id": "scene_outline_prompt", "stage": "planning", "required": false, "model_tier": "cheap" },
+    { "id": "write_scene", "prompt_id": "scene_writer_prompt", "stage": "generation", "required": true, "model_tier": "writing" },
+    { "id": "continue_if_needed", "prompt_id": "continue_chapter_prompt", "stage": "generation", "required": true, "model_tier": "writing" },
+    { "id": "audit_completion", "prompt_id": "chapter_completion_auditor_prompt", "stage": "audit", "required": true, "model_tier": "cheap" },
+    { "id": "summarize_memory", "prompt_id": "summarizer_prompt", "stage": "memory", "required": false, "model_tier": "cheap" }
+  ],
+  "fast_limits": {
+    "scene_completion_audit": "disabled",
+    "scene_completion_repair": "disabled",
+    "chapter_completion_repair": { "enabled": false, "max_attempts": 0 },
+    "save_incomplete_with_warning": true,
+    "quality_review": "disabled",
+    "transition_review": "disabled",
+    "editorial_suggestions": "disabled",
+    "expand_compress": "disabled"
+  },
+  "craft_rule_policy": {
+    "categories": ["scene", "character", "pacing"],
+    "top_k": 2
+  }
+}

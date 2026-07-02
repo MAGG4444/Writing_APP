@@ -1,0 +1,135 @@
+[
+  {
+    "id": "scene-conflict-pressure",
+    "title": "Scene Conflict Pressure",
+    "category": "scene conflict",
+    "principle": "A scene needs a present-tense pressure source: the character wants something now, and something resists that want.",
+    "use_when": "Use when a scene feels descriptive, flat, or like setup without dramatic pressure.",
+    "checklist": [
+      "Name what the character wants in this scene.",
+      "Name what blocks or complicates that want.",
+      "Make the obstacle visible through action, dialogue, or consequence.",
+      "End the scene with a changed situation, not only more information."
+    ],
+    "bad_patterns": [
+      "The scene only explains background.",
+      "The character observes but does not choose or risk anything.",
+      "Conflict is abstract instead of present in the moment."
+    ],
+    "revision_strategy": "Add a concrete obstacle or competing desire before adding more description."
+  },
+  {
+    "id": "character-motivation",
+    "title": "Character Motivation Line",
+    "category": "character motivation",
+    "principle": "Character behavior should follow a readable desire, fear, belief, or pressure established by the project materials and recent memory.",
+    "use_when": "Use when a character acts conveniently, changes emotion too quickly, or makes a choice that feels author-driven.",
+    "checklist": [
+      "Identify the character's immediate motive.",
+      "Check the motive against known character facts.",
+      "Show the motive through action or hesitation.",
+      "Make any change of mind respond to a new pressure or realization."
+    ],
+    "bad_patterns": [
+      "A character changes position because the plot needs it.",
+      "The action contradicts established fear, loyalty, or goal without pressure.",
+      "Internal logic is explained after the fact instead of dramatized."
+    ],
+    "revision_strategy": "Insert the missing pressure, memory, or cost that makes the choice feel necessary."
+  },
+  {
+    "id": "dialogue-naturalness",
+    "title": "Dialogue Naturalness / 对白自然度",
+    "category": "dialogue naturalness",
+    "principle": "Dialogue should sound like people pursuing goals under social pressure, not like exposition delivered in turns.",
+    "use_when": "Use when dialogue feels stiff, over-explanatory, or interchangeable between characters.",
+    "checklist": [
+      "Give each speaker a purpose in the exchange.",
+      "Let subtext carry part of the meaning.",
+      "Break exposition with interruption, avoidance, or misdirection.",
+      "Keep character voice consistent with status, mood, and relationship."
+    ],
+    "bad_patterns": [
+      "Characters explain facts both already know.",
+      "Every line answers the previous line too neatly.",
+      "All speakers use the same sentence rhythm."
+    ],
+    "revision_strategy": "Replace direct explanation with goal-driven lines, partial answers, and reaction beats."
+  },
+  {
+    "id": "pacing-beat-change",
+    "title": "Pacing Beat Change",
+    "category": "pacing",
+    "principle": "Each beat should change information, pressure, emotion, or position; repeated beats slow the chapter without deepening it.",
+    "use_when": "Use when a chapter feels slow, repetitive, or padded after expansion.",
+    "checklist": [
+      "Mark what changes in each paragraph or beat.",
+      "Cut or merge beats that repeat the same state.",
+      "Alternate observation with action or decision.",
+      "Let description earn its space by changing tension or understanding."
+    ],
+    "bad_patterns": [
+      "Several paragraphs restate the same fear or atmosphere.",
+      "Description delays the next meaningful action.",
+      "A scene expands in word count but not in pressure."
+    ],
+    "revision_strategy": "Compress repeated emotional notes and add a beat that changes the situation."
+  },
+  {
+    "id": "scene-transition",
+    "title": "Scene Transition Continuity",
+    "category": "transition",
+    "principle": "Adjacent scenes should preserve time, place, emotional state, and character intent unless the text deliberately signals a jump.",
+    "use_when": "Use when scene-based generation creates a stitched or jumpy chapter.",
+    "checklist": [
+      "Check where the previous scene ends and where the next begins.",
+      "Track time, place, character positions, and emotional residue.",
+      "Add a bridge sentence when the reader needs orientation.",
+      "Avoid repeating the same opening information in the next scene."
+    ],
+    "bad_patterns": [
+      "The next scene starts as if the previous scene did not happen.",
+      "Time or location changes without a signal.",
+      "The same setup is repeated at multiple scene openings."
+    ],
+    "revision_strategy": "Add one orienting bridge sentence or revise the next opening to inherit the previous scene's state."
+  },
+  {
+    "id": "style-sentence-texture",
+    "title": "Style Sentence Texture",
+    "category": "style",
+    "principle": "A chapter should maintain the project's chosen texture through sentence rhythm, sensory focus, narrative distance, and image density.",
+    "use_when": "Use when prose feels generic, mechanically polished, or detached from the project's stated style.",
+    "checklist": [
+      "Compare sentence rhythm against the project's style notes.",
+      "Check whether sensory details match the intended atmosphere.",
+      "Flag paragraphs where narrative distance suddenly shifts.",
+      "Prefer concrete image and action over abstract evaluation."
+    ],
+    "bad_patterns": [
+      "The prose uses the same neutral rhythm in every scene.",
+      "Descriptions sound polished but not specific to the world.",
+      "Emotional statements replace observable behavior or image."
+    ],
+    "revision_strategy": "Mark the places where rhythm, image choice, or narrative distance drifts from the style guide before suggesting localized changes."
+  },
+  {
+    "id": "revision-focused-pass",
+    "title": "Revision Focused Pass",
+    "category": "revision",
+    "principle": "A useful revision pass identifies the highest-impact local fixes without rewriting the chapter or changing its plot function.",
+    "use_when": "Use when a review needs to turn broad quality concerns into concrete next edits.",
+    "checklist": [
+      "Separate structural issues from line-level issues.",
+      "Name the smallest edit that would improve each issue.",
+      "Preserve established plot events and character choices.",
+      "Prioritize fixes that improve clarity, pressure, or continuity."
+    ],
+    "bad_patterns": [
+      "Feedback asks for a full rewrite when a local bridge or beat would solve the issue.",
+      "Suggested fixes introduce new plot facts not present in the outline.",
+      "The review lists vague preferences without an actionable edit."
+    ],
+    "revision_strategy": "Convert each issue into a bounded edit instruction tied to a scene, paragraph, or transition."
+  }
+]

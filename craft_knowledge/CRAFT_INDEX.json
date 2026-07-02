@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "scene-conflict-pressure",
+      "source": "rules.json",
+      "category": "scene",
+      "tags": ["conflict", "pressure", "scene_goal"],
+      "review_types": ["quality", "editorial"],
+      "paths": ["fast_draft", "standard_chapter", "polished_chapter"],
+      "cost_level": "low",
+      "priority": 90,
+      "summary": "Scene needs present pressure: desire plus resistance."
+    },
+    {
+      "id": "character-motivation",
+      "source": "rules.json",
+      "category": "character",
+      "tags": ["motivation", "choice", "consistency"],
+      "review_types": ["quality", "editorial"],
+      "paths": ["fast_draft", "standard_chapter", "polished_chapter"],
+      "cost_level": "low",
+      "priority": 85,
+      "summary": "Character behavior should follow readable motive and pressure."
+    },
+    {
+      "id": "dialogue-naturalness",
+      "source": "rules.json",
+      "category": "dialogue",
+      "tags": ["dialogue", "subtext", "voice"],
+      "review_types": ["quality", "editorial"],
+      "paths": ["standard_chapter", "polished_chapter"],
+      "cost_level": "low",
+      "priority": 80,
+      "summary": "Dialogue should pursue goals under social pressure."
+    },
+    {
+      "id": "pacing-beat-change",
+      "source": "rules.json",
+      "category": "pacing",
+      "tags": ["pacing", "beat", "repetition"],
+      "review_types": ["quality", "transition", "editorial"],
+      "paths": ["fast_draft", "standard_chapter", "polished_chapter"],
+      "cost_level": "low",
+      "priority": 78,
+      "summary": "Each beat should change pressure, information, emotion, or position."
+    },
+    {
+      "id": "scene-transition",
+      "source": "rules.json",
+      "category": "transition",
+      "tags": ["transition", "continuity", "scene_pair"],
+      "review_types": ["transition", "editorial"],
+      "paths": ["standard_chapter", "polished_chapter"],
+      "cost_level": "low",
+      "priority": 86,
+      "summary": "Adjacent scenes should preserve time, place, state, and intent."
+    },
+    {
+      "id": "style-sentence-texture",
+      "source": "rules.json",
+      "category": "style",
+      "tags": ["style", "sentence_texture", "voice"],
+      "review_types": ["quality", "editorial"],
+      "paths": ["polished_chapter"],
+      "cost_level": "low",
+      "priority": 72,
+      "summary": "Chapter prose should maintain the project's chosen style texture."
+    },
+    {
+      "id": "revision-focused-pass",
+      "source": "rules.json",
+      "category": "revision",
+      "tags": ["revision", "actionable_feedback", "local_fix"],
+      "review_types": ["quality", "editorial"],
+      "paths": ["polished_chapter"],
+      "cost_level": "low",
+      "priority": 70,
+      "summary": "Revision feedback should identify bounded high-impact fixes."
+    }
+  ]
+}

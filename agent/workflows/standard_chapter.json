@@ -1,0 +1,36 @@
+{
+  "id": "standard_chapter",
+  "label": "Standard Chapter",
+  "cost_level": "medium",
+  "context_level": "balanced",
+  "word_count_strictness": "moderate",
+  "reviewer_level": "basic",
+  "steps": [
+    { "id": "plan_chapter", "prompt_id": "planner_prompt", "stage": "planning", "required": true, "model_tier": "planning" },
+    { "id": "outline_scenes", "prompt_id": "scene_outline_prompt", "stage": "planning", "required": true, "model_tier": "planning" },
+    { "id": "write_scene", "prompt_id": "scene_writer_prompt", "stage": "generation", "required": true, "model_tier": "writing" },
+    { "id": "continue_if_needed", "prompt_id": "continue_chapter_prompt", "stage": "generation", "required": true, "model_tier": "writing" },
+    { "id": "audit_completion", "prompt_id": "chapter_completion_auditor_prompt", "stage": "audit", "required": true, "model_tier": "cheap" },
+    { "id": "scene_completion_repair", "prompt_id": "chapter_completion_repair_prompt", "stage": "repair", "required": false, "enabled": false, "model_tier": "writing" },
+    { "id": "repair_completion", "prompt_id": "chapter_completion_repair_prompt", "stage": "repair", "required": false, "enabled": true, "max_attempts": 1, "model_tier": "writing" },
+    { "id": "adjust_expand", "prompt_id": "expand_scene_prompt", "stage": "adjustment", "required": false, "enabled": false, "model_tier": "writing" },
+    { "id": "adjust_compress", "prompt_id": "compress_scene_prompt", "stage": "adjustment", "required": false, "enabled": false, "model_tier": "editing" },
+    { "id": "quality_review", "prompt_id": "quality_review_prompt", "stage": "review", "required": false, "enabled": false, "model_tier": "review" },
+    { "id": "transition_review", "prompt_id": "transition_review_prompt", "stage": "review", "required": false, "enabled": false, "model_tier": "review" },
+    { "id": "editorial_suggestions", "prompt_id": "editorial_suggestions_prompt", "stage": "review", "required": false, "enabled": true, "model_tier": "review" },
+    { "id": "summarize_memory", "prompt_id": "summarizer_prompt", "stage": "memory", "required": true, "model_tier": "cheap" }
+  ],
+  "standard_limits": {
+    "expand_compress": "disabled",
+    "scene_completion_repair": "disabled",
+    "chapter_completion_repair": { "enabled": true, "max_attempts": 1 },
+    "quality_review": "disabled",
+    "transition_review": "disabled",
+    "editorial_suggestions": "enabled"
+  },
+  "craft_rule_policy": {
+    "quality_review": ["scene", "character", "dialogue", "pacing"],
+    "transition_review": ["transition", "pacing", "scene"],
+    "top_k": 5
+  }
+}

@@ -255,6 +255,9 @@
   --line: rgba(38, 48, 43, 0.13);
   --accent: #3f7b68;
   --accent-soft: rgba(63, 123, 104, 0.13);
+  --success: #3c7a52;
+  --warning: #9a6a2f;
+  --danger: #a04d43;
   --font-family: "Noto Sans SC", "PingFang SC", sans-serif;
   --editor-font-size: 18px;
   --editor-line-height: 1.9;
@@ -1917,6 +1920,10 @@ body.is-resizing-sidebar {
   gap: 12px;
 }
 
+.ai-cost-details-toggle {
+  margin-top: 4px;
+}
+
 .writing-toolbar-top {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -2434,9 +2441,206 @@ button.is-loading::after {
   gap: 3px;
 }
 
+.agent-goal-box {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel-strong) 84%, transparent);
+}
+
+.agent-goal-box textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  font-family: var(--font-family);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.agent-goal-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.agent-goal-actions .ghost-button,
+.agent-goal-actions .primary-button {
+  min-height: 36px;
+  min-width: 0;
+  padding: 0 10px;
+  white-space: normal;
+  line-height: 1.25;
+}
+
+.agent-goal-draft {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.agent-goal-draft dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.agent-goal-draft dl > div {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.agent-goal-draft dt {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.agent-goal-draft dd {
+  margin: 0;
+  color: var(--text);
+}
+
+.agent-plan-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agent-plan-step {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 64%, transparent);
+}
+
+.agent-plan-step > span {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.agent-plan-step > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.agent-plan-step strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.agent-plan-step strong b {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--panel-strong) 78%, var(--line));
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.agent-plan-step.is-running {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--line));
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+
+.agent-plan-step.is-running strong b {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+}
+
+.agent-plan-step.is-success {
+  border-color: color-mix(in srgb, var(--success) 42%, var(--line));
+  background: color-mix(in srgb, var(--success) 10%, var(--panel));
+}
+
+.agent-plan-step.is-success strong b {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 16%, var(--panel));
+}
+
+.agent-plan-step.is-error {
+  border-color: color-mix(in srgb, var(--danger) 48%, var(--line));
+  background: color-mix(in srgb, var(--danger) 10%, var(--panel));
+}
+
+.agent-plan-step.is-error strong b {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, var(--panel));
+}
+
+.agent-plan-step.is-waiting_confirmation {
+  border-color: color-mix(in srgb, var(--warning) 48%, var(--line));
+  background: color-mix(in srgb, var(--warning) 11%, var(--panel));
+}
+
+.agent-plan-step.is-waiting_confirmation strong b {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 18%, var(--panel));
+}
+
+.agent-plan-step.is-skipped {
+  opacity: 0.72;
+}
+
+.agent-plan-step small,
+.agent-plan-step em {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.agent-plan-step em {
+  font-style: normal;
+  color: color-mix(in srgb, var(--accent) 68%, var(--muted));
+}
+
 .agent-stage-list {
   display: grid;
   gap: 8px;
+}
+
+.agent-generation-controls {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel-strong) 82%, transparent);
+}
+
+.agent-generation-controls label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.agent-generation-controls select {
+  width: 100%;
+  min-width: 0;
+}
+
+.agent-generation-controls small {
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 .agent-stage-row {
@@ -3473,6 +3677,62 @@ button.is-loading::after {
   padding: 18px;
   font-size: 14px;
   line-height: 1.8;
+}
+
+.editorial-suggestions-unavailable {
+  align-self: center;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.editorial-suggestions-float {
+  position: fixed;
+  z-index: 80;
+  width: min(520px, calc(100vw - 24px));
+  max-height: min(680px, calc(100vh - 24px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 18px 42px rgba(28, 39, 34, 0.18);
+  overflow: hidden;
+}
+
+.editorial-suggestions-float-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel-strong) 96%, transparent);
+  cursor: move;
+  user-select: none;
+}
+
+.editorial-suggestions-float-head strong,
+.editorial-suggestions-float-head small {
+  display: block;
+}
+
+.editorial-suggestions-float-head small {
+  margin-top: 3px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.editorial-suggestions-content {
+  min-height: 0;
+  margin: 0;
+  padding: 14px 16px 18px;
+  overflow: auto;
+  color: var(--text);
+  background: var(--panel);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.75;
+  white-space: pre-wrap;
 }
 
 @media (max-width: 820px) {

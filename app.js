@@ -796,6 +796,40 @@ const aiProviderDefaults = {
   deepseek: "deepseek-v4-flash",
   custom: "",
 };
+const aiProviderModelOptions = {
+  openai: ["gpt-5.5", "gpt-4.1", "gpt-4.1-mini"],
+  claude: ["claude-sonnet-4-5"],
+  deepseek: ["deepseek-v4-flash"],
+  custom: [],
+};
+const agentGenerationModes = [
+  {
+    id: "fast_draft",
+    generation_mode: "fast_draft",
+    zh: "快速草稿",
+    en: "Fast Draft",
+    zhHint: "更快、更省资源，适合先出初稿。",
+    enHint: "Faster and lighter, best for a first pass.",
+  },
+  {
+    id: "standard_chapter",
+    generation_mode: "standard_chapter",
+    zh: "标准章节（推荐）",
+    en: "Standard Chapter (Recommended)",
+    zhHint: "平衡质量和速度，适合日常生成。",
+    enHint: "Balanced quality and speed for regular drafting.",
+  },
+  {
+    id: "polished_chapter",
+    generation_mode: "polished_chapter",
+    zh: "精修章节",
+    en: "Polished Chapter",
+    zhHint: "审查更细致，耗时更久。",
+    enHint: "More thorough review, slower and heavier.",
+  },
+];
+const defaultAgentGenerationMode = "standard_chapter";
+const costGuardFriendlyBlockedMessage = "本次生成内容较长，可能消耗较多资源。建议降低目标字数，或切换为快速草稿。";
 const projectMaterialTypes = [
   { id: "outline", zh: "项目大纲", en: "Outline", zhHint: "故事主线、阶段推进和结局方向。", enHint: "Story arc, major beats, and ending direction." },
   { id: "characters", zh: "角色设定", en: "Characters", zhHint: "人物关系、欲望、秘密和口吻。", enHint: "Relationships, motives, secrets, and voice." },
@@ -839,6 +873,7 @@ let outlineResizeState = null;
 let sidebarResizeState = null;
 let sidebarResizeFrame = null;
 let globalEventsBound = false;
+let editorialSuggestionsDragState = null;
 
 init();
 
@@ -1151,8 +1186,17 @@ function createSeedState() {
       aiDraftsByChapter: {},
       aiReviewMode: false,
       aiGenerationPending: false,
+      editorialSuggestionsOpen: false,
+      editorialSuggestionsPosition: { x: 96, y: 96 },
+      editorialSuggestionsLoading: false,
+      editorialSuggestionsError: "",
+      agentGenerationMode: defaultAgentGenerationMode,
+      showCostDetails: false,
       agentActionPending: "",
       agentStatus: "",
+      agentGoalText: "",
+      agentGoalDraft: null,
+      agentExecutionTrace: null,
       ideaProjectMaterialsPendingId: null,
       writingToolOrder: writingToolModules.map((item) => item.id),
       writingToolVisibility: Object.fromEntries(writingToolModules.map((item) => [item.id, true])),
@@ -1273,8 +1317,19 @@ function ensureStateIntegrity() {
   state.ui.aiDraftsByChapter = state.ui.aiDraftsByChapter && typeof state.ui.aiDraftsByChapter === "object" ? state.ui.aiDraftsByChapter : {};
   state.ui.aiReviewMode = Boolean(state.ui.aiReviewMode);
   state.ui.aiGenerationPending = false;
+  state.ui.editorialSuggestionsOpen = Boolean(state.ui.editorialSuggestionsOpen);
+  state.ui.editorialSuggestionsPosition = normalizeFloatingPanelPosition(state.ui.editorialSuggestionsPosition);
+  state.ui.editorialSuggestionsLoading = false;
+  state.ui.editorialSuggestionsError = String(state.ui.editorialSuggestionsError || "");
+  state.ui.agentGenerationMode = agentGenerationModes.some((mode) => mode.id === state.ui.agentGenerationMode)
+    ? state.ui.agentGenerationMode
+    : defaultAgentGenerationMode;
+  state.ui.showCostDetails = Boolean(state.ui.showCostDetails);
   state.ui.agentActionPending = "";
   state.ui.agentStatus = String(state.ui.agentStatus || "");
+  state.ui.agentGoalText = String(state.ui.agentGoalText || "");
+  state.ui.agentGoalDraft = normalizeAgentGoalDraft(state.ui.agentGoalDraft);
+  state.ui.agentExecutionTrace = normalizeAgentExecutionTrace(state.ui.agentExecutionTrace, state.ui.agentGoalDraft?.planSteps || []);
   state.ui.ideaProjectMaterialsPendingId ??= null;
   normalizeWritingToolLayout();
   state.ui.projectMaterialType = projectMaterialTypes.some((item) => item.id === state.ui.projectMaterialType)
@@ -1619,6 +1674,20 @@ function normalizePublicAiSettings(value) {
     updatedAt: String(source.updatedAt || ""),
     saveStatus: String(source.saveStatus || ""),
   };
+}
+
+function getAiModelOptions(provider) {
+  const normalizedProvider = Object.hasOwn(aiProviderDefaults, provider) ? provider : "openai";
+  return [...new Set([
+    aiProviderDefaults[normalizedProvider],
+    ...(aiProviderModelOptions[normalizedProvider] || []),
+  ].map((model) => String(model || "").trim()).filter(Boolean))];
+}
+
+function renderAiModelOptions(provider) {
+  return getAiModelOptions(provider)
+    .map((model) => `<option value="${escapeAttribute(model)}">${escapeHtml(model)}</option>`)
+    .join("");
 }
 
 async function loadAiSettings() {
@@ -2107,6 +2176,29 @@ function renderWritingToolModule(moduleId) {
           <small>${getLanguage() === "en" ? "Project materials, memory, and this chapter." : "调用项目资料、记忆与当前章节。"}</small>
         </div>
         <small class="agent-target-hint" id="agent-target-hint"></small>
+        <div class="agent-generation-controls">
+          <label for="agent-generation-mode-select">
+            <span>${getLanguage() === "en" ? "Mode" : "生成模式"}</span>
+            <select id="agent-generation-mode-select">
+              ${agentGenerationModes
+                .map((mode) => `<option value="${escapeAttribute(mode.id)}">${escapeHtml(getLanguage() === "en" ? mode.en : mode.zh)}</option>`)
+                .join("")}
+            </select>
+          </label>
+          <small id="agent-generation-mode-hint"></small>
+        </div>
+        <div class="agent-goal-box">
+          <textarea
+            id="agent-goal-input"
+            rows="3"
+            placeholder="${escapeAttribute(getLanguage() === "en" ? "Describe a task goal, e.g. update project materials from selected ideas." : "描述任务目标，例如：根据选中的灵感更新人物和世界观。")}"
+          ></textarea>
+          <div class="agent-goal-actions">
+            <button class="ghost-button" data-agent-goal-action="parse">${getLanguage() === "en" ? "Parse Goal" : "解析目标"}</button>
+            <button class="primary-button" data-agent-goal-action="execute">${getLanguage() === "en" ? "Execute Suggested Workflow" : "执行建议流程"}</button>
+          </div>
+          <div class="agent-goal-draft" id="agent-goal-draft"></div>
+        </div>
         <div class="agent-stage-list">
           <div class="agent-stage-row">
             <span>${getLanguage() === "en" ? "Plan" : "规划"}</span>
@@ -2239,12 +2331,18 @@ function AiSettingsCard() {
         <option value="deepseek">DeepSeek</option>
         <option value="custom">${getLanguage() === "en" ? "Custom" : "自定义"}</option>
       </select>
-      <label>${getLanguage() === "en" ? "Model" : "模型"}</label>
+      <label for="ai-model-input">${getLanguage() === "en" ? "Model" : "模型"}</label>
+      <select id="ai-model-select"></select>
       <input id="ai-model-input" type="text" autocomplete="off" />
+      <small class="ai-model-helper">${getLanguage() === "en" ? "Choose a preset model above, or type a custom model name here." : "上方选择预设模型；也可以在这里手动输入自定义模型名。"}</small>
       <label>${getLanguage() === "en" ? "API Key" : "API Key"}</label>
       <input id="ai-api-key-input" type="password" autocomplete="off" placeholder="${escapeAttribute(getLanguage() === "en" ? "Leave blank to keep the saved key" : "留空则保留已保存密钥")}" />
       <label>${getLanguage() === "en" ? "Base URL" : "Base URL"}</label>
       <input id="ai-base-url-input" type="url" autocomplete="off" placeholder="${escapeAttribute(getLanguage() === "en" ? "Optional for custom-compatible APIs" : "兼容接口可选填写")}" />
+      <label class="toggle-row ai-cost-details-toggle">
+        <span>${getLanguage() === "en" ? "Show generation cost details" : "显示生成成本详情"}</span>
+        <input id="agent-show-cost-details-toggle" type="checkbox" />
+      </label>
       <div class="ai-settings-footer">
         <small id="ai-settings-status"></small>
         <button class="primary-button" id="save-ai-settings-button">${getLanguage() === "en" ? "Save AI Settings" : "保存 AI 设置"}</button>
@@ -2360,6 +2458,11 @@ function collectRefs() {
   refs.resumeHint = document.getElementById("resume-hint");
   refs.agentStatus = document.getElementById("agent-status");
   refs.agentTargetHint = document.getElementById("agent-target-hint");
+  refs.agentGenerationModeSelect = document.getElementById("agent-generation-mode-select");
+  refs.agentGenerationModeHint = document.getElementById("agent-generation-mode-hint");
+  refs.agentShowCostDetailsToggle = document.getElementById("agent-show-cost-details-toggle");
+  refs.agentGoalInput = document.getElementById("agent-goal-input");
+  refs.agentGoalDraft = document.getElementById("agent-goal-draft");
   refs.inspirationCategoryFilter = document.getElementById("inspiration-category-filter");
   refs.inspirationSearchInput = document.getElementById("inspiration-search-input");
   refs.inspirationSortButton = document.getElementById("inspiration-sort-button");
@@ -2382,6 +2485,7 @@ function collectRefs() {
   refs.projectMaterialChapterList = document.getElementById("project-material-chapter-list");
   refs.accountCard = document.getElementById("account-card");
   refs.aiProviderSelect = document.getElementById("ai-provider-select");
+  refs.aiModelSelect = document.getElementById("ai-model-select");
   refs.aiModelInput = document.getElementById("ai-model-input");
   refs.aiApiKeyInput = document.getElementById("ai-api-key-input");
   refs.aiBaseUrlInput = document.getElementById("ai-base-url-input");
@@ -2479,6 +2583,9 @@ function bindEvents() {
   refs.rightSidebarReopenButton.addEventListener("click", toggleRightSidebar);
   refs.rightSidebarResizeHandle.addEventListener("mousedown", (event) => beginSidebarResize(event, "right"));
   refs.wordGoalInput?.addEventListener("input", handleWordGoalInput);
+  refs.agentGenerationModeSelect?.addEventListener("change", handleAgentGenerationModeChange);
+  refs.agentShowCostDetailsToggle?.addEventListener("change", handleAgentShowCostDetailsChange);
+  refs.agentGoalInput?.addEventListener("input", handleAgentGoalInput);
   refs.inspirationCategoryFilter.addEventListener("change", (event) => {
     state.inspirations.activeCategory = event.target.value;
     renderInspirationList();
@@ -2497,6 +2604,7 @@ function bindEvents() {
   refs.projectMaterialEditor.addEventListener("input", handleProjectMaterialInput);
   refs.saveProjectMaterialButton.addEventListener("click", () => void saveCurrentProjectMaterial());
   refs.aiProviderSelect.addEventListener("change", handleAiProviderChange);
+  refs.aiModelSelect?.addEventListener("change", handleAiModelSelectChange);
   refs.saveAiSettingsButton.addEventListener("click", () => void saveAiSettingsFromForm());
   refs.themeAccordionButton.addEventListener("click", toggleThemeAccordion);
   refs.fontFamilySelect.addEventListener("change", (event) => {
@@ -2533,6 +2641,7 @@ function bindEvents() {
     button.addEventListener("click", () => switchTab(button.dataset.tab));
   });
   refs.app.addEventListener("click", handleDelegatedClick);
+  refs.app.addEventListener("mousedown", handleEditorialSuggestionsDragStart);
   refs.app.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
     if (!state.ui.modal && (event.metaKey || event.ctrlKey) && key === "f" && state.route === "editor") {
@@ -2572,6 +2681,8 @@ function bindEvents() {
     window.addEventListener("mouseup", endOutlineResize);
     window.addEventListener("mousemove", handleSidebarResizeMove);
     window.addEventListener("mouseup", endSidebarResize);
+    window.addEventListener("mousemove", handleEditorialSuggestionsDragMove);
+    window.addEventListener("mouseup", endEditorialSuggestionsDrag);
     window.addEventListener("resize", syncOutlinePanelLayout);
     globalEventsBound = true;
   }
@@ -2727,6 +2838,12 @@ async function handleDelegatedClick(event) {
   const agentAction = event.target.closest("[data-agent-action]");
   if (agentAction) {
     await handleAgentAction(agentAction.dataset.agentAction);
+    return;
+  }
+
+  const agentGoalAction = event.target.closest("[data-agent-goal-action]");
+  if (agentGoalAction) {
+    await handleAgentGoalAction(agentGoalAction.dataset.agentGoalAction);
     return;
   }
 
@@ -3352,6 +3469,9 @@ function updateWorkspace() {
 
 function updateAgentPanel(chapter = getCurrentChapter()) {
   if (!refs.agentStatus) return;
+  if (refs.agentGoalInput && refs.agentGoalInput.value !== state.ui.agentGoalText && document.activeElement !== refs.agentGoalInput) {
+    refs.agentGoalInput.value = state.ui.agentGoalText;
+  }
   if (refs.agentTargetHint) {
     refs.agentTargetHint.textContent = chapter
       ? (getLanguage() === "en"
@@ -3359,9 +3479,13 @@ function updateAgentPanel(chapter = getCurrentChapter()) {
           : `当前目标：第 ${getCurrentChapterNumber(chapter)} 章 · ${chapter.title}`)
       : (getLanguage() === "en" ? "Target: no chapter selected" : "当前目标：未选择章节");
   }
+  const currentMode = getCurrentAgentGenerationMode();
+  if (refs.agentGenerationModeSelect) refs.agentGenerationModeSelect.value = currentMode.id;
+  if (refs.agentGenerationModeHint) refs.agentGenerationModeHint.textContent = getLanguage() === "en" ? currentMode.enHint : currentMode.zhHint;
   const agentPending = Boolean(state.ui.agentActionPending);
   const reviewPending = Boolean(state.ui.aiGenerationPending);
   const pending = agentPending || reviewPending;
+  if (refs.agentGenerationModeSelect) refs.agentGenerationModeSelect.disabled = pending;
   refs.app.querySelectorAll("[data-agent-action], [data-selection-action='ai-rewrite'], [data-ai-action='generate-mock']").forEach((button) => {
     button.disabled = pending || !chapter;
     const action = button.dataset.agentAction || button.dataset.selectionAction;
@@ -3369,6 +3493,10 @@ function updateAgentPanel(chapter = getCurrentChapter()) {
     const isActiveReviewButton = reviewPending && button.dataset.aiAction === "generate-mock";
     button.classList.toggle("is-loading", isActiveAgentButton || isActiveReviewButton);
   });
+  refs.app.querySelectorAll("[data-agent-goal-action]").forEach((button) => {
+    button.disabled = pending || (button.dataset.agentGoalAction === "execute" && !state.ui.agentGoalDraft);
+  });
+  if (refs.agentGoalDraft) refs.agentGoalDraft.innerHTML = renderAgentGoalDraft(state.ui.agentGoalDraft);
   refs.agentStatus.textContent = pending ? t("ai.running") : state.ui.agentStatus || t("ai.idleStatus");
 }
 
@@ -3383,6 +3511,7 @@ function updateAiReviewSurface(chapter = getCurrentChapter()) {
   const aiDraftRecord = state.ui.aiDraftsByChapter?.[chapter.id] ?? null;
   const aiDraft = aiDraftRecord?.content ?? "";
   const isGenerating = Boolean(state.ui.aiGenerationPending);
+  const editorialControls = renderEditorialSuggestionsControls(aiDraftRecord);
   refs.aiReviewSurface.innerHTML = `
     <div class="ai-review-mode-shell">
       <header class="ai-review-mode-toolbar">
@@ -3392,6 +3521,7 @@ function updateAiReviewSurface(chapter = getCurrentChapter()) {
           <small>${getLanguage() === "en" ? "Compare the current chapter with the generated version." : "左侧为当前旧版，右侧为 AI 生成版本。"}</small>
         </div>
         <div class="ai-review-actions">
+          ${editorialControls}
           <button class="ghost-button" data-ai-action="close-review">${getLanguage() === "en" ? "Exit" : "退出改稿模式"}</button>
           <button class="ghost-button" data-ai-action="generate-mock" ${isGenerating ? "disabled" : ""}>${isGenerating ? (getLanguage() === "en" ? "Generating..." : "生成中……") : (getLanguage() === "en" ? "Regenerate" : "重新生成")}</button>
           ${aiDraft ? `<button class="ghost-button" data-ai-action="copy-draft" ${isGenerating ? "disabled" : ""}>${getLanguage() === "en" ? "Copy AI Version" : "复制 AI 版本"}</button>` : ""}
@@ -3400,7 +3530,59 @@ function updateAiReviewSurface(chapter = getCurrentChapter()) {
       </header>
       ${renderAiCompareGrid(chapter, originalContent, aiDraft, aiDraftRecord)}
     </div>
+    ${renderEditorialSuggestionsFloatingPanel(aiDraftRecord)}
   `;
+}
+
+function renderEditorialSuggestionsControls(aiDraftRecord = null) {
+  const status = String(aiDraftRecord?.editorialSuggestionsStatus || "");
+  const fileName = String(aiDraftRecord?.editorialSuggestionsFile || "");
+  if (status === "soft_failed") {
+    return `<span class="editorial-suggestions-unavailable">${getLanguage() === "en" ? "Editorial suggestions unavailable" : "审稿建议暂不可用"}</span>`;
+  }
+  if (!fileName) return "";
+  const loading = Boolean(state.ui.editorialSuggestionsLoading);
+  return `<button class="ghost-button" data-ai-action="open-editorial-suggestions" ${loading ? "disabled" : ""}>${
+    loading ? (getLanguage() === "en" ? "Loading..." : "读取中……") : (getLanguage() === "en" ? "View Editorial Suggestions" : "查看审稿建议")
+  }</button>`;
+}
+
+function renderEditorialSuggestionsFloatingPanel(aiDraftRecord = null) {
+  if (!state.ui.editorialSuggestionsOpen) return "";
+  const position = normalizeFloatingPanelPosition(state.ui.editorialSuggestionsPosition);
+  const content = String(aiDraftRecord?.editorialSuggestionsContent || "").trim();
+  const status = String(aiDraftRecord?.editorialSuggestionsStatus || "");
+  const error = String(aiDraftRecord?.editorialSuggestionsError || state.ui.editorialSuggestionsError || "").trim();
+  const body = getEditorialSuggestionsPanelBody({ content, status, error });
+  return `
+    <aside
+      class="editorial-suggestions-float surface"
+      style="left: ${position.x}px; top: ${position.y}px;"
+      aria-label="${escapeAttribute(getLanguage() === "en" ? "Editorial suggestions" : "审稿建议")}"
+    >
+      <header class="editorial-suggestions-float-head" data-editorial-suggestions-drag-handle>
+        <div>
+          <strong>${getLanguage() === "en" ? "Editorial Suggestions" : "审稿建议"}</strong>
+          <small>${getLanguage() === "en" ? "Drag this panel to compare while editing." : "可拖拽浮窗，方便对照正文。"}</small>
+        </div>
+        <button class="icon-button" data-ai-action="close-editorial-suggestions" title="${escapeAttribute(getLanguage() === "en" ? "Close" : "关闭")}">×</button>
+      </header>
+      <pre class="editorial-suggestions-content">${escapeHtml(body)}</pre>
+    </aside>
+  `;
+}
+
+function getEditorialSuggestionsPanelBody({ content, status, error }) {
+  if (state.ui.editorialSuggestionsLoading) {
+    return getLanguage() === "en" ? "Loading editorial suggestions..." : "正在读取审稿建议……";
+  }
+  if (status === "soft_failed") {
+    return getLanguage() === "en" ? "Editorial suggestions are temporarily unavailable." : "审稿建议暂不可用。";
+  }
+  if (error) {
+    return `${getLanguage() === "en" ? "No editorial suggestions available." : "暂无审稿建议。"}\n${error}`;
+  }
+  return content || (getLanguage() === "en" ? "No editorial suggestions available." : "暂无审稿建议。");
 }
 
 function updateProjectMaterialsPanel(work = getCurrentWork()) {
@@ -3587,6 +3769,17 @@ async function handleAiAction(action) {
   }
   if (action === "close-review") {
     state.ui.aiReviewMode = false;
+    state.ui.editorialSuggestionsOpen = false;
+    updateWorkspace();
+    persist();
+    return;
+  }
+  if (action === "open-editorial-suggestions") {
+    await openEditorialSuggestionsPanel(chapter);
+    return;
+  }
+  if (action === "close-editorial-suggestions") {
+    state.ui.editorialSuggestionsOpen = false;
     updateWorkspace();
     persist();
     return;
@@ -3619,6 +3812,7 @@ async function handleAiAction(action) {
     const aiDraft = state.ui.aiDraftsByChapter?.[chapter.id]?.content ?? "";
     if (!aiDraft) return;
     applyAiDraftToCurrentChapter(chapter, aiDraft);
+    completeCurrentAgentConfirmation(getLanguage() === "en" ? "AI draft applied." : "AI 草稿已应用。");
     return;
   }
   if (action === "copy-draft") {
@@ -3631,13 +3825,768 @@ async function handleAiAction(action) {
   }
 }
 
-async function handleAgentAction(action) {
+async function openEditorialSuggestionsPanel(chapter = getCurrentChapter()) {
+  if (!chapter) return;
+  const draftRecord = state.ui.aiDraftsByChapter?.[chapter.id];
+  if (!draftRecord) {
+    state.ui.editorialSuggestionsOpen = true;
+    state.ui.editorialSuggestionsError = "";
+    updateWorkspace();
+    persist();
+    return;
+  }
+  if (draftRecord.editorialSuggestionsStatus === "soft_failed") {
+    state.ui.editorialSuggestionsOpen = true;
+    draftRecord.editorialSuggestionsError = getLanguage() === "en" ? "Editorial suggestions are temporarily unavailable." : "审稿建议暂不可用。";
+    updateWorkspace();
+    persist();
+    return;
+  }
+  if (!draftRecord.editorialSuggestionsFile) {
+    state.ui.editorialSuggestionsOpen = true;
+    draftRecord.editorialSuggestionsError = getLanguage() === "en" ? "No editorial suggestions available." : "暂无审稿建议。";
+    updateWorkspace();
+    persist();
+    return;
+  }
+  if (draftRecord.editorialSuggestionsContent) {
+    state.ui.editorialSuggestionsOpen = true;
+    updateWorkspace();
+    persist();
+    return;
+  }
+  if (!desktopApi?.readProjectReport) {
+    state.ui.editorialSuggestionsOpen = true;
+    draftRecord.editorialSuggestionsError = getLanguage() === "en" ? "Desktop report reader is unavailable." : "当前环境无法读取审稿建议。";
+    updateWorkspace();
+    persist();
+    return;
+  }
+  const work = getCurrentWork();
+  if (!work) return;
+  state.ui.editorialSuggestionsOpen = true;
+  state.ui.editorialSuggestionsLoading = true;
+  draftRecord.editorialSuggestionsError = "";
+  updateWorkspace();
+  try {
+    const report = await desktopApi.readProjectReport({
+      workId: work.id,
+      fileName: draftRecord.editorialSuggestionsFile,
+    });
+    draftRecord.editorialSuggestionsContent = sanitizeEditorialSuggestionsContent(report?.content);
+    draftRecord.editorialSuggestionsError = draftRecord.editorialSuggestionsContent
+      ? ""
+      : (getLanguage() === "en" ? "No editorial suggestions available." : "暂无审稿建议。");
+  } catch (error) {
+    console.error("Failed to read editorial suggestions", error);
+    draftRecord.editorialSuggestionsContent = "";
+    draftRecord.editorialSuggestionsError = getLanguage() === "en" ? "No editorial suggestions available." : "暂无审稿建议。";
+  } finally {
+    state.ui.editorialSuggestionsLoading = false;
+    updateWorkspace();
+    persist();
+  }
+}
+
+function sanitizeEditorialSuggestionsContent(content) {
+  const text = String(content || "").trim();
+  if (!text) return "";
+  if (/```json|^\s*\{[\s\S]*\}\s*$/i.test(text)) return "";
+  const blocked = /\b(scene_metadata|llm_events|craft_rule_ids|finish_reason|raw_report)\b/i;
+  if (blocked.test(text)) {
+    return text
+      .split(/\r?\n/)
+      .filter((line) => !/\b(scene_metadata|llm_events|craft_rule_ids|finish_reason|raw_report)\b/i.test(line))
+      .join("\n")
+      .trim();
+  }
+  return text;
+}
+
+function handleEditorialSuggestionsDragStart(event) {
+  const handle = event.target.closest("[data-editorial-suggestions-drag-handle]");
+  if (!handle || event.target.closest("button")) return;
+  const panel = handle.closest(".editorial-suggestions-float");
+  if (!panel) return;
+  const position = normalizeFloatingPanelPosition(state.ui.editorialSuggestionsPosition);
+  editorialSuggestionsDragState = {
+    startX: event.clientX,
+    startY: event.clientY,
+    originX: position.x,
+    originY: position.y,
+  };
+  event.preventDefault();
+}
+
+function handleEditorialSuggestionsDragMove(event) {
+  if (!editorialSuggestionsDragState) return;
+  const next = normalizeFloatingPanelPosition({
+    x: editorialSuggestionsDragState.originX + event.clientX - editorialSuggestionsDragState.startX,
+    y: editorialSuggestionsDragState.originY + event.clientY - editorialSuggestionsDragState.startY,
+  });
+  state.ui.editorialSuggestionsPosition = next;
+  const panel = refs.app.querySelector(".editorial-suggestions-float");
+  if (panel) {
+    panel.style.left = `${next.x}px`;
+    panel.style.top = `${next.y}px`;
+  }
+}
+
+function endEditorialSuggestionsDrag() {
+  if (!editorialSuggestionsDragState) return;
+  editorialSuggestionsDragState = null;
+  persist();
+}
+
+function normalizeFloatingPanelPosition(value) {
+  const source = value && typeof value === "object" ? value : {};
+  const maxX = Math.max(12, window.innerWidth - 360);
+  const maxY = Math.max(12, window.innerHeight - 220);
+  return {
+    x: Math.min(Math.max(Number(source.x) || 96, 12), maxX),
+    y: Math.min(Math.max(Number(source.y) || 96, 12), maxY),
+  };
+}
+
+function handleAgentGoalInput(event) {
+  state.ui.agentGoalText = event.target.value;
+  state.ui.agentGoalDraft = null;
+  state.ui.agentExecutionTrace = null;
+  updateAgentPanel(getCurrentChapter());
+  persist();
+}
+
+function handleAgentGenerationModeChange(event) {
+  state.ui.agentGenerationMode = agentGenerationModes.some((mode) => mode.id === event.target.value)
+    ? event.target.value
+    : defaultAgentGenerationMode;
+  updateAgentPanel(getCurrentChapter());
+  persist();
+}
+
+function handleAgentShowCostDetailsChange(event) {
+  state.ui.showCostDetails = Boolean(event.target.checked);
+  updateAgentPanel(getCurrentChapter());
+  persist();
+}
+
+async function handleAgentGoalAction(action) {
+  if (action === "parse") {
+    state.ui.agentGoalDraft = parseAgentGoal(state.ui.agentGoalText);
+    state.ui.agentExecutionTrace = null;
+    updateAgentPanel(getCurrentChapter());
+    persist();
+    return;
+  }
+  if (action === "execute") {
+    const draft = state.ui.agentGoalDraft || parseAgentGoal(state.ui.agentGoalText);
+    state.ui.agentGoalDraft = draft;
+    updateAgentPanel(getCurrentChapter());
+    await executeParsedAgentGoal(draft);
+  }
+}
+
+function normalizeAgentGoalDraft(value) {
+  if (!value || typeof value !== "object") return null;
+  const action = String(value.action || "");
+  const supportedActions = ["generate-outline", "write-chapter", "summarize-chapter", "check-consistency", "develop-selected-project-materials"];
+  if (!supportedActions.includes(action)) return null;
+  const planSteps = Array.isArray(value.planSteps)
+    ? value.planSteps
+        .map((step, index) => ({
+      id: String(step?.id || `step-${index + 1}`),
+      label: String(step?.label || ""),
+      detail: String(step?.detail || ""),
+      toolId: String(step?.toolId || step?.tool || ""),
+      requiresConfirmation: Boolean(step?.requiresConfirmation),
+      status: normalizeAgentStepStatus(step?.status || "queued"),
+      resultSummary: String(step?.resultSummary || ""),
+    }))
+        .filter((step) => step.label && step.detail)
+    : [];
+  return {
+    action,
+    goal: String(value.goal || ""),
+    taskLabel: String(value.taskLabel || ""),
+    inputSource: String(value.inputSource || ""),
+    expectedOutput: String(value.expectedOutput || ""),
+    userInstruction: String(value.userInstruction || ""),
+    confidence: Number(value.confidence) || 0.5,
+    requiresConfirmation: Boolean(value.requiresConfirmation),
+    planSteps,
+    executionTrace: normalizeAgentExecutionTrace(value.executionTrace, planSteps),
+  };
+}
+
+function normalizeAgentStepStatus(value) {
+  const status = String(value || "").trim();
+  return ["queued", "running", "success", "error", "skipped", "waiting_confirmation"].includes(status) ? status : "queued";
+}
+
+function normalizeAgentExecutionTrace(value, planSteps = []) {
+  const normalizedSteps = Array.isArray(planSteps) ? planSteps : [];
+  if (!value || typeof value !== "object") {
+    return {
+      status: "idle",
+      startedAt: "",
+      completedAt: "",
+      error: "",
+      steps: normalizedSteps.map((step) => ({
+        id: String(step?.id || ""),
+        toolId: String(step?.toolId || ""),
+        status: normalizeAgentStepStatus(step?.status || "queued"),
+        resultSummary: String(step?.resultSummary || ""),
+      })),
+    };
+  }
+  const knownSteps = new Map(
+    (Array.isArray(value.steps) ? value.steps : []).map((step) => [String(step?.id || ""), step]),
+  );
+  const status = String(value.status || "");
+  return {
+    status: ["idle", "queued", "running", "success", "error", "skipped", "waiting_confirmation"].includes(status) ? status : "idle",
+    startedAt: String(value.startedAt || ""),
+    completedAt: String(value.completedAt || ""),
+    error: String(value.error || ""),
+    steps: normalizedSteps.map((step) => {
+      const saved = knownSteps.get(String(step?.id || "")) || {};
+      return {
+        id: String(step?.id || ""),
+        toolId: String(step?.toolId || ""),
+        status: normalizeAgentStepStatus(saved.status || step?.status || "queued"),
+        resultSummary: String(saved.resultSummary || step?.resultSummary || ""),
+      };
+    }),
+  };
+}
+
+function createAgentExecutionTrace(draft, status = "queued") {
+  const normalized = normalizeAgentGoalDraft(draft);
+  const now = new Date().toISOString();
+  const traceStatus = ["queued", "running", "success", "error", "skipped", "waiting_confirmation"].includes(status) ? status : "queued";
+  return {
+    status: traceStatus,
+    startedAt: traceStatus === "running" ? now : "",
+    completedAt: ["success", "error", "skipped", "waiting_confirmation"].includes(traceStatus) ? now : "",
+    error: "",
+    steps: (normalized?.planSteps || []).map((step, index) => ({
+      id: step.id,
+      toolId: step.toolId,
+      status: traceStatus === "running" && index === 0 ? "running" : "queued",
+      resultSummary: "",
+    })),
+  };
+}
+
+function updateAgentExecutionTrace(trace, status, options = {}) {
+  const normalized = normalizeAgentExecutionTrace(trace, options.planSteps || []);
+  const nextStatus = ["queued", "running", "success", "error", "skipped", "waiting_confirmation"].includes(status) ? status : normalized.status;
+  const now = new Date().toISOString();
+  const confirmationIndex = findAgentConfirmationStepIndex(options.planSteps || []);
+  return {
+    ...normalized,
+    status: nextStatus,
+    startedAt: normalized.startedAt || (nextStatus === "running" ? now : ""),
+    completedAt: ["success", "error", "skipped", "waiting_confirmation"].includes(nextStatus) ? now : normalized.completedAt,
+    error: nextStatus === "error" ? String(options.error || normalized.error || "") : "",
+    steps: normalized.steps.map((step, index) => {
+      let stepStatus = step.status;
+      if (nextStatus === "running") stepStatus = index === 0 ? "running" : "queued";
+      if (nextStatus === "success") stepStatus = "success";
+      if (nextStatus === "waiting_confirmation") {
+        stepStatus = index < confirmationIndex ? "success" : index === confirmationIndex ? "waiting_confirmation" : "queued";
+      }
+      if (nextStatus === "error") {
+        const firstUnfinishedIndex = normalized.steps.findIndex((item) => !["success", "skipped"].includes(item.status));
+        stepStatus = index < firstUnfinishedIndex ? "success" : index === firstUnfinishedIndex ? "error" : "skipped";
+      }
+      if (nextStatus === "skipped") stepStatus = "skipped";
+      return {
+        ...step,
+        status: stepStatus,
+        resultSummary:
+          stepStatus === "error"
+            ? String(options.error || step.resultSummary || "")
+            : stepStatus === "waiting_confirmation"
+              ? String(options.confirmationSummary || step.resultSummary || "")
+            : stepStatus === "success"
+              ? String(options.successSummary || step.resultSummary || "")
+              : step.resultSummary,
+      };
+    }),
+  };
+}
+
+function findAgentConfirmationStepIndex(planSteps = []) {
+  const steps = Array.isArray(planSteps) ? planSteps : [];
+  const index = steps.findIndex((step) => {
+    const tool = getAgentToolDefinition(step?.toolId);
+    return Boolean(step?.requiresConfirmation || tool.requiresConfirmation);
+  });
+  return index >= 0 ? index : steps.length;
+}
+
+function shouldAgentWaitForConfirmation(draft) {
+  const normalized = normalizeAgentGoalDraft(draft);
+  if (!normalized) return false;
+  return normalized.requiresConfirmation || findAgentConfirmationStepIndex(normalized.planSteps) < normalized.planSteps.length;
+}
+
+function completeAgentConfirmationTrace(trace, planSteps = [], summary = "") {
+  const normalized = normalizeAgentExecutionTrace(trace, planSteps);
+  if (normalized.status !== "waiting_confirmation") return normalized;
+  return updateAgentExecutionTrace(normalized, "success", {
+    planSteps,
+    successSummary: summary || (getLanguage() === "en" ? "Confirmed and completed." : "已确认并完成。"),
+  });
+}
+
+function completeCurrentAgentConfirmation(summary = "") {
+  const draft = normalizeAgentGoalDraft(state.ui.agentGoalDraft);
+  if (!draft || !state.ui.agentExecutionTrace) return false;
+  const nextTrace = completeAgentConfirmationTrace(
+    state.ui.agentExecutionTrace,
+    draft.planSteps,
+    summary || (getLanguage() === "en" ? "Confirmed and completed." : "已确认并完成。"),
+  );
+  if (nextTrace.status !== "success") return false;
+  state.ui.agentExecutionTrace = nextTrace;
+  state.ui.agentGoalDraft = normalizeAgentGoalDraft({ ...draft, executionTrace: nextTrace });
+  state.ui.agentStatus = summary || (getLanguage() === "en" ? "Confirmed and completed." : "已确认并完成。");
+  updateAgentPanel(getCurrentChapter());
+  persist();
+  return true;
+}
+
+function createAgentToolRegistry() {
+  return {
+    read_project_context: {
+      id: "read_project_context",
+      label: getLanguage() === "en" ? "Read Project Context" : "读取项目上下文",
+      description: getLanguage() === "en" ? "Loads project materials, memory, and chapter list." : "读取项目资料、记忆与章节列表。",
+      inputSchema: "project_id",
+      outputSchema: "materials, memory, chapters",
+      requiresConfirmation: false,
+    },
+    selected_inspirations: {
+      id: "selected_inspirations",
+      label: getLanguage() === "en" ? "Selected Ideas" : "已选灵感",
+      description: getLanguage() === "en" ? "Collects selected inspiration cards into a structured brief." : "把已选灵感卡片整理成结构化输入。",
+      inputSchema: "selectedInspirationIds[]",
+      outputSchema: "combinedIdea",
+      requiresConfirmation: false,
+    },
+    generate_project_materials_from_idea: {
+      id: "generate_project_materials_from_idea",
+      label: getLanguage() === "en" ? "Generate Project Materials" : "生成项目资料",
+      description: getLanguage() === "en" ? "Turns ideas into project material drafts." : "把灵感发展成项目资料草稿。",
+      inputSchema: "project_id, idea",
+      outputSchema: "materials",
+      requiresConfirmation: false,
+    },
+    save_project_material: {
+      id: "save_project_material",
+      label: getLanguage() === "en" ? "Save Project Material" : "保存项目资料",
+      description: getLanguage() === "en" ? "Writes confirmed material drafts to project files." : "把确认后的资料草稿写入项目文件。",
+      inputSchema: "workId, material, content",
+      outputSchema: "saved material file",
+      requiresConfirmation: true,
+    },
+    write_chapter: {
+      id: "write_chapter",
+      label: getLanguage() === "en" ? "Write Chapter" : "起草章节",
+      description: getLanguage() === "en" ? "Generates a draft for the current chapter." : "为当前章节生成正文草稿。",
+      inputSchema: "project_id, chapter_number, user_instruction",
+      outputSchema: "content",
+      requiresConfirmation: false,
+    },
+    ai_review_surface: {
+      id: "ai_review_surface",
+      label: getLanguage() === "en" ? "AI Review Surface" : "AI 对比视图",
+      description: getLanguage() === "en" ? "Shows AI output before it can be applied." : "展示 AI 结果，等待用户决定是否应用。",
+      inputSchema: "chapter_id, content",
+      outputSchema: "review draft",
+      requiresConfirmation: true,
+    },
+    summarize_chapter: {
+      id: "summarize_chapter",
+      label: getLanguage() === "en" ? "Summarize Chapter" : "总结章节",
+      description: getLanguage() === "en" ? "Summarizes the current chapter for memory." : "把当前章节总结为项目记忆。",
+      inputSchema: "project_id, chapter_number, content",
+      outputSchema: "summary",
+      requiresConfirmation: false,
+    },
+    update_memory: {
+      id: "update_memory",
+      label: getLanguage() === "en" ? "Update Memory" : "更新记忆",
+      description: getLanguage() === "en" ? "Stores reusable chapter memory." : "保存可复用的章节记忆。",
+      inputSchema: "workId, chapterId, summary",
+      outputSchema: "memory",
+      requiresConfirmation: false,
+    },
+    read_chapter: {
+      id: "read_chapter",
+      label: getLanguage() === "en" ? "Read Chapter" : "读取章节",
+      description: getLanguage() === "en" ? "Loads current chapter text for analysis." : "读取当前章节正文用于分析。",
+      inputSchema: "project_id, chapter_number",
+      outputSchema: "chapter",
+      requiresConfirmation: false,
+    },
+    consistency_check: {
+      id: "consistency_check",
+      label: getLanguage() === "en" ? "Consistency Check" : "一致性检查",
+      description: getLanguage() === "en" ? "Checks contradictions and continuity risks." : "检查设定冲突与连续性风险。",
+      inputSchema: "project_id, chapter_number, content",
+      outputSchema: "report",
+      requiresConfirmation: false,
+    },
+    generate_chapter_outline: {
+      id: "generate_chapter_outline",
+      label: getLanguage() === "en" ? "Generate Chapter Outline" : "生成章节小纲",
+      description: getLanguage() === "en" ? "Creates an actionable outline for the current chapter." : "为当前章节生成可执行小纲。",
+      inputSchema: "project_id, chapter_number, user_instruction",
+      outputSchema: "outline",
+      requiresConfirmation: false,
+    },
+    applyGeneratedOutline: {
+      id: "applyGeneratedOutline",
+      label: getLanguage() === "en" ? "Apply Generated Outline" : "写入生成小纲",
+      description: getLanguage() === "en" ? "Writes the generated outline into the outline editor." : "把生成的小纲写入小纲编辑区。",
+      inputSchema: "chapter_id, outline",
+      outputSchema: "updated outline",
+      requiresConfirmation: false,
+    },
+  };
+}
+
+function getAgentToolDefinition(toolId) {
+  return createAgentToolRegistry()[toolId] ?? {
+    id: String(toolId || ""),
+    label: String(toolId || ""),
+    description: getLanguage() === "en" ? "Unregistered tool." : "未注册工具。",
+    inputSchema: "unknown",
+    outputSchema: "unknown",
+    requiresConfirmation: false,
+  };
+}
+
+function getAgentStepStatusLabel(status) {
+  const normalized = normalizeAgentStepStatus(status);
+  if (getLanguage() === "en") {
+    return {
+      queued: "Queued",
+      running: "Running",
+      success: "Done",
+      error: "Failed",
+      skipped: "Skipped",
+      waiting_confirmation: "Needs confirmation",
+    }[normalized];
+  }
+  return {
+    queued: "待执行",
+    running: "执行中",
+    success: "已完成",
+    error: "失败",
+    skipped: "已跳过",
+    waiting_confirmation: "等待确认",
+  }[normalized];
+}
+
+function getAgentTraceStatusLabel(status) {
+  const normalized = String(status || "idle");
+  if (getLanguage() === "en") {
+    return {
+      idle: "Not started",
+      queued: "Queued",
+      running: "Executing",
+      success: "Completed",
+      error: "Failed",
+      skipped: "Skipped",
+      waiting_confirmation: "Waiting for confirmation",
+    }[normalized] || "Not started";
+  }
+  return {
+    idle: "未开始",
+    queued: "已排队",
+    running: "执行中",
+    success: "已完成",
+    error: "失败",
+    skipped: "已跳过",
+    waiting_confirmation: "等待确认",
+  }[normalized] || "未开始";
+}
+
+function parseAgentGoal(goalText) {
+  const goal = String(goalText || "").trim();
+  const normalized = goal.toLowerCase();
+  const has = (patterns) => patterns.some((pattern) => normalized.includes(pattern) || goal.includes(pattern));
+  let draft;
+  if (has(["灵感", "项目资料", "资料", "人物", "世界观", "设定", "materials", "idea", "ideas"])) {
+    draft = {
+      action: "develop-selected-project-materials",
+      taskLabel: getLanguage() === "en" ? "Develop project materials" : "发展项目资料",
+      inputSource: getLanguage() === "en" ? "Selected ideas in the Inspiration panel" : "灵感面板中已选择的灵感",
+      expectedOutput: getLanguage() === "en" ? "Project material draft preview" : "项目资料草稿预览",
+      confidence: 0.82,
+    };
+  } else if (has(["冲突", "一致", "检查", "矛盾", "consistency", "conflict"])) {
+    draft = {
+      action: "check-consistency",
+      taskLabel: getLanguage() === "en" ? "Check consistency" : "检查设定一致性",
+      inputSource: getLanguage() === "en" ? "Current chapter and project context" : "当前章节与项目上下文",
+      expectedOutput: getLanguage() === "en" ? "Consistency report" : "一致性检查报告",
+      confidence: 0.78,
+    };
+  } else if (has(["总结", "记忆", "摘要", "summarize", "summary", "memory"])) {
+    draft = {
+      action: "summarize-chapter",
+      taskLabel: getLanguage() === "en" ? "Summarize to memory" : "总结并更新记忆",
+      inputSource: getLanguage() === "en" ? "Current chapter body" : "当前章节正文",
+      expectedOutput: getLanguage() === "en" ? "Updated chapter memory" : "更新后的章节记忆",
+      confidence: 0.78,
+    };
+  } else if (has(["写", "起草", "正文", "draft", "write"])) {
+    draft = {
+      action: "write-chapter",
+      taskLabel: getLanguage() === "en" ? "Draft current chapter" : "起草当前章节",
+      inputSource: getLanguage() === "en" ? "Current outline, notes, and project context" : "当前小纲、备注与项目上下文",
+      expectedOutput: getLanguage() === "en" ? "AI draft in comparison view" : "进入对比视图的 AI 正文草稿",
+      confidence: 0.76,
+    };
+  } else {
+    draft = {
+      action: "generate-outline",
+      taskLabel: getLanguage() === "en" ? "Plan current chapter" : "规划当前章节",
+      inputSource: getLanguage() === "en" ? "Project context and current chapter target" : "项目上下文与当前章节目标",
+      expectedOutput: getLanguage() === "en" ? "Chapter outline" : "章节小纲",
+      confidence: goal ? 0.58 : 0.4,
+    };
+  }
+  const plannedDraft = {
+    ...draft,
+    planSteps: createAgentGoalPlan(draft.action),
+    requiresConfirmation: draft.action === "develop-selected-project-materials" || draft.action === "write-chapter",
+  };
+  return normalizeAgentGoalDraft({
+    ...plannedDraft,
+    goal,
+    userInstruction: goal || draft.taskLabel,
+  });
+}
+
+function createAgentGoalPlan(action) {
+  const commonContext = {
+    id: "read-context",
+    label: getLanguage() === "en" ? "Read context" : "读取上下文",
+    detail: getLanguage() === "en" ? "Load current work, chapter target, project materials, and memory." : "读取当前作品、章节目标、项目资料与记忆。",
+    toolId: "read_project_context",
+    requiresConfirmation: false,
+  };
+  if (action === "develop-selected-project-materials") {
+    return [
+      {
+        id: "collect-ideas",
+        label: getLanguage() === "en" ? "Collect selected ideas" : "收集已选灵感",
+        detail: getLanguage() === "en" ? "Merge selected idea cards into one structured brief." : "把已选择的灵感卡片整合成结构化输入。",
+        toolId: "selected_inspirations",
+        requiresConfirmation: false,
+      },
+      commonContext,
+      {
+        id: "generate-materials",
+        label: getLanguage() === "en" ? "Draft materials" : "生成资料草稿",
+        detail: getLanguage() === "en" ? "Run the project-material workflow and open a preview." : "运行项目资料 workflow 并打开草稿预览。",
+        toolId: "generate_project_materials_from_idea",
+        requiresConfirmation: false,
+      },
+      {
+        id: "write-materials",
+        label: getLanguage() === "en" ? "Wait for write confirmation" : "等待写入确认",
+        detail: getLanguage() === "en" ? "Only write files after the preview is confirmed." : "只有确认预览后才写入资料文件。",
+        toolId: "save_project_material",
+        requiresConfirmation: true,
+      },
+    ];
+  }
+  if (action === "write-chapter") {
+    return [
+      commonContext,
+      {
+        id: "draft-body",
+        label: getLanguage() === "en" ? "Draft chapter" : "起草正文",
+        detail: getLanguage() === "en" ? "Generate a chapter draft from the goal, outline, notes, and context." : "根据目标、小纲、备注与上下文生成正文草稿。",
+        toolId: "write_chapter",
+        requiresConfirmation: false,
+      },
+      {
+        id: "review-draft",
+        label: getLanguage() === "en" ? "Open comparison" : "打开对比",
+        detail: getLanguage() === "en" ? "Show the AI draft in comparison view before applying it." : "先在对比视图展示 AI 草稿，不直接覆盖正文。",
+        toolId: "ai_review_surface",
+        requiresConfirmation: true,
+      },
+    ];
+  }
+  if (action === "summarize-chapter") {
+    return [
+      commonContext,
+      {
+        id: "summarize-current",
+        label: getLanguage() === "en" ? "Summarize chapter" : "总结章节",
+        detail: getLanguage() === "en" ? "Summarize the current chapter into reusable memory." : "把当前章节总结成后续可复用的记忆。",
+        toolId: "summarize_chapter",
+        requiresConfirmation: false,
+      },
+      {
+        id: "update-memory",
+        label: getLanguage() === "en" ? "Update memory" : "更新记忆",
+        detail: getLanguage() === "en" ? "Save the summary into the project memory store." : "把摘要保存到项目记忆中。",
+        toolId: "update_memory",
+        requiresConfirmation: false,
+      },
+    ];
+  }
+  if (action === "check-consistency") {
+    return [
+      commonContext,
+      {
+        id: "read-chapter",
+        label: getLanguage() === "en" ? "Read chapter" : "读取章节",
+        detail: getLanguage() === "en" ? "Load current chapter text for consistency analysis." : "读取当前章节正文用于一致性分析。",
+        toolId: "read_chapter",
+        requiresConfirmation: false,
+      },
+      {
+        id: "generate-report",
+        label: getLanguage() === "en" ? "Generate report" : "生成报告",
+        detail: getLanguage() === "en" ? "Check contradictions, risks, and minimal fixes." : "检查冲突、风险和最小修改建议。",
+        toolId: "consistency_check",
+        requiresConfirmation: false,
+      },
+    ];
+  }
+  return [
+    commonContext,
+    {
+      id: "plan-chapter",
+      label: getLanguage() === "en" ? "Plan chapter" : "规划章节",
+      detail: getLanguage() === "en" ? "Generate an actionable outline for the current chapter." : "为当前章节生成可执行小纲。",
+      toolId: "generate_chapter_outline",
+      requiresConfirmation: false,
+    },
+    {
+      id: "update-outline",
+      label: getLanguage() === "en" ? "Update outline panel" : "更新小纲面板",
+      detail: getLanguage() === "en" ? "Write the generated outline into the chapter outline editor." : "把生成的小纲写入章节小纲编辑区。",
+      toolId: "applyGeneratedOutline",
+      requiresConfirmation: false,
+    },
+  ];
+}
+
+function renderAgentGoalDraft(draft) {
+  if (!draft) {
+    return `<small>${getLanguage() === "en" ? "Enter a goal and parse it before execution." : "输入目标后先解析，确认系统会走哪条流程。"}</small>`;
+  }
+  const trace = normalizeAgentExecutionTrace(draft.executionTrace || state.ui.agentExecutionTrace, draft.planSteps);
+  const traceSteps = new Map(trace.steps.map((step) => [step.id, step]));
+  return `
+    <dl>
+      <div><dt>${getLanguage() === "en" ? "Workflow" : "流程"}</dt><dd>${escapeHtml(draft.taskLabel)}</dd></div>
+      <div><dt>${getLanguage() === "en" ? "Input" : "输入"}</dt><dd>${escapeHtml(draft.inputSource)}</dd></div>
+      <div><dt>${getLanguage() === "en" ? "Output" : "产物"}</dt><dd>${escapeHtml(draft.expectedOutput)}</dd></div>
+      <div><dt>${getLanguage() === "en" ? "Trace" : "轨迹"}</dt><dd>${escapeHtml(getAgentTraceStatusLabel(trace.status))}${trace.error ? ` · ${escapeHtml(trace.error)}` : ""}</dd></div>
+    </dl>
+    <ol class="agent-plan-list">
+      ${draft.planSteps
+        .map(
+          (step, index) => {
+            const tool = getAgentToolDefinition(step.toolId);
+            const needsConfirmation = step.requiresConfirmation || tool.requiresConfirmation;
+            const stepTrace = traceSteps.get(step.id) || { status: "queued", resultSummary: "" };
+            const stepStatus = normalizeAgentStepStatus(stepTrace.status);
+            return `
+              <li class="agent-plan-step is-${escapeAttribute(stepStatus)}">
+                <span>${String(index + 1).padStart(2, "0")}</span>
+                <div>
+                  <strong>${escapeHtml(step.label)} <b>${escapeHtml(getAgentStepStatusLabel(stepStatus))}</b></strong>
+                  <small>${escapeHtml(step.detail)}</small>
+                  <em>${escapeHtml(tool.label)} · ${escapeHtml(tool.inputSchema)} → ${escapeHtml(tool.outputSchema)}${needsConfirmation ? ` · ${getLanguage() === "en" ? "confirmation" : "需确认"}` : ""}</em>
+                  ${stepTrace.resultSummary ? `<small>${escapeHtml(stepTrace.resultSummary)}</small>` : ""}
+                </div>
+              </li>
+            `;
+          },
+        )
+        .join("")}
+    </ol>
+    <small>${getLanguage() === "en" ? `Confidence ${Math.round(draft.confidence * 100)}%` : `识别置信度 ${Math.round(draft.confidence * 100)}%`}</small>
+  `;
+}
+
+async function executeParsedAgentGoal(draft) {
+  const normalized = normalizeAgentGoalDraft(draft);
+  if (!normalized) return;
+  const runningTrace = createAgentExecutionTrace(normalized, "running");
+  state.ui.agentExecutionTrace = runningTrace;
+  state.ui.agentGoalDraft = normalizeAgentGoalDraft({ ...normalized, executionTrace: runningTrace });
+  updateAgentPanel(getCurrentChapter());
+  persist();
+  if (normalized.action === "develop-selected-project-materials") {
+    const work = getCurrentWork();
+    const selectedItems = getSelectedInspirationsForWork(work?.id);
+    if (!work || selectedItems.length === 0) {
+      const errorMessage = getLanguage() === "en"
+        ? "Select one or more ideas in the Inspiration panel before running this goal."
+        : "请先在灵感面板选择一条或多条灵感，再执行这个目标。";
+      const errorTrace = updateAgentExecutionTrace(runningTrace, "error", {
+        planSteps: normalized.planSteps,
+        error: errorMessage,
+      });
+      state.ui.agentExecutionTrace = errorTrace;
+      state.ui.agentGoalDraft = normalizeAgentGoalDraft({ ...normalized, executionTrace: errorTrace });
+      openInfoModal(
+        t("ai.title"),
+        errorMessage,
+      );
+      updateAgentPanel(getCurrentChapter());
+      persist();
+      return;
+    }
+    const ok = await generateProjectMaterialsFromSelectedInspirations(work, normalized.userInstruction);
+    const nextTrace = updateAgentExecutionTrace(runningTrace, ok ? "waiting_confirmation" : "error", {
+      planSteps: normalized.planSteps,
+      successSummary: getLanguage() === "en" ? "Completed." : "已完成。",
+      confirmationSummary: getLanguage() === "en" ? "Preview opened. Confirm before writing files." : "已打开预览，确认后才会写入文件。",
+      error: getLanguage() === "en" ? "Project-material workflow failed." : "项目资料流程失败。",
+    });
+    state.ui.agentExecutionTrace = nextTrace;
+    state.ui.agentGoalDraft = normalizeAgentGoalDraft({ ...normalized, executionTrace: nextTrace });
+    updateAgentPanel(getCurrentChapter());
+    persist();
+    return;
+  }
+  const ok = await handleAgentAction(normalized.action, { userInstruction: normalized.userInstruction });
+  const successStatus = ok && shouldAgentWaitForConfirmation(normalized) ? "waiting_confirmation" : "success";
+  const nextTrace = updateAgentExecutionTrace(runningTrace, ok ? successStatus : "error", {
+    planSteps: normalized.planSteps,
+    successSummary: getLanguage() === "en" ? "Workflow completed." : "流程已完成。",
+    confirmationSummary: getLanguage() === "en" ? "Review the generated result before applying it." : "请先检查生成结果，再确认是否应用。",
+    error: state.ui.agentStatus || (getLanguage() === "en" ? "Workflow failed." : "流程失败。"),
+  });
+  state.ui.agentExecutionTrace = nextTrace;
+  state.ui.agentGoalDraft = normalizeAgentGoalDraft({ ...normalized, executionTrace: nextTrace });
+  updateAgentPanel(getCurrentChapter());
+  persist();
+}
+
+async function handleAgentAction(action, options = {}) {
   const chapter = getCurrentChapter();
   const work = getCurrentWork();
-  if (!chapter || !work) return;
+  if (!chapter || !work) return false;
   if (!desktopApi) {
     openInfoModal(t("ai.title"), t("ai.desktopRequired"));
-    return;
+    return false;
   }
   state.ui.agentActionPending = action;
   state.ui.agentStatus = "";
@@ -3646,25 +4595,37 @@ async function handleAgentAction(action) {
     if (action === "generate-outline") {
       const result = await requireAgentResult(
         desktopApi.generateChapterOutline?.(createNovelAgentPayload(chapter, {
-          user_instruction: getLanguage() === "en" ? "Generate a chapter outline for the current chapter." : "为当前章节生成章节小纲。",
+          user_instruction: options.userInstruction || (getLanguage() === "en" ? "Generate a chapter outline for the current chapter." : "为当前章节生成章节小纲。"),
         })),
       );
       applyGeneratedOutline(chapter, result.outline);
       state.ui.agentStatus = t("ai.outlineUpdated");
     }
     if (action === "write-chapter") {
+      const payload = createNovelAgentPayload(chapter, {
+        user_instruction: options.userInstruction || chapter.outline || chapter.notes || (getLanguage() === "en" ? "Write the current chapter." : "写当前章节正文。"),
+        cost_guard_confirmed: options.costGuardConfirmed === true,
+      });
       const result = await requireAgentResult(
-        desktopApi.writeChapterWithNovelAgent?.(createNovelAgentPayload(chapter, {
-          user_instruction: chapter.outline || chapter.notes || (getLanguage() === "en" ? "Write the current chapter." : "写当前章节正文。"),
-        })),
+        desktopApi.writeChapterWithNovelAgent?.(payload),
       );
       state.ui.aiDraftsByChapter[chapter.id] = {
         content: String(result.content || ""),
         provider: "novel-agent",
         generatedAt: new Date().toISOString(),
+        editorialSuggestionsFile: String(result.editorial_suggestions_file || ""),
+        editorialSuggestionsStatus: String(result.generation_metadata?.editorial_suggestions_status || ""),
+        editorialSuggestionsContent: "",
+        editorialSuggestionsError: "",
       };
+      state.ui.editorialSuggestionsOpen = false;
+      state.ui.editorialSuggestionsError = "";
       state.ui.aiReviewMode = true;
-      state.ui.agentStatus = t("ai.chapterDraftReady");
+      state.ui.agentStatus = result.needs_completion_review
+        ? (getLanguage() === "en"
+            ? `Draft generated, but the ending needs review: ${result.warning || "completion audit did not pass."}`
+            : `草稿已生成，但结尾需要检查：${result.warning || "完成度审核未通过。"}`)
+        : t("ai.chapterDraftReady");
     }
     if (action === "summarize-chapter") {
       const result = await requireAgentResult(
@@ -3679,10 +4640,21 @@ async function handleAgentAction(action) {
       state.ui.agentStatus = t("ai.consistencyReady");
     }
     persist();
+    return true;
   } catch (error) {
     console.error("Agent action failed", error);
-    state.ui.agentStatus = error?.message || (getLanguage() === "en" ? "AI action failed." : "AI 操作失败。");
+    if (error?.result?.cost_guard_blocked === true && action === "write-chapter") {
+      state.ui.agentStatus = formatCostGuardBlockedMessage(error.result, Boolean(state.ui.showCostDetails));
+      openCostGuardConfirmationModal({
+        result: error.result,
+        action,
+        options,
+      });
+      return false;
+    }
+    state.ui.agentStatus = formatAgentFailureMessage(error);
     openInfoModal(t("ai.title"), state.ui.agentStatus);
+    return false;
   } finally {
     state.ui.agentActionPending = "";
     updateWorkspace();
@@ -3693,11 +4665,165 @@ async function requireAgentResult(promise) {
   if (!promise) throw new Error(t("ai.desktopRequired"));
   const result = await promise;
   if (!result?.ok) {
-    const error = new Error(result?.error || (getLanguage() === "en" ? "AI action failed." : "AI 操作失败。"));
+    const message = result?.cost_guard_blocked
+      ? formatCostGuardBlockedMessage(result, Boolean(state.ui.showCostDetails))
+      : (result?.error || (getLanguage() === "en" ? "AI action failed." : "AI 操作失败。"));
+    const error = new Error(message);
     error.result = result;
     throw error;
   }
   return result;
+}
+
+function formatAgentFailureMessage(error) {
+  const result = error?.result || {};
+  const rawMessage = String(error?.message || result.error || "").trim();
+  const failedStep = String(result.failed_step || "").trim();
+  const failedPrompt = String(result.failed_prompt_id || "").trim();
+  const requestedMode = String(result.generation_mode || "").trim();
+  const resolvedPath = String(result.writing_path || "").trim();
+  const metadataFile = String(result.generation_metadata_file || "").trim();
+  const completedCalls = Array.isArray(result.failed_llm_events) ? result.failed_llm_events.length : 0;
+  const isNetworkFailure = /fetch failed|network request failed|network error|econn|enotfound|etimedout|socket|timeout/i.test(rawMessage);
+  if (isNetworkFailure) {
+    const parts = [
+      getLanguage() === "en"
+        ? "The AI provider request failed mid-generation. This is usually a network interruption, provider timeout, quota/rate-limit issue, or Base URL connectivity problem."
+        : "AI 服务请求在生成中途失败。常见原因是网络中断、服务商超时、额度/限流，或 Base URL 连接异常。",
+    ];
+    if (failedStep) parts.push(`${getLanguage() === "en" ? "Failed step" : "失败步骤"}：${failedStep}`);
+    if (failedPrompt) parts.push(`Prompt：${failedPrompt}`);
+    if (requestedMode) parts.push(`${getLanguage() === "en" ? "Requested mode" : "请求模式"}：${requestedMode}`);
+    if (resolvedPath) parts.push(`${getLanguage() === "en" ? "Resolved path" : "实际路径"}：${resolvedPath}`);
+    parts.push(`${getLanguage() === "en" ? "Completed requests before failure" : "失败前已完成请求"}：${completedCalls}`);
+    if (metadataFile) parts.push(`${getLanguage() === "en" ? "Debug report" : "调试报告"}：${metadataFile}`);
+    if (state.ui.showCostDetails && rawMessage) parts.push(`${getLanguage() === "en" ? "Raw error" : "原始错误"}：${rawMessage}`);
+    return parts.join("\n");
+  }
+  return rawMessage || (getLanguage() === "en" ? "AI action failed." : "AI 操作失败。");
+}
+
+function getCurrentAgentGenerationMode() {
+  return agentGenerationModes.find((mode) => mode.id === state.ui.agentGenerationMode) ||
+    agentGenerationModes.find((mode) => mode.id === defaultAgentGenerationMode) ||
+    agentGenerationModes[0];
+}
+
+function createNovelAgentDefaultOptions() {
+  const mode = getCurrentAgentGenerationMode();
+  return {
+    generation_mode: mode.generation_mode,
+    enable_context_pack_for_summary: true,
+    enable_context_pack_for_audit: false,
+    enable_model_routing: false,
+    show_cost_details: Boolean(state.ui.showCostDetails),
+  };
+}
+
+function formatCostGuardBlockedMessage(result, showDetails = false) {
+  if (!showDetails) return getLanguage() === "en"
+    ? "This generation is relatively long and may use more resources. Try lowering the target length or switching to Fast Draft."
+    : costGuardFriendlyBlockedMessage;
+  const report = result?.budget_report || {};
+  const details = [
+    getLanguage() === "en" ? "Generation budget details:" : "生成预算详情：",
+    `${getLanguage() === "en" ? "Estimated calls" : "预计调用次数"}：${formatPlainNumber(report.estimated_llm_calls)}`,
+    `${getLanguage() === "en" ? "Estimated input" : "预计输入"}：${formatNumberRange(report.estimated_input_tokens_range)} tokens`,
+    `${getLanguage() === "en" ? "Estimated output" : "预计输出"}：${formatNumberRange(report.estimated_output_tokens_range)} tokens`,
+    `${getLanguage() === "en" ? "Estimated cost" : "预计费用"}：${formatMoneyRange(report.estimated_cost_usd_range)}`,
+  ];
+  const enabled = Array.isArray(report.enabled_steps) ? report.enabled_steps : [];
+  const disabled = Array.isArray(report.disabled_steps) ? report.disabled_steps : [];
+  const reasons = Array.isArray(result?.blocked_reasons) && result.blocked_reasons.length
+    ? result.blocked_reasons
+    : (Array.isArray(report.blocked_reasons) ? report.blocked_reasons : []);
+  if (enabled.length) details.push(`${getLanguage() === "en" ? "Enabled steps" : "启用步骤"}：${enabled.map(formatCostGuardStepLabel).join("、")}`);
+  if (disabled.length) details.push(`${getLanguage() === "en" ? "Skipped steps" : "跳过步骤"}：${disabled.map(formatCostGuardStepLabel).join("、")}`);
+  if (reasons.length) {
+    details.push(getLanguage() === "en" ? "Blocked because:" : "阻止原因：");
+    details.push(...reasons.map((reason) => `- ${formatCostGuardBlockedReason(reason)}`));
+  }
+  return `${getLanguage() === "en" ? "This generation is relatively long and may use more resources. Try lowering the target length or switching to Fast Draft." : costGuardFriendlyBlockedMessage}\n\n${details.join("\n")}`;
+}
+
+function formatCostGuardBlockedDetails(result) {
+  return formatCostGuardBlockedMessage(result, true);
+}
+
+function formatPlainNumber(value) {
+  const number = Number(value) || 0;
+  return number.toLocaleString(getLanguage() === "en" ? "en-US" : "zh-CN");
+}
+
+function formatNumberRange(range = {}) {
+  const low = formatPlainNumber(range.low);
+  const high = formatPlainNumber(range.high);
+  return low === high ? low : `${low} - ${high}`;
+}
+
+function formatMoneyRange(range = {}) {
+  const low = Number(range.low) || 0;
+  const high = Number(range.high) || 0;
+  const text = low === high ? low.toFixed(2) : `${low.toFixed(2)} - ${high.toFixed(2)}`;
+  return `$${text}`;
+}
+
+function formatCostGuardStepLabel(step) {
+  const labels = {
+    planner: getLanguage() === "en" ? "Planning" : "规划",
+    scene_outline: getLanguage() === "en" ? "Scene outline" : "场景大纲",
+    scene_writing: getLanguage() === "en" ? "Scene writing" : "场景正文",
+    completion_audit: getLanguage() === "en" ? "Completion audit" : "完成度检查",
+    expand_compress: getLanguage() === "en" ? "Length adjustment" : "扩写/压缩",
+    quality_review: getLanguage() === "en" ? "Quality review" : "质量审查",
+    transition_review: getLanguage() === "en" ? "Transition review" : "衔接审查",
+    editorial_suggestions: getLanguage() === "en" ? "Editorial suggestions" : "审稿建议",
+    save: getLanguage() === "en" ? "Save chapter" : "保存章节",
+    memory_summary: getLanguage() === "en" ? "Memory summary" : "记忆总结",
+  };
+  return labels[String(step || "")] || String(step || "");
+}
+
+function formatCostGuardBlockedReason(reason) {
+  const text = String(reason || "");
+  const number = (pattern) => {
+    const match = text.match(pattern);
+    return match ? formatPlainNumber(match[1]) : "";
+  };
+  if (/test_run_mode blocks target_word_count/.test(text)) {
+    return getLanguage() === "en"
+      ? `The target length is above the current test-run limit. Target ${number(/target_word_count (\d+)/)}, limit ${number(/max is (\d+)/)}.`
+      : `当前目标字数超过测试运行上限。目标 ${number(/target_word_count (\d+)/)}，上限 ${number(/max is (\d+)/)}。`;
+  }
+  if (/estimated_llm_calls/.test(text)) {
+    return getLanguage() === "en"
+      ? `Estimated model calls are too high. Estimated ${number(/estimated_llm_calls (\d+)/)}, limit ${number(/max (\d+)/)}.`
+      : `预计模型调用次数过高。预计 ${number(/estimated_llm_calls (\d+)/)} 次，上限 ${number(/max (\d+)/)} 次。`;
+  }
+  if (/estimated input tokens high/.test(text)) {
+    return getLanguage() === "en"
+      ? `Estimated input is too large. Estimated ${number(/high (\d+)/)} tokens, limit ${number(/max (\d+)/)}.`
+      : `预计输入内容过长。预计 ${number(/high (\d+)/)} tokens，上限 ${number(/max (\d+)/)}。`;
+  }
+  if (/estimated output tokens high/.test(text)) {
+    return getLanguage() === "en"
+      ? `Estimated output is too large. Estimated ${number(/high (\d+)/)} tokens, limit ${number(/max (\d+)/)}.`
+      : `预计输出内容过长。预计 ${number(/high (\d+)/)} tokens，上限 ${number(/max (\d+)/)}。`;
+  }
+  if (/estimated cost high/.test(text)) {
+    const values = text.match(/\$(\d+(?:\.\d+)?)/g) || [];
+    return getLanguage() === "en"
+      ? `Estimated cost is above the configured limit. Estimated ${values[0] || "--"}, limit ${values[1] || "--"}.`
+      : `预计费用超过后台保护上限。预计 ${values[0] || "--"}，上限 ${values[1] || "--"}。`;
+  }
+  if (/estimated single prompt input/.test(text)) {
+    return getLanguage() === "en"
+      ? `One prompt is estimated to be too large. Estimated ${number(/input (\d+)/)} tokens, limit ${number(/max (\d+)/)}.`
+      : `单次提示词预计过长。预计 ${number(/input (\d+)/)} tokens，上限 ${number(/max (\d+)/)}。`;
+  }
+  return getLanguage() === "en"
+    ? "The estimated generation budget exceeded the configured safety limit."
+    : "本次生成预算超过后台保护上限。";
 }
 
 function createNovelAgentPayload(chapter, extra = {}) {
@@ -3707,6 +4833,8 @@ function createNovelAgentPayload(chapter, extra = {}) {
     chapter_number: getCurrentChapterNumber(chapter),
     title: chapter?.title || "",
     content: chapter?.content || "",
+    target_word_count: Number(chapter?.wordGoal) || 0,
+    ...createNovelAgentDefaultOptions(),
     ...extra,
   };
 }
@@ -4212,9 +5340,14 @@ function updateAiSettingsPanel() {
   if (!refs.aiProviderSelect) return;
   const settings = normalizePublicAiSettings(state.aiSettings);
   refs.aiProviderSelect.value = settings.provider;
+  if (refs.aiModelSelect) {
+    refs.aiModelSelect.innerHTML = renderAiModelOptions(settings.provider);
+    refs.aiModelSelect.value = getAiModelOptions(settings.provider).includes(settings.model) ? settings.model : "";
+  }
   refs.aiModelInput.value = settings.model || aiProviderDefaults[settings.provider] || "";
   refs.aiBaseUrlInput.value = settings.baseUrl;
   refs.aiApiKeyInput.value = "";
+  if (refs.agentShowCostDetailsToggle) refs.agentShowCostDetailsToggle.checked = Boolean(state.ui.showCostDetails);
   const savedKeyText = settings.hasApiKey
     ? (getLanguage() === "en" ? `Saved key ${settings.apiKeyPreview}` : `已保存密钥 ${settings.apiKeyPreview}`)
     : (getLanguage() === "en" ? "No API key saved." : "尚未保存 API Key。");
@@ -4224,9 +5357,21 @@ function updateAiSettingsPanel() {
 
 function handleAiProviderChange(event) {
   const provider = event.target.value;
-  if (!refs.aiModelInput.value || refs.aiModelInput.value === aiProviderDefaults[state.aiSettings.provider]) {
+  const previousProvider = state.aiSettings.provider;
+  const previousPresetModels = getAiModelOptions(previousProvider);
+  if (!refs.aiModelInput.value || previousPresetModels.includes(refs.aiModelInput.value)) {
     refs.aiModelInput.value = aiProviderDefaults[provider] || "";
   }
+  if (refs.aiModelSelect) {
+    refs.aiModelSelect.innerHTML = renderAiModelOptions(provider);
+    refs.aiModelSelect.value = getAiModelOptions(provider).includes(refs.aiModelInput.value) ? refs.aiModelInput.value : "";
+  }
+}
+
+function handleAiModelSelectChange(event) {
+  const selectedModel = String(event.target.value || "").trim();
+  if (!selectedModel) return;
+  refs.aiModelInput.value = selectedModel;
 }
 
 function renderInspirationList() {
@@ -4688,6 +5833,34 @@ function openInfoModal(title, message) {
     title,
     message,
     actions: [{ id: "close-modal", label: getLanguage() === "en" ? "Close" : "关闭", primary: true }],
+  };
+  updateModal();
+}
+
+function openCostGuardConfirmationModal({ result, action, options }) {
+  const message = formatCostGuardBlockedMessage(result, Boolean(state.ui.showCostDetails));
+  state.ui.modal = {
+    type: "cost-guard-confirmation",
+    title: getLanguage() === "en" ? "Generation may use more API quota" : "本次生成可能消耗较多 API 用量",
+    message,
+    body: `
+      <div class="modal-copy-block">
+        <p>${escapeHtml(getLanguage() === "en"
+          ? "You can cancel and adjust the target length or mode, or continue this write. Continuing will not show this warning again for the current attempt."
+          : "你可以取消并调整目标字数或生成模式，也可以继续本次写作。继续后，本次写作不会再次显示这个提醒。")}</p>
+      </div>
+    `,
+    payload: {
+      action,
+      options: {
+        ...options,
+        costGuardConfirmed: true,
+      },
+    },
+    actions: [
+      { id: "cancel-modal", label: getLanguage() === "en" ? "Cancel" : "取消", primary: false },
+      { id: "confirm-cost-guard-continue", label: getLanguage() === "en" ? "Continue This Write" : "继续本次写作", primary: true },
+    ],
   };
   updateModal();
 }
@@ -5221,7 +6394,18 @@ async function handleModalAction(action) {
     const materials = state.ui.modal?.payload?.materials;
     state.ui.modal = null;
     updateModal();
-    await writeProjectMaterialsDraft(materials);
+    const written = await writeProjectMaterialsDraft(materials);
+    if (written) {
+      completeCurrentAgentConfirmation(getLanguage() === "en" ? "Project materials written." : "项目资料已写入。");
+    }
+    return;
+  }
+
+  if (action === "confirm-cost-guard-continue") {
+    const payload = state.ui.modal?.payload || {};
+    state.ui.modal = null;
+    updateModal();
+    await handleAgentAction(payload.action, payload.options || {});
     return;
   }
 
@@ -6257,7 +7441,7 @@ async function rewriteSelectedTextWithAgent(chapter, selected, start, end) {
 async function generateProjectMaterialsFromInspiration(work, inspiration) {
   if (!desktopApi?.generateProjectMaterialsFromIdea) {
     openInfoModal(t("ai.title"), t("ai.desktopRequired"));
-    return;
+    return false;
   }
   state.ui.agentActionPending = "idea-project-materials";
   state.ui.ideaProjectMaterialsPendingId = inspiration.id;
@@ -6271,6 +7455,7 @@ async function generateProjectMaterialsFromInspiration(work, inspiration) {
       }),
     );
     openIdeaProjectMaterialsPreviewModal(inspiration, normalizeProjectMaterialsFromAgent(result.materials));
+    return true;
   } catch (error) {
     console.error("Generate project materials from idea failed", error);
     const rawPreview = String(error?.result?.raw_materials_preview || "").trim();
@@ -6281,6 +7466,7 @@ async function generateProjectMaterialsFromInspiration(work, inspiration) {
         : "",
     ].join("");
     openInfoModal(t("ai.title"), message);
+    return false;
   } finally {
     state.ui.agentActionPending = "";
     state.ui.ideaProjectMaterialsPendingId = null;
@@ -6289,19 +7475,21 @@ async function generateProjectMaterialsFromInspiration(work, inspiration) {
   }
 }
 
-async function generateProjectMaterialsFromSelectedInspirations(work) {
+async function generateProjectMaterialsFromSelectedInspirations(work, goalInstruction = "") {
   const selectedItems = getSelectedInspirationsForWork(work.id);
-  if (selectedItems.length === 0) return;
+  if (selectedItems.length === 0) return false;
   const combinedIdea = buildCombinedIdeaFromInspirations(selectedItems);
-  await generateProjectMaterialsFromInspiration(work, {
+  const extraInstruction = String(goalInstruction || "").trim();
+  return generateProjectMaterialsFromInspiration(work, {
     id: "selected-inspirations",
     content: [
       getLanguage() === "en"
         ? "Please merge and reconcile the selected ideas, then develop them into project materials."
         : "请整合并消化以下多条灵感，把它们发展成统一的项目资料。",
+      extraInstruction ? (getLanguage() === "en" ? `Goal: ${extraInstruction}` : `任务目标：${extraInstruction}`) : "",
       "",
       combinedIdea,
-    ].join("\n"),
+    ].filter(Boolean).join("\n"),
   });
 }
 
@@ -6313,11 +7501,11 @@ async function writeProjectMaterialsDraft(materials) {
   const work = getCurrentWork();
   if (!work || !desktopApi?.saveProjectMaterial) {
     openInfoModal(t("ai.title"), t("ai.desktopRequired"));
-    return;
+    return false;
   }
   const normalized = normalizeProjectMaterialsFromAgent(materials);
   const entries = projectMaterialTypes.filter((item) => normalized[item.id]);
-  if (entries.length === 0) return;
+  if (entries.length === 0) return false;
   projectMaterialsState.saving = true;
   projectMaterialsState.status = getLanguage() === "en" ? "Writing project materials..." : "正在写入项目资料…";
   updateProjectMaterialsPanel(work);
@@ -6333,10 +7521,12 @@ async function writeProjectMaterialsDraft(materials) {
     state.ui.leftSidebarCollapsed = false;
     updateAll();
     persist();
+    return true;
   } catch (error) {
     console.error("Write project materials draft failed", error);
     projectMaterialsState.status = error?.message || (getLanguage() === "en" ? "Failed to write project materials." : "项目资料写入失败。");
     openInfoModal(t("ai.title"), projectMaterialsState.status);
+    return false;
   } finally {
     projectMaterialsState.saving = false;
     updateProjectMaterialsPanel(getCurrentWork());

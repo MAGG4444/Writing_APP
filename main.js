@@ -6,6 +6,7 @@ const { createProjectManager } = require("./project-manager");
 const { createMemoryManager } = require("./memory-manager");
 const { createToolManager } = require("./tool-manager");
 const { createNovelWritingAgent } = require("./novel-writing-agent");
+const { createCostGuard } = require("./agent/cost/cost-guard");
 
 const isMac = process.platform === "darwin";
 const LIBRARY_DIRNAME = "jian-ji-library-v2";
@@ -168,6 +169,13 @@ function getNovelWritingAgent() {
     llmClient: {
       generate: runConfiguredPromptAgent,
     },
+    costGuard: createCostGuard({
+      test_run_mode: false,
+      max_llm_calls_per_chapter: 30,
+      max_input_tokens_per_chapter: 600000,
+      max_output_tokens_per_chapter: 70000,
+      max_estimated_cost_usd: 3.0,
+    }),
   });
 }
 
@@ -516,9 +524,10 @@ const AI_PROVIDER_BASE_URLS = {
   custom: "",
 };
 const AI_REQUEST_TIMEOUT_MS = 60000;
-const AI_PROMPT_REQUEST_TIMEOUT_MS = 120000;
+const AI_PROMPT_REQUEST_TIMEOUT_MS = 300000;
 const AI_MAX_OUTPUT_TOKENS = 4096;
 const AI_PROMPT_MAX_OUTPUT_TOKENS = 4096;
+const AI_COMPATIBLE_MIN_PROMPT_OUTPUT_TOKENS = 1536;
 
 function normalizeAiSettings(value) {
   const source = value && typeof value === "object" ? value : {};
@@ -779,6 +788,7 @@ function normalizePromptAgentRequest(payload) {
       { role: "system", content: system },
       { role: "user", content: user },
     ],
+    max_output_tokens: normalizePromptOutputTokenLimit(source.max_output_tokens ?? source.maxOutputTokens ?? source.max_tokens ?? source.maxTokens),
   };
 }
 
@@ -789,7 +799,7 @@ function buildOpenAiPromptResponseRequest(settings, promptRequest) {
     model: normalizedSettings.model || AI_PROVIDER_DEFAULTS.openai,
     instructions: prompt.system,
     input: prompt.user,
-    max_output_tokens: AI_PROMPT_MAX_OUTPUT_TOKENS,
+    max_output_tokens: getPromptOutputTokenLimit(prompt, normalizedSettings),
   };
 }
 
@@ -799,7 +809,7 @@ function buildOpenAiCompatiblePromptChatRequest(settings, promptRequest) {
   return {
     model: normalizedSettings.model || AI_PROVIDER_DEFAULTS[normalizedSettings.provider] || AI_PROVIDER_DEFAULTS.deepseek,
     messages: prompt.messages,
-    max_tokens: AI_PROMPT_MAX_OUTPUT_TOKENS,
+    max_tokens: getPromptOutputTokenLimit(prompt, normalizedSettings),
     stream: false,
   };
 }
@@ -809,9 +819,51 @@ function buildClaudePromptMessagesRequest(settings, promptRequest) {
   const prompt = normalizePromptAgentRequest(promptRequest);
   return {
     model: normalizedSettings.model || AI_PROVIDER_DEFAULTS.claude,
-    max_tokens: AI_PROMPT_MAX_OUTPUT_TOKENS,
+    max_tokens: getPromptOutputTokenLimit(prompt, normalizedSettings),
     system: prompt.system,
     messages: [{ role: "user", content: prompt.user }],
+  };
+}
+
+function getPromptOutputTokenLimit(promptRequest, settings = {}) {
+  const prompt = normalizePromptAgentRequest(promptRequest);
+  const requestedLimit = prompt.max_output_tokens || AI_PROMPT_MAX_OUTPUT_TOKENS;
+  if (shouldUseOpenAiCompatiblePromptFloor(settings, prompt)) {
+    return Math.max(requestedLimit, AI_COMPATIBLE_MIN_PROMPT_OUTPUT_TOKENS);
+  }
+  return requestedLimit;
+}
+
+function normalizePromptOutputTokenLimit(value) {
+  const limit = Math.round(Number(value) || 0);
+  if (!Number.isFinite(limit) || limit <= 0) return null;
+  return Math.min(limit, AI_PROMPT_MAX_OUTPUT_TOKENS);
+}
+
+function shouldUseOpenAiCompatiblePromptFloor(settings, promptRequest) {
+  const settingsSource = settings && typeof settings === "object" ? settings : {};
+  const provider = String(settingsSource.provider || "").trim();
+  const promptId = String(promptRequest?.prompt_id || promptRequest?.promptId || "").trim();
+  return provider === "deepseek" && ["scene_writer_prompt", "continue_chapter_prompt"].includes(promptId);
+}
+
+function createAiResponseMetadata({ provider, settings, request, body }) {
+  const normalizedSettings = normalizeAiSettings(settings);
+  const source = body && typeof body === "object" ? body : {};
+  const usage = source.usage && typeof source.usage === "object" ? source.usage : {};
+  const choice = Array.isArray(source.choices) ? source.choices[0] : null;
+  const promptTokens = usage.input_tokens ?? usage.prompt_tokens ?? usage.inputTokens ?? usage.promptTokens ?? null;
+  const completionTokens = usage.output_tokens ?? usage.completion_tokens ?? usage.outputTokens ?? usage.completionTokens ?? null;
+  return {
+    provider: String(provider || normalizedSettings.provider || ""),
+    model: String(source.model || request?.model || normalizedSettings.model || ""),
+    max_tokens: Number(request?.max_tokens ?? source.max_tokens ?? 0) || null,
+    max_output_tokens: Number(request?.max_output_tokens ?? source.max_output_tokens ?? 0) || null,
+    finish_reason: String(choice?.finish_reason || source.finish_reason || source.stop_reason || ""),
+    status: String(source.status || ""),
+    incomplete_details: source.incomplete_details && typeof source.incomplete_details === "object" ? source.incomplete_details : null,
+    output_token_usage: Number(completionTokens) || null,
+    input_token_usage: Number(promptTokens) || null,
   };
 }
 
@@ -826,7 +878,14 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = AI_REQUEST_TI
     if (error?.name === "AbortError") {
       throw new Error(`AI request timed out after ${Math.round(timeoutMs / 1000)} seconds. Please try again.`);
     }
-    throw error;
+    let host = "";
+    try {
+      host = new URL(url).host;
+    } catch (_error) {
+      host = "AI provider";
+    }
+    const detail = String(error?.message || error || "network error");
+    throw new Error(`AI network request failed while calling ${host}: ${detail}`);
   } finally {
     clearTimeout(timeout);
   }
@@ -847,13 +906,14 @@ async function runOpenAiWritingAgent(settings, payload) {
   if (!normalizedSettings.apiKey) {
     throw new Error("OpenAI API key is not configured.");
   }
+  const request = buildOpenAiResponseRequest(normalizedSettings, payload);
   const { response, body } = await fetchJsonWithTimeout(buildProviderEndpoint(normalizedSettings, "responses"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${normalizedSettings.apiKey}`,
     },
-    body: JSON.stringify(buildOpenAiResponseRequest(normalizedSettings, payload)),
+    body: JSON.stringify(request),
   });
   if (!response.ok) {
     const message = getProviderErrorMessage("OpenAI", body, response.status);
@@ -865,6 +925,7 @@ async function runOpenAiWritingAgent(settings, payload) {
     content,
     provider: "openai",
     generatedAt: new Date().toISOString(),
+    metadata: createAiResponseMetadata({ provider: "openai", settings: normalizedSettings, request, body }),
   };
 }
 
@@ -873,13 +934,14 @@ async function runOpenAiCompatibleWritingAgent(settings, payload, providerLabel)
   if (!normalizedSettings.apiKey) {
     throw new Error(`${providerLabel} API key is not configured.`);
   }
+  const request = buildOpenAiCompatibleChatRequest(normalizedSettings, payload);
   const { response, body } = await fetchJsonWithTimeout(buildProviderEndpoint(normalizedSettings, "chat/completions"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${normalizedSettings.apiKey}`,
     },
-    body: JSON.stringify(buildOpenAiCompatibleChatRequest(normalizedSettings, payload)),
+    body: JSON.stringify(request),
   });
   if (!response.ok) {
     throw new Error(getProviderErrorMessage(providerLabel, body, response.status));
@@ -890,6 +952,7 @@ async function runOpenAiCompatibleWritingAgent(settings, payload, providerLabel)
     content,
     provider: normalizedSettings.provider,
     generatedAt: new Date().toISOString(),
+    metadata: createAiResponseMetadata({ provider: normalizedSettings.provider, settings: normalizedSettings, request, body }),
   };
 }
 
@@ -898,6 +961,7 @@ async function runClaudeWritingAgent(settings, payload) {
   if (!normalizedSettings.apiKey) {
     throw new Error("Claude API key is not configured.");
   }
+  const request = buildClaudeMessagesRequest(normalizedSettings, payload);
   const { response, body } = await fetchJsonWithTimeout(buildProviderEndpoint(normalizedSettings, "messages"), {
     method: "POST",
     headers: {
@@ -905,7 +969,7 @@ async function runClaudeWritingAgent(settings, payload) {
       "x-api-key": normalizedSettings.apiKey,
       "anthropic-version": "2023-06-01",
     },
-    body: JSON.stringify(buildClaudeMessagesRequest(normalizedSettings, payload)),
+    body: JSON.stringify(request),
   });
   if (!response.ok) {
     throw new Error(getProviderErrorMessage("Claude", body, response.status));
@@ -916,6 +980,7 @@ async function runClaudeWritingAgent(settings, payload) {
     content,
     provider: "claude",
     generatedAt: new Date().toISOString(),
+    metadata: createAiResponseMetadata({ provider: "claude", settings: normalizedSettings, request, body }),
   };
 }
 
@@ -924,6 +989,7 @@ async function runOpenAiPromptAgent(settings, promptRequest, timeoutMs = AI_PROM
   if (!normalizedSettings.apiKey) {
     throw new Error("OpenAI API key is not configured.");
   }
+  const request = buildOpenAiPromptResponseRequest(normalizedSettings, promptRequest);
   const { response, body } = await fetchJsonWithTimeout(
     buildProviderEndpoint(normalizedSettings, "responses"),
     {
@@ -932,7 +998,7 @@ async function runOpenAiPromptAgent(settings, promptRequest, timeoutMs = AI_PROM
         "Content-Type": "application/json",
         Authorization: `Bearer ${normalizedSettings.apiKey}`,
       },
-      body: JSON.stringify(buildOpenAiPromptResponseRequest(normalizedSettings, promptRequest)),
+      body: JSON.stringify(request),
     },
     timeoutMs,
   );
@@ -941,7 +1007,12 @@ async function runOpenAiPromptAgent(settings, promptRequest, timeoutMs = AI_PROM
   }
   const content = extractOpenAiOutputText(body).trim();
   if (!content) throw new Error("OpenAI returned an empty response.");
-  return { content, provider: "openai", generatedAt: new Date().toISOString() };
+  return {
+    content,
+    provider: "openai",
+    generatedAt: new Date().toISOString(),
+    metadata: createAiResponseMetadata({ provider: "openai", settings: normalizedSettings, request, body }),
+  };
 }
 
 async function runOpenAiCompatiblePromptAgent(settings, promptRequest, providerLabel, timeoutMs = AI_PROMPT_REQUEST_TIMEOUT_MS) {
@@ -949,6 +1020,7 @@ async function runOpenAiCompatiblePromptAgent(settings, promptRequest, providerL
   if (!normalizedSettings.apiKey) {
     throw new Error(`${providerLabel} API key is not configured.`);
   }
+  const request = buildOpenAiCompatiblePromptChatRequest(normalizedSettings, promptRequest);
   const { response, body } = await fetchJsonWithTimeout(
     buildProviderEndpoint(normalizedSettings, "chat/completions"),
     {
@@ -957,7 +1029,7 @@ async function runOpenAiCompatiblePromptAgent(settings, promptRequest, providerL
         "Content-Type": "application/json",
         Authorization: `Bearer ${normalizedSettings.apiKey}`,
       },
-      body: JSON.stringify(buildOpenAiCompatiblePromptChatRequest(normalizedSettings, promptRequest)),
+      body: JSON.stringify(request),
     },
     timeoutMs,
   );
@@ -966,7 +1038,12 @@ async function runOpenAiCompatiblePromptAgent(settings, promptRequest, providerL
   }
   const content = extractChatCompletionOutputText(body).trim();
   if (!content) throw new Error(`${providerLabel} returned an empty response.`);
-  return { content, provider: normalizedSettings.provider, generatedAt: new Date().toISOString() };
+  return {
+    content,
+    provider: normalizedSettings.provider,
+    generatedAt: new Date().toISOString(),
+    metadata: createAiResponseMetadata({ provider: normalizedSettings.provider, settings: normalizedSettings, request, body }),
+  };
 }
 
 async function runClaudePromptAgent(settings, promptRequest, timeoutMs = AI_PROMPT_REQUEST_TIMEOUT_MS) {
@@ -974,6 +1051,7 @@ async function runClaudePromptAgent(settings, promptRequest, timeoutMs = AI_PROM
   if (!normalizedSettings.apiKey) {
     throw new Error("Claude API key is not configured.");
   }
+  const request = buildClaudePromptMessagesRequest(normalizedSettings, promptRequest);
   const { response, body } = await fetchJsonWithTimeout(
     buildProviderEndpoint(normalizedSettings, "messages"),
     {
@@ -983,7 +1061,7 @@ async function runClaudePromptAgent(settings, promptRequest, timeoutMs = AI_PROM
         "x-api-key": normalizedSettings.apiKey,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify(buildClaudePromptMessagesRequest(normalizedSettings, promptRequest)),
+      body: JSON.stringify(request),
     },
     timeoutMs,
   );
@@ -992,7 +1070,12 @@ async function runClaudePromptAgent(settings, promptRequest, timeoutMs = AI_PROM
   }
   const content = extractClaudeOutputText(body).trim();
   if (!content) throw new Error("Claude returned an empty response.");
-  return { content, provider: "claude", generatedAt: new Date().toISOString() };
+  return {
+    content,
+    provider: "claude",
+    generatedAt: new Date().toISOString(),
+    metadata: createAiResponseMetadata({ provider: "claude", settings: normalizedSettings, request, body }),
+  };
 }
 
 async function runConfiguredPromptAgent(promptRequest) {
@@ -1127,6 +1210,10 @@ ipcMain.handle("project-materials:save", async (_event, payload) =>
 );
 
 ipcMain.handle("project-materials:list-chapters", async (_event, workId) => getProjectManager().listProjectChapters(workId));
+
+ipcMain.handle("project-report:read", async (_event, payload) =>
+  getProjectManager().readProjectReport(payload?.workId, payload?.fileName),
+);
 
 ipcMain.handle("memory:load", async (_event, workId) => getMemoryManager().loadMemory(workId));
 

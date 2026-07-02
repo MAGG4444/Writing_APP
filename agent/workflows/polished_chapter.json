@@ -1,0 +1,28 @@
+{
+  "id": "polished_chapter",
+  "label": "Polished Chapter",
+  "cost_level": "high",
+  "context_level": "full_relevant",
+  "word_count_strictness": "strict",
+  "reviewer_level": "full",
+  "steps": [
+    { "id": "plan_chapter", "prompt_id": "planner_prompt", "stage": "planning", "required": true, "model_tier": "planning" },
+    { "id": "outline_scenes", "prompt_id": "scene_outline_prompt", "stage": "planning", "required": true, "model_tier": "planning" },
+    { "id": "write_scene", "prompt_id": "scene_writer_prompt", "stage": "generation", "required": true, "model_tier": "writing" },
+    { "id": "continue_if_needed", "prompt_id": "continue_chapter_prompt", "stage": "generation", "required": true, "model_tier": "writing" },
+    { "id": "audit_completion", "prompt_id": "chapter_completion_auditor_prompt", "stage": "audit", "required": true, "model_tier": "cheap" },
+    { "id": "repair_completion", "prompt_id": "chapter_completion_repair_prompt", "stage": "repair", "required": false, "model_tier": "writing" },
+    { "id": "adjust_expand", "prompt_id": "expand_scene_prompt", "stage": "adjustment", "required": false, "model_tier": "writing" },
+    { "id": "adjust_compress", "prompt_id": "compress_scene_prompt", "stage": "adjustment", "required": false, "model_tier": "editing" },
+    { "id": "quality_review", "prompt_id": "quality_review_prompt", "stage": "review", "required": false, "model_tier": "review" },
+    { "id": "transition_review", "prompt_id": "transition_review_prompt", "stage": "review", "required": false, "model_tier": "review" },
+    { "id": "editorial_suggestions", "prompt_id": "editorial_suggestions_prompt", "stage": "report", "required": false, "model_tier": "review" },
+    { "id": "summarize_memory", "prompt_id": "summarizer_prompt", "stage": "memory", "required": true, "model_tier": "cheap" }
+  ],
+  "craft_rule_policy": {
+    "quality_review": ["scene", "character", "dialogue", "pacing", "style", "revision"],
+    "transition_review": ["transition", "pacing", "scene"],
+    "editorial_suggestions": ["scene", "character", "dialogue", "pacing", "style", "revision", "transition"],
+    "top_k": 8
+  }
+}

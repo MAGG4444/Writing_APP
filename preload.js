@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld("storyForgeDesktop", {
   readProjectMaterials: (workId) => ipcRenderer.invoke("project-materials:read", workId),
   saveProjectMaterial: (payload) => ipcRenderer.invoke("project-materials:save", payload),
   listProjectMaterialChapters: (workId) => ipcRenderer.invoke("project-materials:list-chapters", workId),
+  readProjectReport: (payload) => ipcRenderer.invoke("project-report:read", payload),
   loadMemory: (workId) => ipcRenderer.invoke("memory:load", workId),
   saveMemory: (payload) => ipcRenderer.invoke("memory:save", payload),
   updateChapterSummary: (payload) => ipcRenderer.invoke("memory:update-chapter-summary", payload),

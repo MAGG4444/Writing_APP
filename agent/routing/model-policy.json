@@ -1,0 +1,87 @@
+{
+  "version": 2,
+  "default_policy": "default",
+  "policies": {
+    "default": {
+      "policy_id": "default",
+      "description": "Model routing policy. Routing is disabled by default and only low-risk tiers may be routed when explicitly enabled.",
+      "routing_enabled": false,
+      "allow_fast_draft_planning_routing": false,
+      "allowed_routing_tiers": ["cheap", "summary", "review"],
+      "tiers": {
+        "cheap": {
+          "placeholder_model": "cheap-default",
+          "model": "cheap-default",
+          "fallback_model": "",
+          "fallback_to_default": true,
+          "max_output_tokens": null
+        },
+        "mid": {
+          "placeholder_model": "mid-default",
+          "model": "mid-default",
+          "fallback_model": "",
+          "fallback_to_default": true,
+          "routing_allowed": false,
+          "max_output_tokens": null
+        },
+        "writing": {
+          "placeholder_model": "writing-default",
+          "model": "writing-default",
+          "fallback_model": "",
+          "fallback_to_default": true,
+          "routing_allowed": false,
+          "max_output_tokens": null
+        },
+        "review": {
+          "placeholder_model": "review-default",
+          "model": "review-default",
+          "fallback_model": "",
+          "fallback_to_default": true,
+          "max_output_tokens": null
+        },
+        "summary": {
+          "placeholder_model": "summary-default",
+          "model": "summary-default",
+          "fallback_model": "",
+          "fallback_to_default": true,
+          "max_output_tokens": null
+        }
+      },
+      "prompt_tiers": {
+        "planner_prompt": "mid",
+        "scene_outline_prompt": "mid",
+        "scene_writer_prompt": "writing",
+        "writer_prompt": "writing",
+        "continue_chapter_prompt": "writing",
+        "chapter_completion_repair_prompt": "writing",
+        "expand_scene_prompt": "writing",
+        "compress_scene_prompt": "writing",
+        "chapter_completion_auditor_prompt": "cheap",
+        "quality_review_prompt": "review",
+        "transition_review_prompt": "review",
+        "editorial_suggestions_prompt": "review",
+        "consistency_checker_prompt": "review",
+        "summarizer_prompt": "summary",
+        "editor_prompt": "mid",
+        "project_materials_prompt": "mid"
+      },
+      "path_overrides": {
+        "fast_draft": {
+          "planner_prompt": "cheap",
+          "scene_outline_prompt": "cheap"
+        },
+        "standard_chapter": {},
+        "polished_chapter": {}
+      },
+      "mode_overrides": {
+        "fast_draft": {
+          "planner_prompt": "cheap",
+          "scene_outline_prompt": "cheap"
+        },
+        "standard": {},
+        "full_review": {},
+        "polished": {}
+      }
+    }
+  }
+}

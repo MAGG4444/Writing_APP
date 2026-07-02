@@ -127,6 +127,17 @@ function createProjectManager({ projectsRoot }) {
     return { workId: String(workId), fileName: normalizedFileName };
   }
 
+  async function readProjectReport(workId, fileName) {
+    await ensureProject(workId);
+    const normalizedFileName = sanitizeReportFileName(fileName);
+    const filePath = path.join(getProjectDirectory(workId), "reports", normalizedFileName);
+    return {
+      workId: String(workId),
+      fileName: normalizedFileName,
+      content: await fs.readFile(filePath, "utf8"),
+    };
+  }
+
   async function listProjectChapters(workId) {
     await ensureProject(workId);
     const chaptersDirectory = path.join(getProjectDirectory(workId), "chapters");
@@ -145,6 +156,7 @@ function createProjectManager({ projectsRoot }) {
     saveProjectChapter,
     readProjectChapter,
     saveProjectReport,
+    readProjectReport,
     listProjectChapters,
   };
 }
